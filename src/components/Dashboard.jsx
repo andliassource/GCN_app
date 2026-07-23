@@ -54,8 +54,9 @@ export default function Dashboard({ db, setActiveTab }) {
     : "1.00";
 
   const percentualAderencia = avaliacoes.length > 0
-    ? (avaliacoes.reduce((acc, curr) => acc + Number(curr.aderence_ISO22301), 0) / avaliacoes.length).toFixed(0)
+    ? (avaliacoes.reduce((acc, curr) => acc + Number(curr.aderencia_ISO22301), 0) / avaliacoes.length).toFixed(0)
     : "0";
+
 
   const resilienciaData = [
     { name: 'Aderência', value: Number(percentualAderencia) },
