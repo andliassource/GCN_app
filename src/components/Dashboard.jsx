@@ -69,9 +69,10 @@ export default function Dashboard({ db, setActiveTab }) {
   // Agrupar processos no Heatmap
   const getProcessosInHeatmapCell = (prob, imp) => {
     return ains.filter(ain => ain.probabilidade === prob && ain.impacto_financeiro === imp)
-      .map(ain => processes.find(p => p.id_processo === ain.id_processo))
+      .map(ain => processos.find(p => p.id_processo === ain.id_processo))
       .filter(Boolean);
   };
+
 
   // Cores de Risco do Heatmap
   const getHeatmapColor = (probIdx, impIdx) => {
