@@ -39,7 +39,9 @@ export default function Header({ activeTab, user, db }) {
   const getTitle = () => {
     switch (activeTab) {
       case 'dashboard': return 'Gestão de Resiliência NRGCN';
+      case 'organizacao': return 'Estrutura Organizacional e Análise de Riscos (Geric)';
       case 'contratos': return 'Ingestão e Análise de Contratos';
+
       case 'incidentes': return 'Registro e Histórico de Incidentes';
       case 'ain': return 'Análise de Impacto nos Negócios (AIN)';
       case 'planos': return 'Planos de Continuidade (PCO) & Recuperação (PRD)';

@@ -1,266 +1,240 @@
 // ============================================================================
-// SERVIÇO DE BANCO DE DADOS (MOCK / LOCALSTORAGE) - PORTÁVEL PARA FIREBASE & SQL
+// SERVIÇO DE BANCO DE DADOS (MOCK / LOCALSTORAGE) - PORTÁVEL E EXPANDIDO
 // ============================================================================
 
-// Dados iniciais realistas para o sistema de GCN/NRGCN
 const INITIAL_DATA = {
+  diretorias: [
+    { id_diretoria: "DIR-001", nome: "Diretoria de Tecnologia e Infraestrutura", sigla: "Dites" },
+    { id_diretoria: "DIR-002", nome: "Diretoria de Operações e Negócios", sigla: "Diope" },
+    { id_diretoria: "DIR-003", nome: "Diretoria Financeira e Administrativa", sigla: "Diafi" }
+  ],
+  gerencias: [
+    // Ligadas à Dites (TIC)
+    { id_gerencia: "GER-TIC01", nome: "Gerência Executiva de Infraestrutura de TI", sigla: "Getic", tipo: "TIC", id_diretoria: "DIR-001" },
+    { id_gerencia: "GER-TIC02", nome: "Gerência Executiva de Governança de TI", sigla: "Geati", tipo: "TIC", id_diretoria: "DIR-001" },
+    { id_gerencia: "GER-TIC03", nome: "Gerência Executiva de Aplicações Corporativas", sigla: "Geape", tipo: "TIC", id_diretoria: "DIR-001" },
+    { id_gerencia: "GER-TIC04", nome: "Gerência Executiva de Cibersegurança", sigla: "Gesec", tipo: "TIC", id_diretoria: "DIR-001" },
+    // Ligadas à Diope (Negócios e Governança GCN)
+    { id_gerencia: "GER-NEG01", nome: "Gerência Executiva de Canais e Backoffice", sigla: "Gecob", tipo: "Negócios", id_diretoria: "DIR-002" },
+    { id_gerencia: "GER-NEG02", nome: "Gerência Executiva de Assistência Técnica", sigla: "Gered", tipo: "Negócios", id_diretoria: "DIR-002" },
+    { id_gerencia: "GER-GOV01", nome: "Gerência de Gestão de Riscos e GCN", sigla: "Geric", tipo: "Governança", id_diretoria: "DIR-002" },
+    { id_gerencia: "GER-GOV02", nome: "Gerência de Governança Corporativa e Crises", sigla: "Geemp", tipo: "Governança", id_diretoria: "DIR-002" },
+    { id_gerencia: "GER-GOV03", nome: "Gerência de Marketing e Comunicação", sigla: "Gemac", tipo: "Governança", id_diretoria: "DIR-002" },
+    // Ligadas à Diafi (Áreas de Apoio)
+    { id_gerencia: "GER-APO01", nome: "Gerência Executiva de Pessoas e Recursos Humanos", sigla: "Gepes", tipo: "Apoio", id_diretoria: "DIR-003" },
+    { id_gerencia: "GER-APO02", nome: "Gerência Executiva de Finanças e Tesouraria", sigla: "Gefic", tipo: "Apoio", id_diretoria: "DIR-003" },
+    { id_gerencia: "GER-APO03", nome: "Gerência Executiva de Suprimentos e Contratos", sigla: "Gesuc", tipo: "Apoio", id_diretoria: "DIR-003" },
+    { id_gerencia: "GER-APO04", nome: "Gerência Executiva de Administração Predial", sigla: "Gesap", tipo: "Apoio", id_diretoria: "DIR-003" }
+  ],
+  ativosSistemas: [
+    { id_ativo: "ATV-SYS01", nome: "Core Banking e API Transacional", tipo: "Sistema", criticidade: "Crítica" },
+    { id_ativo: "ATV-SYS02", nome: "Portal de Atendimento Zendesk", tipo: "Sistema", criticidade: "Alta" },
+    { id_ativo: "ATV-LNK01", nome: "Link de Fibra Embratel Dedicado", tipo: "Link", criticidade: "Alta" },
+    { id_ativo: "ATV-SRV01", nome: "Cluster Kubernetes AWS us-east-1", tipo: "Servidor", criticidade: "Crítica" },
+    { id_ativo: "ATV-SYS03", nome: "Sistema ERP Financeiro SAP", tipo: "Sistema", criticidade: "Média" },
+    { id_ativo: "ATV-SYS04", nome: "Portal Corporativo de Recursos Humanos", tipo: "Sistema", criticidade: "Média" }
+  ],
+  processosCriticosAtivos: [
+    { id_processo: "PROC-001", id_ativo: "ATV-SYS01" },
+    { id_processo: "PROC-001", id_ativo: "ATV-SRV01" },
+    { id_processo: "PROC-002", id_ativo: "ATV-SRV01" },
+    { id_processo: "PROC-003", id_ativo: "ATV-LNK01" },
+    { id_processo: "PROC-003", id_ativo: "ATV-SYS02" }
+  ],
+  riscos: [
+    { id_risco: "RISK-001", nome: "Indisponibilidade de Nuvem AWS", descricao: "Perda de instâncias por quedas gerais do data center na AWS us-east-1.", probabilidade: "Pouco Provável", impacto: "Catastrófico", id_processo: "PROC-002" },
+    { id_risco: "RISK-002", nome: "Corte físico no Link Embratel", descricao: "Rompimento acidental da fibra na via pública primária.", probabilidade: "Provável", impacto: "Moderado", id_processo: "PROC-003" },
+    { id_risco: "RISK-003", nome: "Ataque Cibernético e Ransomware", descricao: "Tentativa de sequestro de dados no core transacional.", probabilidade: "Pouco Provável", impacto: "Catastrófico", id_processo: "PROC-001" },
+    { id_risco: "RISK-004", nome: "Greve de Transportes ou Bloqueio Predial", descricao: "Impedimento de acesso físico ao edifício central de administração.", probabilidade: "Provável", impacto: "Moderado", id_processo: "PROC-005" }
+  ],
+  atasComiteCrise: [
+    {
+      id_ata: "ATA-2026-001",
+      data_reuniao: "2026-04-12",
+      pauta: "Acionamento do Comitê de Crise devido a Instabilidade Crítica na AWS",
+      deliberacoes: "Determinada a ativação da War Room sob liderança da Getic/Gesec. Aprovada a comunicação de contingência interna e externa pela Gemac. Autorizado o chaveamento para servidores reservas.",
+      participantes: "Roberto Carlos (Geric), Patrícia Lima (Getic), Arthur Mendes (Geemp), Vanessa Lopes (Gemac)"
+    }
+  ],
   contratos: [
     {
       id_contrato: "CON-001",
-      nome: "Contrato Amazon Web Services (AWS) - Hosting e Infraestrutura Cloud",
+      nome: "Contrato AWS - Hosting e Infraestrutura Cloud",
       valor_faturamento: 450000.00,
       clausulas_risco: "Resolução em menos de 4 horas para instâncias críticas. Multa em caso de indisponibilidade superior a 99.9%.",
       multas: "Multa de 5% do faturamento mensal por hora de indisponibilidade além do SLA.",
       data_inicio: "2025-01-01",
-      data_fim: "2027-12-31"
+      data_fim: "2027-12-31",
+      id_gerencia: "GER-TIC01" // Getic
     },
     {
       id_contrato: "CON-002",
-      nome: "Contrato Embratel - Link de Fibra Óptica Dedicado (Principal)",
+      nome: "Contrato Embratel - Link de Fibra Dedicado",
       valor_faturamento: 120000.00,
-      clausulas_risco: "SLA de conectividade de 99.95%. Penalidade por interrupção completa sem aviso prévio.",
-      multas: "Abatimento proporcional e multa contratual de R$ 10.000 por hora de queda contínua.",
+      clausulas_risco: "SLA de conectividade de 99.95%.",
+      multas: "Abatimento proporcional e multa contratual de R$ 10.000 por hora.",
       data_inicio: "2024-06-01",
-      data_fim: "2026-06-01"
+      data_fim: "2026-06-01",
+      id_gerencia: "GER-TIC01" // Getic
     },
     {
       id_contrato: "CON-003",
-      nome: "Contrato Stone Pagamentos - Gateway de Cobrança e Checkout",
+      nome: "Contrato Stone Pagamentos - Gateway",
       valor_faturamento: 890000.00,
-      clausulas_risco: "Indisponibilidade do checkout afeta vendas diretas. Risco alto de perdas financeiras em tempo real.",
-      multas: "Ressarcimento de perdas comprovadas e cancelamento de taxa de adesão temporária.",
+      clausulas_risco: "Indisponibilidade afeta vendas em tempo real.",
+      multas: "Ressarcimento de perdas comprovadas.",
       data_inicio: "2025-03-01",
-      data_fim: "2027-03-01"
+      data_fim: "2027-03-01",
+      id_gerencia: "GER-NEG01" // Gecob
+    },
+    {
+      id_contrato: "CON-ASTEC",
+      nome: "Acúmulo de Contratos de Assistência Técnica (Astec - 13 Contratos)",
+      valor_faturamento: 780000.00,
+      clausulas_risco: "SLAs de atendimento de campo variando entre 8 e 24 horas por região geográfica.",
+      multas: "Redução de repasse de 2% por chamado fora do SLA acordado nas capitais.",
+      data_inicio: "2025-01-01",
+      data_fim: "2028-01-01",
+      id_gerencia: "GER-NEG02" // Gered
     }
   ],
   processosCriticos: [
     {
       id_processo: "PROC-001",
-      nome: "Processamento de Pagamentos e Checkout",
-      descricao: "Processamento de transações no gateway de pagamento e fluxo de fechamento de carrinho no e-commerce.",
+      nome: "Processamento de Pagamentos (Checkouts/Gecob)",
+      descricao: "Mapeamento das transações do gateway e fluxos de canais digitais.",
       id_contrato: "CON-003",
-      criticidade: "Crítica"
+      criticidade: "Crítica",
+      id_gerencia: "GER-NEG01" // Gecob
     },
     {
       id_processo: "PROC-002",
-      nome: "Hospedagem e Infraestrutura do Portal de Serviços",
-      descricao: "Servidores cloud e banco de dados que suportam toda a aplicação visível ao cliente.",
+      nome: "Infraestrutura do Portal de Serviços",
+      descricao: "Servidores em nuvem sob gestão técnica de infraestrutura da TI.",
       id_contrato: "CON-001",
-      criticidade: "Crítica"
+      criticidade: "Crítica",
+      id_gerencia: "GER-TIC01" // Getic
     },
     {
       id_processo: "PROC-003",
-      nome: "Comunicação Interna e Atendimento ao Cliente",
-      descricao: "Links de internet e telefonia utilizados pelo suporte técnico e atendimento para atendimento de chamados.",
+      nome: "Atendimento de Canais e Suporte Técnico",
+      descricao: "Links e ferramentas de atendimento utilizados para receber chamados.",
       id_contrato: "CON-002",
-      criticidade: "Alta"
+      criticidade: "Alta",
+      id_gerencia: "GER-NEG01" // Gecob
     },
     {
       id_processo: "PROC-004",
-      nome: "Faturamento e Cobrança Mensal",
-      descricao: "Processamento de notas fiscais e envio de boletos automáticos aos assinantes.",
-      id_contrato: "CON-003",
-      criticidade: "Média"
+      nome: "Gestão e Apoio: Folha de Pagamento Corporativa",
+      descricao: "Mapeamento interno da folha mensal de colaboradores. Processo de apoio (Sem contrato).",
+      id_contrato: "", // Sem contrato
+      criticidade: "Alta",
+      id_gerencia: "GER-APO01" // Gepes
+    },
+    {
+      id_processo: "PROC-005",
+      nome: "Gestão Predial, Brigada e Evacuação",
+      descricao: "Gerenciamento predial e acionamento de brigadas. Apoio à segurança predial (Sem contrato).",
+      id_contrato: "", // Sem contrato
+      criticidade: "Média",
+      id_gerencia: "GER-APO04" // Gesap
     }
   ],
   incidentes: [
     {
       id_incidente: "INC-101",
       data_hora: "2026-04-12T14:30:00",
-      local: "Data Center AWS - Região us-east-1",
-      descricao: "Indisponibilidade de API de checkout devido a uma instabilidade no provedor de nuvem AWS.",
+      local: "Data Center AWS",
+      descricao: "Indisponibilidade devido a uma instabilidade no provedor de nuvem AWS.",
       tipo_incidente: "Falha de Infraestrutura Nuvem",
       impacto: "Alto",
       id_processo: "PROC-002",
-      medidas_mitigacao: "Redirecionamento de tráfego para a região backup em sa-east-1.",
-      resultado_resposta: "Sistemas restabelecidos em 45 minutos. Perda financeira calculada dentro do planejado."
-    },
-    {
-      id_incidente: "INC-102",
-      data_hora: "2026-06-05T09:15:00",
-      local: "Escritório Central - Link Embratel",
-      descricao: "Rompimento de fibra óptica na rua de acesso ao escritório central, causando queda do link dedicado.",
-      tipo_incidente: "Corte de Fibra Óptica / Telecom",
-      impacto: "Médio",
-      id_processo: "PROC-003",
-      medidas_mitigacao: "Ativação automática do link de contingência de rádio (Vivo). Redirecionamento da equipe de suporte para home office.",
-      resultado_resposta: "Apenas 5 minutos de instabilidade para alternar os links. A operação continuou sem prejuízos."
+      medidas_mitigacao: "Redirecionamento para a região backup em sa-east-1.",
+      resultado_resposta: "Sistemas restabelecidos em 45 minutos."
     }
   ],
   analiseImpactoNegocio: [
-    {
-      id_ain: "AIN-001",
-      id_processo: "PROC-001",
-      probabilidade: "Provável",
-      impacto_financeiro: "Catastrófico",
-      RTO: 15, // minutos (Tempo Objetivo de Recuperação)
-      RPO: 5,  // minutos (Ponto Objetivo de Recuperação - perda máxima de dados)
-      MTDCN: 60 // minutos (Período Máximo Tolerável de Interrupção)
-    },
-    {
-      id_ain: "AIN-002",
-      id_processo: "PROC-002",
-      probabilidade: "Pouco Provável",
-      impacto_financeiro: "Catastrófico",
-      RTO: 30,
-      RPO: 15,
-      MTDCN: 120
-    },
-    {
-      id_ain: "AIN-003",
-      id_processo: "PROC-003",
-      probabilidade: "Provável",
-      impacto_financeiro: "Moderado",
-      RTO: 120,
-      RPO: 180,
-      MTDCN: 360
-    },
-    {
-      id_ain: "AIN-004",
-      id_processo: "PROC-004",
-      probabilidade: "Pouco Provável",
-      impacto_financeiro: "Menor",
-      RTO: 1440, // 24 horas
-      RPO: 1440,
-      MTDCN: 2880
-    }
+    { id_ain: "AIN-001", id_processo: "PROC-001", probabilidade: "Provável", impacto_financeiro: "Catastrófico", RTO: 15, RPO: 5, MTDCN: 60 },
+    { id_ain: "AIN-002", id_processo: "PROC-002", probabilidade: "Pouco Provável", impacto_financeiro: "Catastrófico", RTO: 30, RPO: 15, MTDCN: 120 },
+    { id_ain: "AIN-003", id_processo: "PROC-003", probabilidade: "Provável", impacto_financeiro: "Moderado", RTO: 120, RPO: 180, MTDCN: 360 },
+    { id_ain: "AIN-004", id_processo: "PROC-004", probabilidade: "Pouco Provável", impacto_financeiro: "Moderado", RTO: 1440, RPO: 1440, MTDCN: 2880 },
+    { id_ain: "AIN-005", id_processo: "PROC-005", probabilidade: "Provável", impacto_financeiro: "Menor", RTO: 360, RPO: 1440, MTDCN: 720 }
   ],
   planosContinuidade: [
     {
       id_pco: "PCO-001",
       id_processo: "PROC-001",
-      estrategia_recuperacao: "Acionamento de gateway alternativo offline com processamento assíncrono. Redirecionar fluxos de venda para sistema de contingência local.",
-      responsabilidades: "Equipe de Engenharia de Software realiza o failover. Gerente de Negócios aprova o comunicado aos clientes.",
-      recursos_necessarios: "Servidores secundários ativos, chaves de API redundantes, saldo de garantia na adquirente reserva.",
+      estrategia_recuperacao: "Failover automático para gateway adquirente reserva e processamento assíncrono.",
+      responsabilidades: "Equipe técnica da Gecob e SRE executam o failover.",
+      recursos_necessarios: "API Reserva, instâncias de contingência.",
+      
+      // Cenários de Crise do PCO
+      cenario_acesso: "Garantir trabalho home office imediato de todos os analistas com VPN corporativa ativa. Liberação de auxílio dados móveis emergencial.",
+      cenario_sistemas: "Passo 1: Validar falha de checkout. Passo 2: Mudar chave API de contingência. Passo 3: Contatar fiscal de serviço do contrato no telefone (11) 98888-7777 e formalizar e-mail em fiscal.SLA@stone.com.br.",
+      cenario_fornecedores: "Se a adquirente Stone falhar integralmente, migrar tráfego em lote para a adquirente Cielo reserva conforme acordo de contingência.",
+      cenario_pessoas: "Em caso de surto/falta de 40% dos analistas, acionar plano de horas extras com equipe de BPO parceira.",
+      escalonamento_crise: "Se o tempo de indisponibilidade exceder 15 minutos (RTO), o gerente executivo da Gecob deve escalonar o chamado para o Comitê de Crise e Getic para ativação do PRD.",
+      
       status_aprovacao: "Aprovado",
       versao: "1.2.0"
     },
     {
-      id_pco: "PCO-002",
-      id_processo: "PROC-002",
-      estrategia_recuperacao: "Failover automático Multi-Região via Route 53. Balanceamento de carga distribuído.",
-      responsabilidades: "SRE/DevOps de plantão monitora as métricas e valida a replicação do banco de dados.",
-      recursos_necessarios: "Replicação síncrona do Banco de Dados Aurora Global Database, certificados SSL duplicados.",
-      status_aprovacao: "Em Revisão",
-      versao: "1.0.1"
-    },
-    {
-      id_pco: "PCO-003",
-      id_processo: "PROC-003",
-      estrategia_recuperacao: "Transferência das filas de chamados para equipe externa de BPO contratada de prontidão.",
-      responsabilidades: "Coordenação de Suporte Técnico realiza a chamada de emergência para a equipe parceira.",
-      recursos_necessarios: "Contas de usuário e logins criados previamente na plataforma Zendesk para a equipe parceira.",
+      id_pco: "PCO-005",
+      id_processo: "PROC-005",
+      estrategia_recuperacao: "Direcionamento imediato da brigada predial e isolamento de áreas de risco.",
+      responsabilidades: "Gerente Executivo da Gesap aciona o protocolo de segurança predial física.",
+      recursos_necessarios: "Equipamentos de segurança, brigadistas e sinalizadores.",
+      
+      cenario_acesso: "Evacuação total do edifício sede. Transferência das equipes para escritório de contingência em Alphaville ou home office temporário.",
+      cenario_sistemas: "Acionamento manual do alarme predial. Disparo de alertas via WhatsApp institucional para os funcionários do prédio.",
+      cenario_fornecedores: "Acionar fornecedor de manutenção predial em até 2 horas conforme SLA para restabelecimento elétrico ou hidráulico.",
+      cenario_pessoas: "Em caso de incapacidade predial, escalonar equipe de segurança física substituta.",
+      escalonamento_crise: "Escalonamento imediato para a Geric e Diretoria Administrativa (Diafi) se houver riscos à integridade física.",
+      
       status_aprovacao: "Aprovado",
-      versao: "2.0.0"
+      versao: "1.0.0"
     }
   ],
   planosRecuperacaoDesastres: [
     {
       id_prd: "PRD-001",
       id_processo: "PROC-001",
-      procedimentos_restauracao: "1. Validar integridade dos logs de transações.\n2. Lançar script de conciliação automática.\n3. Restaurar banco de dados transacional do snapshot das últimas 5 horas caso haja corrupção de dados.\n4. Processar transações represadas.",
-      local_backup: "AWS S3 Glaciar - Região eu-west-1 (Criptografado)",
+      procedimentos_restauracao: "1. Verificar logs. 2. Restaurar snapshot transacional de 5 minutos do S3.",
+      local_backup: "AWS S3 Glacier (eu-west-1)",
       frequencia_backup: "A cada 5 minutos",
-      comunicacao_emergencia: "Grupo de WhatsApp 'Crise-Checkout', Canal Slack #incidentes-graves, e-mail para Diretoria Executiva."
+      comunicacao_emergencia: "Notificar time SRE via PagerDuty e Slack #incidentes-graves.",
+      
+      // Procedimento de War Room (ISO 27031)
+      procedimento_war_room: "1. Identificar falha prolongada. 2. Criar sala Teams 'War-Room-Crise-01'. 3. Convocar líderes de Getic, Gesec, Geape e o fiscal do contrato da AWS. 4. Manter status page operacional a cada 15 minutos."
     },
     {
       id_prd: "PRD-002",
       id_processo: "PROC-002",
-      procedimentos_restauracao: "1. Verificar status da AWS.\n2. Apontar DNS Cloudflare para IP de contingência Azure VM.\n3. Rodar script de consistência do banco de dados.\n4. Ativar servidores de aplicação na nuvem Azure.",
+      procedimentos_restauracao: "1. Verificar status geral da AWS. 2. Mudar Cloudflare DNS para contingência em Azure VM.",
       local_backup: "Azure Blob Storage (Geo-redundante)",
-      frequencia_backup: "A cada 15 minutos (Replicação de logs de transação)",
-      comunicacao_emergencia: "Notificação PagerDuty para time SRE, Canal Slack #incidentes-ops."
+      frequencia_backup: "A cada 15 minutos",
+      comunicacao_emergencia: "Disparo PagerDuty para DevOps.",
+      procedimento_war_room: "1. Acionamento de War Room na sala de crises com a presença da governança de TI (Geati). 2. Notificação da Gesec para análise de ameaças de segurança."
     }
   ],
   testesAvaliacoes: [
-    {
-      id_teste: "TST-001",
-      id_pco: "PCO-001",
-      id_prd: "PRD-001",
-      data_teste: "2026-03-10",
-      resultado: "Sucesso",
-      areas_melhoria: "O tempo de failover automático foi de 12 minutos (dentro dos 15 minutos de RTO), mas a notificação inicial por e-mail demorou 6 minutos para disparar. Melhorar o sistema de triggers."
-    },
-    {
-      id_teste: "TST-002",
-      id_pco: "PCO-002",
-      id_prd: "PRD-002",
-      data_teste: "2026-05-20",
-      resultado: "Sucesso Parcial",
-      areas_melhoria: "A infraestrutura em Azure subiu perfeitamente. No entanto, o banco de dados estava dessincronizado por cerca de 22 minutos (meta de RPO era 15 minutos). Ajustar a frequência de sincronização de logs para 10 minutos."
-    }
+    { id_teste: "TST-001", id_pco: "PCO-001", id_prd: "PRD-001", data_teste: "2026-03-10", resultado: "Sucesso", areas_melhoria: "O tempo de failover automático foi de 12 minutos (dentro dos 15 minutos de RTO)." }
   ],
   revisoesAtualizacoes: [
-    {
-      id_revisao: "REV-001",
-      id_pco: "PCO-001",
-      id_prd: "PRD-001",
-      data_revisao: "2026-04-15",
-      motivo: "Mudança no provedor de pagamento reserva",
-      atualizacao_realizada: "Substituição das chaves de API da Adyen pelas da Pagar.me no plano de failover e nos testes de recuperação."
-    },
-    {
-      id_revisao: "REV-002",
-      id_pco: "PCO-003",
-      id_prd: null,
-      data_revisao: "2026-06-10",
-      motivo: "Revisão semestral obrigatória da ISO 22301",
-      atualizacao_realizada: "Revisão dos números de telefone de contato do link de contingência e lista de gerentes de plantão."
-    }
+    { id_revisao: "REV-001", id_pco: "PCO-001", id_prd: "PRD-001", data_revisao: "2026-04-15", motivo: "Mudança no gateway reserva", atualizacao_realizada: "Substituição do gateway reserva para Pagar.me." }
   ],
   governancaGCN: [
-    {
-      id_governanca: "GOV-001",
-      responsavel: "Roberto Carlos (Diretor de Riscos e Compliance / Geric)",
-      comunicacao: "Reuniões trimestrais do Comitê de Crise e GCN. Relatórios executivos compartilhados via Teams.",
-      treinamento: "Treinamento teórico de incêndio e desastre cibernético anual. Exercício prático (simulado) semestral com todos os gerentes.",
-      id_processo: "PROC-001"
-    },
-    {
-      id_governanca: "GOV-002",
-      responsavel: "Patrícia Lima (Coordenadora de SRE / Infraestrutura)",
-      comunicacao: "Canais dedicados de emergência no Slack e PagerDuty. Status Page público atualizado em tempo real.",
-      treinamento: "Simulado de Failover de Infraestrutura e restauração de backups a cada 4 meses.",
-      id_processo: "PROC-002"
-    }
+    { id_governanca: "GOV-001", responsavel: "Roberto Carlos (Geric)", comunicacao: "Comitê trimestral de crises", treinamento: "Simulado semestral", id_processo: "PROC-001" }
   ],
   avaliacaoNRGCN: [
-    {
-      id_avaliacao: "EVL-001",
-      id_processo: "PROC-001",
-      nivel_resiliencia: 4.80, // Escala 1.00 a 5.00
-      aderencia_ISO22301: 96.00, // 0.00 a 100.00%
-      metricas_utilizadas: "Mapeamento completo, RTO/RPO menores que 15 min, testes práticos com sucesso comprovado nos últimos 6 meses, auditoria interna concluída.",
-      grafico_resultado: "radar_checkout_maturidade"
-    },
-    {
-      id_avaliacao: "EVL-002",
-      id_processo: "PROC-002",
-      nivel_resiliencia: 4.20,
-      aderencia_ISO22301: 84.00,
-      metricas_utilizadas: "Redundância ativa multi-região configurada, RTO de 30 min alcançado parcialmente em testes, dependência de infraestrutura externa.",
-      grafico_resultado: "radar_hosting_maturidade"
-    },
-    {
-      id_avaliacao: "EVL-003",
-      id_processo: "PROC-003",
-      nivel_resiliencia: 3.50,
-      aderencia_ISO22301: 70.00,
-      metricas_utilizadas: "Plano estruturado de comunicação e contingência de link de rede, porém sem testes práticos automatizados na filial nos últimos 12 meses.",
-      grafico_resultado: "radar_comunicacao_maturidade"
-    },
-    {
-      id_avaliacao: "EVL-004",
-      id_processo: "PROC-004",
-      nivel_resiliencia: 2.10,
-      aderencia_ISO22301: 42.00,
-      metricas_utilizadas: "Mapeamento rudimentar, sem plano formalizado de contingência (PCO), dependência exclusiva do sistema de e-commerce e faturamento principal.",
-      grafico_resultado: "radar_faturamento_maturidade"
-    }
+    { id_avaliacao: "EVL-001", id_processo: "PROC-001", nivel_resiliencia: 4.80, aderencia_ISO22301: 96.00, metricas_utilizadas: "{}", grafico_resultado: "radar_PROC-001" },
+    { id_avaliacao: "EVL-002", id_processo: "PROC-002", nivel_resiliencia: 4.20, aderencia_ISO22301: 84.00, metricas_utilizadas: "{}", grafico_resultado: "radar_PROC-002" },
+    { id_avaliacao: "EVL-003", id_processo: "PROC-003", nivel_resiliencia: 3.50, aderencia_ISO22301: 70.00, metricas_utilizadas: "{}", grafico_resultado: "radar_PROC-003" },
+    { id_avaliacao: "EVL-004", id_processo: "PROC-004", nivel_resiliencia: 2.10, aderencia_ISO22301: 42.00, metricas_utilizadas: "{}", grafico_resultado: "radar_PROC-004" },
+    { id_avaliacao: "EVL-005", id_processo: "PROC-005", nivel_resiliencia: 3.80, aderencia_ISO22301: 76.00, metricas_utilizadas: "{}", grafico_resultado: "radar_PROC-005" }
   ]
 };
 
-// Carrega ou inicializa a base de dados
 const getDB = () => {
   const dbStr = localStorage.getItem("gcn_database");
   if (!dbStr) {
@@ -274,36 +248,99 @@ const saveDB = (data) => {
   localStorage.setItem("gcn_database", JSON.stringify(data));
 };
 
-// Funções utilitárias de serviço
 export const dbService = {
-  // Resetar banco para o estado padrão
   reset() {
     saveDB(INITIAL_DATA);
     return INITIAL_DATA;
   },
 
-  contratos: {
-    list: () => getDB().contratos,
-    get: (id) => getDB().contratos.find(c => c.id_contrato === id),
-    create: (contrato) => {
+  diretorias: {
+    list: () => getDB().diretorias,
+    create: (d) => {
       const db = getDB();
-      const newContract = {
-        ...contrato,
-        id_contrato: contrato.id_contrato || `CON-${Date.now().toString().slice(-3)}`
-      };
-      db.contratos.push(newContract);
+      const newD = { ...d, id_diretoria: d.id_diretoria || `DIR-${Date.now().toString().slice(-3)}` };
+      db.diretorias.push(newD);
       saveDB(db);
-      return newContract;
-    },
-    update: (id, data) => {
+      return newD;
+    }
+  },
+
+  gerencias: {
+    list: () => {
       const db = getDB();
-      const index = db.contratos.findIndex(c => c.id_contrato === id);
-      if (index !== -1) {
-        db.contratos[index] = { ...db.contratos[index], ...data };
-        saveDB(db);
-        return db.contratos[index];
-      }
-      return null;
+      return db.gerencias.map(g => ({
+        ...g,
+        diretoria: db.diretorias.find(d => d.id_diretoria === g.id_diretoria)
+      }));
+    },
+    create: (g) => {
+      const db = getDB();
+      const newG = { ...g, id_gerencia: g.id_gerencia || `GER-${g.sigla.toUpperCase()}` };
+      db.gerencias.push(newG);
+      saveDB(db);
+      return newG;
+    }
+  },
+
+  ativosSistemas: {
+    list: () => getDB().ativosSistemas,
+    create: (a) => {
+      const db = getDB();
+      const newA = { ...a, id_ativo: a.id_ativo || `ATV-${Date.now().toString().slice(-3)}` };
+      db.ativosSistemas.push(newA);
+      saveDB(db);
+      return newA;
+    }
+  },
+
+  riscos: {
+    list: () => {
+      const db = getDB();
+      return db.riscos.map(r => ({
+        ...r,
+        processo: db.processosCriticos.find(p => p.id_processo === r.id_processo)
+      }));
+    },
+    create: (r) => {
+      const db = getDB();
+      const newR = { ...r, id_risco: r.id_risco || `RISK-${Date.now().toString().slice(-3)}` };
+      db.riscos.push(newR);
+      saveDB(db);
+      return newR;
+    },
+    delete: (id) => {
+      const db = getDB();
+      db.riscos = db.riscos.filter(r => r.id_risco !== id);
+      saveDB(db);
+      return true;
+    }
+  },
+
+  atasComiteCrise: {
+    list: () => getDB().atasComiteCrise,
+    create: (a) => {
+      const db = getDB();
+      const newA = { ...a, id_ata: a.id_ata || `ATA-${Date.now().toString().slice(-3)}` };
+      db.atasComiteCrise.push(newA);
+      saveDB(db);
+      return newA;
+    }
+  },
+
+  contratos: {
+    list: () => {
+      const db = getDB();
+      return db.contratos.map(c => ({
+        ...c,
+        gerencia: db.gerencias.find(g => g.id_gerencia === c.id_gerencia)
+      }));
+    },
+    create: (c) => {
+      const db = getDB();
+      const newC = { ...c, id_contrato: c.id_contrato || `CON-${Date.now().toString().slice(-3)}` };
+      db.contratos.push(newC);
+      saveDB(db);
+      return newC;
     },
     delete: (id) => {
       const db = getDB();
@@ -316,47 +353,49 @@ export const dbService = {
   processosCriticos: {
     list: () => {
       const db = getDB();
-      // Retorna populado com informações do contrato associado
       return db.processosCriticos.map(p => ({
         ...p,
-        contrato: db.contratos.find(c => c.id_contrato === p.id_contrato)
+        contrato: db.contratos.find(c => c.id_contrato === p.id_contrato),
+        gerencia: db.gerencias.find(g => g.id_gerencia === p.id_gerencia),
+        ativos: db.processosCriticosAtivos
+          .filter(pca => pca.id_processo === p.id_processo)
+          .map(pca => db.ativosSistemas.find(a => a.id_ativo === pca.id_ativo))
+          .filter(Boolean)
       }));
     },
     get: (id) => {
       const db = getDB();
-      const p = db.processosCriticos.find(p => p.id_processo === id);
-      if (p) {
-        return {
-          ...p,
-          contrato: db.contratos.find(c => c.id_contrato === p.id_contrato)
-        };
-      }
-      return null;
-    },
-    create: (processo) => {
-      const db = getDB();
-      const newProcess = {
-        ...processo,
-        id_processo: processo.id_processo || `PROC-${Date.now().toString().slice(-3)}`
+      const p = db.processosCriticos.find(x => x.id_processo === id);
+      if (!p) return null;
+      return {
+        ...p,
+        contrato: db.contratos.find(c => c.id_contrato === p.id_contrato),
+        gerencia: db.gerencias.find(g => g.id_gerencia === p.id_gerencia),
+        ativos: db.processosCriticosAtivos
+          .filter(pca => pca.id_processo === p.id_processo)
+          .map(pca => db.ativosSistemas.find(a => a.id_ativo === pca.id_ativo))
+          .filter(Boolean)
       };
-      db.processosCriticos.push(newProcess);
-      saveDB(db);
-      return newProcess;
     },
-    update: (id, data) => {
+    create: (p) => {
       const db = getDB();
-      const index = db.processosCriticos.findIndex(p => p.id_processo === id);
-      if (index !== -1) {
-        db.processosCriticos[index] = { ...db.processosCriticos[index], ...data };
-        saveDB(db);
-        return db.processosCriticos[index];
+      const newP = { ...p, id_processo: p.id_processo || `PROC-${Date.now().toString().slice(-3)}` };
+      db.processosCriticos.push(newP);
+      
+      // Vincula ativos
+      if (p.ativosIds && Array.isArray(p.ativosIds)) {
+        p.ativosIds.forEach(ativoId => {
+          db.processosCriticosAtivos.push({ id_processo: newP.id_processo, id_ativo: ativoId });
+        });
       }
-      return null;
+
+      saveDB(db);
+      return newP;
     },
     delete: (id) => {
       const db = getDB();
       db.processosCriticos = db.processosCriticos.filter(p => p.id_processo !== id);
-      // Limpa dependências em cascata (conforme o schema SQL ON DELETE CASCADE/SET NULL)
+      db.processosCriticosAtivos = db.processosCriticosAtivos.filter(p => p.id_processo !== id);
       db.analiseImpactoNegocio = db.analiseImpactoNegocio.filter(a => a.id_processo !== id);
       db.planosContinuidade = db.planosContinuidade.filter(p => p.id_processo !== id);
       db.planosRecuperacaoDesastres = db.planosRecuperacaoDesastres.filter(p => p.id_processo !== id);
@@ -374,25 +413,12 @@ export const dbService = {
         processo: db.processosCriticos.find(p => p.id_processo === i.id_processo)
       }));
     },
-    create: (incidente) => {
+    create: (i) => {
       const db = getDB();
-      const newIncidente = {
-        ...incidente,
-        id_incidente: incidente.id_incidente || `INC-${Date.now().toString().slice(-3)}`
-      };
-      db.incidentes.push(newIncidente);
+      const newI = { ...i, id_incidente: i.id_incidente || `INC-${Date.now().toString().slice(-3)}` };
+      db.incidentes.push(newI);
       saveDB(db);
-      return newIncidente;
-    },
-    update: (id, data) => {
-      const db = getDB();
-      const index = db.incidentes.findIndex(i => i.id_incidente === id);
-      if (index !== -1) {
-        db.incidentes[index] = { ...db.incidentes[index], ...data };
-        saveDB(db);
-        return db.incidentes[index];
-      }
-      return null;
+      return newI;
     },
     delete: (id) => {
       const db = getDB();
@@ -513,10 +539,7 @@ export const dbService = {
     },
     create: (teste) => {
       const db = getDB();
-      const newTeste = {
-        ...teste,
-        id_teste: teste.id_teste || `TST-${Date.now().toString().slice(-3)}`
-      };
+      const newTeste = { ...teste, id_teste: teste.id_teste || `TST-${Date.now().toString().slice(-3)}` };
       db.testesAvaliacoes.push(newTeste);
       saveDB(db);
       return newTeste;
@@ -538,10 +561,7 @@ export const dbService = {
     },
     create: (revisao) => {
       const db = getDB();
-      const newRevisao = {
-        ...revisao,
-        id_revisao: revisao.id_revisao || `REV-${Date.now().toString().slice(-3)}`
-      };
+      const newRevisao = { ...revisao, id_revisao: revisao.id_revisao || `REV-${Date.now().toString().slice(-3)}` };
       db.revisoesAtualizacoes.push(newRevisao);
       saveDB(db);
       return newRevisao;
@@ -556,18 +576,15 @@ export const dbService = {
         processo: db.processosCriticos.find(p => p.id_processo === g.id_processo)
       }));
     },
-    save: (governanca) => {
+    save: (gov) => {
       const db = getDB();
-      const index = db.governancaGCN.findIndex(g => g.id_processo === governanca.id_processo);
+      const index = db.governancaGCN.findIndex(g => g.id_processo === gov.id_processo);
       let updatedGov;
       if (index !== -1) {
-        updatedGov = { ...db.governancaGCN[index], ...governanca };
+        updatedGov = { ...db.governancaGCN[index], ...gov };
         db.governancaGCN[index] = updatedGov;
       } else {
-        updatedGov = {
-          ...governanca,
-          id_governanca: governanca.id_governanca || `GOV-${Date.now().toString().slice(-3)}`
-        };
+        updatedGov = { ...gov, id_governanca: gov.id_governanca || `GOV-${Date.now().toString().slice(-3)}` };
         db.governancaGCN.push(updatedGov);
       }
       saveDB(db);
@@ -583,22 +600,19 @@ export const dbService = {
         processo: db.processosCriticos.find(p => p.id_processo === a.id_processo)
       }));
     },
-    save: (avaliacao) => {
+    save: (av) => {
       const db = getDB();
-      const index = db.avaliacaoNRGCN.findIndex(a => a.id_processo === avaliacao.id_processo);
-      let updatedEvl;
+      const index = db.avaliacaoNRGCN.findIndex(a => a.id_processo === av.id_processo);
+      let updatedAv;
       if (index !== -1) {
-        updatedEvl = { ...db.avaliacaoNRGCN[index], ...avaliacao };
-        db.avaliacaoNRGCN[index] = updatedEvl;
+        updatedAv = { ...db.avaliacaoNRGCN[index], ...av };
+        db.avaliacaoNRGCN[index] = updatedAv;
       } else {
-        updatedEvl = {
-          ...avaliacao,
-          id_avaliacao: avaliacao.id_avaliacao || `EVL-${Date.now().toString().slice(-3)}`
-        };
-        db.avaliacaoNRGCN.push(updatedEvl);
+        updatedAv = { ...av, id_avaliacao: av.id_avaliacao || `EVL-${Date.now().toString().slice(-3)}` };
+        db.avaliacaoNRGCN.push(updatedAv);
       }
       saveDB(db);
-      return updatedEvl;
+      return updatedAv;
     }
   }
 };

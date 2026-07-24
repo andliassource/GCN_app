@@ -10,6 +10,8 @@ import TestesExercicios from './components/TestesExercicios';
 import RevisoesAtualizacoes from './components/RevisoesAtualizacoes';
 import GovernancaAprovacao from './components/GovernancaAprovacao';
 import AvaliacaoMaturidade from './components/AvaliacaoMaturidade';
+import OrganizacaoRiscos from './components/OrganizacaoRiscos';
+
 
 import { dbService } from './services/db';
 import { authService } from './services/auth';
@@ -80,7 +82,9 @@ export default function App() {
         {/* Conteúdo da Aba Ativa */}
         <main className="flex-1 overflow-y-auto p-8 max-w-7xl w-full mx-auto">
           {activeTab === 'dashboard' && <Dashboard db={dbService} setActiveTab={setActiveTab} />}
+          {activeTab === 'organizacao' && <OrganizacaoRiscos db={dbService} />}
           {activeTab === 'contratos' && <ContratosDocs db={dbService} />}
+
           {activeTab === 'incidentes' && <BaseIncidentes db={dbService} />}
           {activeTab === 'ain' && <AnaliseImpacto db={dbService} />}
           {activeTab === 'planos' && <PlanosRecuperacao db={dbService} />}

@@ -10,12 +10,14 @@ import {
   ShieldCheck, 
   Moon, 
   Sun, 
-  LogOut 
+  LogOut,
+  Network
 } from 'lucide-react';
 
 export default function Sidebar({ activeTab, setActiveTab, darkMode, setDarkMode, user, onLogout }) {
   const menuItems = [
     { id: 'dashboard', label: 'Painel NRGCN & Resiliência', icon: LayoutDashboard },
+    { id: 'organizacao', label: 'Estrutura & Riscos (Geric)', icon: Network },
     { id: 'contratos', label: '1. Ingestão de Contratos', icon: FileText },
     { id: 'incidentes', label: '2. Base de Incidentes', icon: AlertOctagon },
     { id: 'ain', label: '3. Análise de Impacto (AIN)', icon: TrendingDown },
@@ -25,6 +27,7 @@ export default function Sidebar({ activeTab, setActiveTab, darkMode, setDarkMode
     { id: 'governanca', label: '7. Governança & Aprovações', icon: ShieldCheck },
     { id: 'avaliacao', label: '8. Avaliação NRGCN', icon: ShieldCheck },
   ];
+
 
 
   return (
