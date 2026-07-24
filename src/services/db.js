@@ -3,7 +3,9 @@
 // ============================================================================
 
 const INITIAL_DATA = {
+  db_version: "2.0",
   diretorias: [
+
     { id_diretoria: "DIR-001", nome: "Diretoria de Tecnologia e Infraestrutura", sigla: "Dites" },
     { id_diretoria: "DIR-002", nome: "Diretoria de Operações e Negócios", sigla: "Diope" },
     { id_diretoria: "DIR-003", nome: "Diretoria Financeira e Administrativa", sigla: "Diafi" }
@@ -241,7 +243,17 @@ const getDB = () => {
     localStorage.setItem("gcn_database", JSON.stringify(INITIAL_DATA));
     return INITIAL_DATA;
   }
-  return JSON.parse(dbStr);
+  try {
+    const db = JSON.parse(dbStr);
+    if (db.db_version !== "2.0") {
+      localStorage.setItem("gcn_database", JSON.stringify(INITIAL_DATA));
+      return INITIAL_DATA;
+    }
+    return db;
+  } catch (e) {
+    localStorage.setItem("gcn_database", JSON.stringify(INITIAL_DATA));
+    return INITIAL_DATA;
+  }
 };
 
 const saveDB = (data) => {
