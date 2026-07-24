@@ -11,22 +11,25 @@ import {
   Moon, 
   Sun, 
   LogOut,
-  Network
+  Network,
+  Settings
 } from 'lucide-react';
 
 export default function Sidebar({ activeTab, setActiveTab, darkMode, setDarkMode, user, onLogout }) {
   const menuItems = [
-    { id: 'dashboard', label: 'Painel NRGCN & Resiliência', icon: LayoutDashboard },
-    { id: 'organizacao', label: 'Estrutura & Riscos (Geric)', icon: Network },
+    { id: 'dashboard', label: 'Painel Executivo Geric', icon: LayoutDashboard },
+    { id: 'organizacao', label: 'Estrutura & Riscos', icon: Network },
     { id: 'contratos', label: '1. Ingestão de Contratos', icon: FileText },
-    { id: 'incidentes', label: '2. Base de Incidentes', icon: AlertOctagon },
+    { id: 'incidentes', label: '2. Base de Incidentes & Lições', icon: AlertOctagon },
     { id: 'ain', label: '3. Análise de Impacto (AIN)', icon: TrendingDown },
     { id: 'planos', label: '4. Planos PCO e PRD', icon: BookOpen },
-    { id: 'testes', label: '5. Testes e Exercícios', icon: Activity },
-    { id: 'revisoes', label: '6. Revisões & Atualizações', icon: RefreshCw },
-    { id: 'governanca', label: '7. Governança & Aprovações', icon: ShieldCheck },
+    { id: 'testes', label: '5. Testes por Cenário', icon: Activity },
+    { id: 'revisoes', label: '6. Revisões & Histórico', icon: RefreshCw },
+    { id: 'governanca', label: '7. Governança & Crises', icon: ShieldCheck },
     { id: 'avaliacao', label: '8. Avaliação NRGCN', icon: ShieldCheck },
+    { id: 'config', label: 'Configurações do Sistema', icon: Settings },
   ];
+
 
 
 

@@ -1,123 +1,96 @@
-import React, { useState } from 'react';
-import { Bell, Shield, CheckCircle, AlertTriangle, Info } from 'lucide-react';
+import React from 'react';
+import { Shield, AlertTriangle, User, LogOut } from 'lucide-react';
+import NotificationCenter from './NotificationCenter';
+import { useAuth } from '../contexts/AuthContext';
 
-export default function Header({ activeTab, user, db }) {
-  const [showNotifications, setShowNotifications] = useState(false);
+export default function Header({ activeTab, db, onNavigate }) {
+  const { usuario, logout } = useAuth();
 
-  // Calcula estatísticas rápidas
-  const processos = db.processosCriticos.list();
-  const avaliacoes = db.avaliacaoNRGCN.list();
-  const incidentes = db.incidentes.list();
+  const avaliacoes = db.avaliacaoNRGCN?.list ? db.avaliacaoNRGCN.list() : [];
+  const incidentes = db.incidentes?.list ? db.incidentes.list() : [];
 
   const mediaMaturidade = avaliacoes.length > 0
-    ? (avaliacoes.reduce((acc, curr) => acc + Number(curr.nivel_resiliencia), 0) / avaliacoes.length).toFixed(2)
+    ? (avaliacoes.reduce((acc, curr) => acc + Number(curr.nivel_resiliencia || 0), 0) / avaliacoes.length).toFixed(2)
     : "0.00";
 
   const incidentesAtivos = incidentes.length;
 
-  const notifications = [
-    {
-      id: 1,
-      type: 'warning',
-      text: 'O Plano PCO do processo "Hospedagem e Infraestrutura" está aguardando revisão semestral.',
-      time: 'Há 2 horas'
-    },
-    {
-      id: 2,
-      type: 'info',
-      text: 'Novo incidente registrado associado ao processo "Processamento de Pagamentos".',
-      time: 'Há 5 horas'
-    },
-    {
-      id: 3,
-      type: 'success',
-      text: 'O teste prático "Simulado de Failover de Checkout" foi aprovado pela GERIC.',
-      time: 'Ontem'
-    }
-  ];
-
   const getTitle = () => {
     switch (activeTab) {
-      case 'dashboard': return 'Gestão de Resiliência NRGCN';
-      case 'organizacao': return 'Estrutura Organizacional e Análise de Riscos (Geric)';
+      case 'dashboard': return 'Painel Executivo — Gestão GCN (Geric)';
+      case 'organizacao': return 'Estrutura Organizacional e Análise de Riscos';
       case 'contratos': return 'Ingestão e Análise de Contratos';
-
-      case 'incidentes': return 'Registro e Histórico de Incidentes';
-      case 'ain': return 'Análise de Impacto nos Negócios (AIN)';
+      case 'incidentes': return 'Base de Incidentes & Lições Aprendidas';
+      case 'ain': return 'Análise de Impacto nos Negócios (AIN/BIA)';
       case 'planos': return 'Planos de Continuidade (PCO) & Recuperação (PRD)';
-      case 'testes': return 'Execução de Testes e Exercícios';
+      case 'testes': return 'Execução de Testes e Exercícios por Cenário';
       case 'revisoes': return 'Histórico de Revisões e Versionamento';
-      case 'governanca': return 'Aprovações, Governança & Auditoria';
+      case 'governanca': return 'Aprovações, Governança & Comitê de Crises';
       case 'avaliacao': return 'Avaliação de Maturidade NRGCN';
+      case 'config': return 'Configurações do Sistema GCN';
       default: return 'Sistema de GCN';
-
     }
   };
 
+  const getRoleBadge = (role) => {
+    if (role === 'admin_geric') return { text: 'Admin Geric', cls: 'bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800' };
+    if (role === 'gestor_area') return { text: 'Gestor da Área', cls: 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800' };
+    return { text: 'Visualizador', cls: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700' };
+  };
+
+  const badge = getRoleBadge(usuario?.role);
+
   return (
-    <header className="h-20 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-8 relative transition-colors duration-300">
+    <header className="h-20 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-6 relative transition-colors duration-300">
       <div>
-        <h2 className="text-xl font-bold text-slate-800 dark:text-white">{getTitle()}</h2>
+        <h2 className="text-lg font-bold text-slate-800 dark:text-white leading-tight">{getTitle()}</h2>
         <p className="text-xs text-slate-400 dark:text-slate-500">
-          Status operacional: <span className="text-emerald-500 dark:text-emerald-400 font-semibold">Resiliência Estável</span>
+          Status: <span className="text-emerald-500 font-semibold">Resiliência Operacional Ativa</span> · ISO 22301 / 27031
         </p>
       </div>
 
-      <div className="flex items-center gap-6">
-        {/* KPI: Nível NRGCN Global */}
-        <div className="flex items-center gap-2 bg-indigo-50 dark:bg-indigo-950/30 px-3.5 py-1.5 rounded-lg border border-indigo-100 dark:border-indigo-900/50">
-          <Shield className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+      <div className="flex items-center gap-4">
+        {/* KPI: Maturidade NRGCN */}
+        <div className="hidden md:flex items-center gap-2 bg-indigo-50 dark:bg-indigo-950/30 px-3 py-1.5 rounded-lg border border-indigo-100 dark:border-indigo-900/50">
+          <Shield className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
           <div>
-            <p className="text-[10px] text-indigo-500 dark:text-indigo-400 font-bold uppercase tracking-wider leading-none">Maturidade NRGCN</p>
-            <p className="text-sm font-extrabold text-indigo-900 dark:text-indigo-200">{mediaMaturidade} <span className="text-xs font-normal text-indigo-500">/ 5.0</span></p>
+            <p className="text-[9px] text-indigo-500 dark:text-indigo-400 font-bold uppercase tracking-wider leading-none">Maturidade NRGCN</p>
+            <p className="text-xs font-black text-indigo-900 dark:text-indigo-200">{mediaMaturidade} <span className="text-[9px] font-normal text-indigo-400">/ 5.0</span></p>
           </div>
         </div>
 
-        {/* KPI: Incidentes Ativos */}
-        <div className="flex items-center gap-2 bg-rose-50 dark:bg-rose-950/20 px-3.5 py-1.5 rounded-lg border border-rose-100 dark:border-rose-900/30">
-          <AlertTriangle className="w-5 h-5 text-rose-500 dark:text-rose-400" />
+        {/* KPI: Incidentes */}
+        <div className="hidden md:flex items-center gap-2 bg-rose-50 dark:bg-rose-950/20 px-3 py-1.5 rounded-lg border border-rose-100 dark:border-rose-900/30">
+          <AlertTriangle className="w-4 h-4 text-rose-500" />
           <div>
-            <p className="text-[10px] text-rose-500 dark:text-rose-400 font-bold uppercase tracking-wider leading-none">Histórico Incidentes</p>
-            <p className="text-sm font-extrabold text-rose-900 dark:text-rose-200">{incidentesAtivos} <span className="text-xs font-normal text-rose-500">registros</span></p>
+            <p className="text-[9px] text-rose-500 font-bold uppercase tracking-wider leading-none">Incidentes</p>
+            <p className="text-xs font-black text-rose-900 dark:text-rose-200">{incidentesAtivos} <span className="text-[9px] font-normal text-rose-400">registros</span></p>
           </div>
         </div>
 
-        {/* Notificações Bell */}
-        <div className="relative">
-          <button 
-            onClick={() => setShowNotifications(!showNotifications)}
-            className="w-10 h-10 rounded-full border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
-          >
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
-          </button>
+        {/* Central de Notificações */}
+        <NotificationCenter db={db} onNavigate={onNavigate} />
 
-          {/* Menu Dropdown de Notificações */}
-          {showNotifications && (
-            <div className="absolute right-0 mt-3 w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 overflow-hidden">
-              <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 flex justify-between items-center">
-                <span className="text-sm font-bold text-slate-800 dark:text-white">Notificações</span>
-                <span className="text-[10px] bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-full font-bold">3 Pendentes</span>
-              </div>
-              <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                {notifications.map((n) => (
-                  <div key={n.id} className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors flex gap-3">
-                    <div className="mt-0.5">
-                      {n.type === 'warning' && <AlertTriangle className="w-4 h-4 text-amber-500" />}
-                      {n.type === 'info' && <Info className="w-4 h-4 text-blue-500" />}
-                      {n.type === 'success' && <CheckCircle className="w-4 h-4 text-emerald-500" />}
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-700 dark:text-slate-300 leading-normal">{n.text}</p>
-                      <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 block">{n.time}</span>
-                    </div>
-                  </div>
-                ))}
+        {/* Usuário Logado + Perfil */}
+        {usuario && (
+          <div className="flex items-center gap-3 pl-3 border-l border-slate-200 dark:border-slate-800">
+            <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-sm">
+              {usuario.nome.charAt(0)}
+            </div>
+            <div className="hidden lg:block text-left">
+              <div className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-tight">{usuario.nome}</div>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className={`text-[9px] px-1.5 py-0.2 rounded border font-semibold ${badge.cls}`}>{badge.text}</span>
+                <span className="text-[9px] text-slate-400 font-mono">{usuario.id_gerencia}</span>
               </div>
             </div>
-          )}
-        </div>
+            <button onClick={logout} title="Sair do sistema" className="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg transition-colors">
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
+        )}
       </div>
     </header>
   );
 }
+
