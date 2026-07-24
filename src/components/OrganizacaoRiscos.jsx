@@ -230,6 +230,11 @@ export default function OrganizacaoRiscos({ db }) {
                             </span>
                           </div>
                           <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">{g.nome}</p>
+                          {g.observacao && (
+                            <p className="text-[9px] text-slate-400 dark:text-slate-500 italic leading-tight border-l-2 border-indigo-300 dark:border-indigo-700 pl-2 mt-1">
+                              {g.observacao}
+                            </p>
+                          )}
                           <div className="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-slate-850 text-[10px] text-slate-400">
                             <span>Processos críticos:</span>
                             <span className="font-bold text-slate-700 dark:text-slate-300">{procsDaGer.length}</span>

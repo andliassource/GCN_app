@@ -3,30 +3,60 @@
 // ============================================================================
 
 const INITIAL_DATA = {
-  db_version: "2.0",
+  db_version: "3.0",
   diretorias: [
-
     { id_diretoria: "DIR-001", nome: "Diretoria de Tecnologia e Infraestrutura", sigla: "Dites" },
     { id_diretoria: "DIR-002", nome: "Diretoria de Operações e Negócios", sigla: "Diope" },
     { id_diretoria: "DIR-003", nome: "Diretoria Financeira e Administrativa", sigla: "Diafi" }
   ],
   gerencias: [
-    // Ligadas à Dites (TIC)
-    { id_gerencia: "GER-TIC01", nome: "Gerência Executiva de Infraestrutura de TI", sigla: "Getic", tipo: "TIC", id_diretoria: "DIR-001" },
-    { id_gerencia: "GER-TIC02", nome: "Gerência Executiva de Governança de TI", sigla: "Geati", tipo: "TIC", id_diretoria: "DIR-001" },
-    { id_gerencia: "GER-TIC03", nome: "Gerência Executiva de Aplicações Corporativas", sigla: "Geape", tipo: "TIC", id_diretoria: "DIR-001" },
-    { id_gerencia: "GER-TIC04", nome: "Gerência Executiva de Cibersegurança", sigla: "Gesec", tipo: "TIC", id_diretoria: "DIR-001" },
-    // Ligadas à Diope (Negócios e Governança GCN)
-    { id_gerencia: "GER-NEG01", nome: "Gerência Executiva de Canais e Backoffice", sigla: "Gecob", tipo: "Negócios", id_diretoria: "DIR-002" },
-    { id_gerencia: "GER-NEG02", nome: "Gerência Executiva de Assistência Técnica", sigla: "Gered", tipo: "Negócios", id_diretoria: "DIR-002" },
-    { id_gerencia: "GER-GOV01", nome: "Gerência de Gestão de Riscos e GCN", sigla: "Geric", tipo: "Governança", id_diretoria: "DIR-002" },
-    { id_gerencia: "GER-GOV02", nome: "Gerência de Governança Corporativa e Crises", sigla: "Geemp", tipo: "Governança", id_diretoria: "DIR-002" },
-    { id_gerencia: "GER-GOV03", nome: "Gerência de Marketing e Comunicação", sigla: "Gemac", tipo: "Governança", id_diretoria: "DIR-002" },
-    // Ligadas à Diafi (Áreas de Apoio)
-    { id_gerencia: "GER-APO01", nome: "Gerência Executiva de Pessoas e Recursos Humanos", sigla: "Gepes", tipo: "Apoio", id_diretoria: "DIR-003" },
-    { id_gerencia: "GER-APO02", nome: "Gerência Executiva de Finanças e Tesouraria", sigla: "Gefic", tipo: "Apoio", id_diretoria: "DIR-003" },
-    { id_gerencia: "GER-APO03", nome: "Gerência Executiva de Suprimentos e Contratos", sigla: "Gesuc", tipo: "Apoio", id_diretoria: "DIR-003" },
-    { id_gerencia: "GER-APO04", nome: "Gerência Executiva de Administração Predial", sigla: "Gesap", tipo: "Apoio", id_diretoria: "DIR-003" }
+    // === DITES (TIC) - 4 gerências ===
+    { id_gerencia: "GER-TIC01", nome: "Gerência Executiva de Infraestrutura de TI", sigla: "Getic", tipo: "TIC", id_diretoria: "DIR-001",
+      observacao: "Responsável pelo PRD de TI (ISO 27031) e ativação de War Room. Governa links, data centers e nuvem." },
+    { id_gerencia: "GER-TIC02", nome: "Gerência Executiva de Governança de TI", sigla: "Geati", tipo: "TIC", id_diretoria: "DIR-001",
+      observacao: "Conduz a estratégia de TI. Governa planejamento e conformidade de TIC." },
+    { id_gerencia: "GER-TIC03", nome: "Gerência Executiva de Aplicações Corporativas", sigla: "Geape", tipo: "TIC", id_diretoria: "DIR-001",
+      observacao: "Gerencia sistemas de negócios e ERPs corporativos." },
+    { id_gerencia: "GER-TIC04", nome: "Gerência Executiva de Cibersegurança", sigla: "Gesec", tipo: "TIC", id_diretoria: "DIR-001",
+      observacao: "Gestão de ameaças cibernéticas, DDoS, ransomware e proteção de dados." },
+
+    // === DIOPE (Negócios) - 9 gerências ===
+    { id_gerencia: "GER-NEG01", nome: "Gerência Executiva de Canais e Backoffice", sigla: "Gecob", tipo: "Negócios", id_diretoria: "DIR-002",
+      observacao: "Opera os canais digitais, CRBB, cobrança extrajudicial e BBmericas. PCO obrigatório por produto." },
+    { id_gerencia: "GER-NEG02", nome: "Gerência Executiva de Assistência Técnica em Campo", sigla: "Gered", tipo: "Negócios", id_diretoria: "DIR-002",
+      observacao: "Gerencia 13 contratos de campo com a Astec. SLA de 8h (capitais) e 24h (interior). PCO por contrato." },
+    { id_gerencia: "GER-NEG03", nome: "Gerência Executiva de Negócios Digitais", sigla: "Gened", tipo: "Negócios", id_diretoria: "DIR-002",
+      observacao: "Gerencia produtos e soluções financeiras digitais." },
+    { id_gerencia: "GER-NEG04", nome: "Gerência Executiva de Relacionamento com Clientes", sigla: "Gerec", tipo: "Negócios", id_diretoria: "DIR-002",
+      observacao: "Responsável pelo CRM e atendimento pós-venda." },
+    { id_gerencia: "GER-NEG05", nome: "Gerência Executiva de Operações e Liquidação", sigla: "Geoliq", tipo: "Negócios", id_diretoria: "DIR-002",
+      observacao: "Opera a liquidação financeira e conciliação bancária." },
+    { id_gerencia: "GER-NEG06", nome: "Gerência Executiva de Negócios Corporativos", sigla: "Gencorp", tipo: "Negócios", id_diretoria: "DIR-002",
+      observacao: "Gerencia contratos empresariais e soluções B2B." },
+    { id_gerencia: "GER-GOV01", nome: "Gerência de Gestão de Riscos e GCN (2ª Linha)", sigla: "Geric", tipo: "Governança", id_diretoria: "DIR-002",
+      observacao: "Segunda linha de defesa. Gestão de todos os PCOs e PRDs. Coordena com Geemp o Comitê de Crise." },
+    { id_gerencia: "GER-GOV02", nome: "Gerência de Governança Corporativa e Crises", sigla: "Geemp", tipo: "Governança", id_diretoria: "DIR-002",
+      observacao: "Conduz o Comitê de Crise. Elabora o regimento de crises (PGC). Preside atas." },
+    { id_gerencia: "GER-GOV03", nome: "Gerência de Marketing e Comunicação Corporativa", sigla: "Gemac", tipo: "Governança", id_diretoria: "DIR-002",
+      observacao: "Coordena comunicação interna e externa em crises. Única autorizada a emitir notas à imprensa." },
+
+    // === DIAFI (Apoio) - 8 gerências ===
+    { id_gerencia: "GER-APO01", nome: "Gerência Executiva de Pessoas e Recursos Humanos", sigla: "Gepes", tipo: "Apoio", id_diretoria: "DIR-003",
+      observacao: "PCO de apoio: SLA interno de 24h para recrutamento emergencial. Sem contrato externo de faturamento." },
+    { id_gerencia: "GER-APO02", nome: "Gerência Executiva de Finanças e Tesouraria", sigla: "Gefic", tipo: "Apoio", id_diretoria: "DIR-003",
+      observacao: "PCO de apoio: SLA de 4h para liberação de pagamentos emergenciais em crises. Sem contrato externo." },
+    { id_gerencia: "GER-APO03", nome: "Gerência Executiva de Suprimentos e Contratos", sigla: "Gesuc", tipo: "Apoio", id_diretoria: "DIR-003",
+      observacao: "Gerencia aquisições de emergência e aciona fornecedores alternativos em contingências." },
+    { id_gerencia: "GER-APO04", nome: "Gerência Executiva de Administração Predial e Segurança", sigla: "Gesap", tipo: "Apoio", id_diretoria: "DIR-003",
+      observacao: "Brigada de incêndio. Evacução predial. Contingência física e acesso ao edifício sede. SLA de 30min para abertura de incidente predial." },
+    { id_gerencia: "GER-APO05", nome: "Gerência Executiva de Compliance e Jurídico", sigla: "Gecoj", tipo: "Apoio", id_diretoria: "DIR-003",
+      observacao: "Suporte jurídico em crises. SLA interno de 8h para pareceres legais emergenciais." },
+    { id_gerencia: "GER-APO06", nome: "Gerência Executiva de Controladoria e Contabilidade", sigla: "Gecont", tipo: "Apoio", id_diretoria: "DIR-003",
+      observacao: "Responsável pela integridade contábil durante contingências e crises financeiras." },
+    { id_gerencia: "GER-APO07", nome: "Gerência Executiva de Relações Institucionais", sigla: "Gerin", tipo: "Apoio", id_diretoria: "DIR-003",
+      observacao: "Interface com órgãos reguladores durante crises. Notifica BACEN e CVM se necessário." },
+    { id_gerencia: "GER-APO08", nome: "Gerência Executiva de Saúde e Bem-Estar Corporativo", sigla: "Gesaude", tipo: "Apoio", id_diretoria: "DIR-003",
+      observacao: "SLA de 2h para suporte médico e afastamento emergencial de colaboradores." }
   ],
   ativosSistemas: [
     { id_ativo: "ATV-SYS01", nome: "Core Banking e API Transacional", tipo: "Sistema", criticidade: "Crítica" },
@@ -67,7 +97,7 @@ const INITIAL_DATA = {
       multas: "Multa de 5% do faturamento mensal por hora de indisponibilidade além do SLA.",
       data_inicio: "2025-01-01",
       data_fim: "2027-12-31",
-      id_gerencia: "GER-TIC01" // Getic
+      id_gerencia: "GER-TIC01"
     },
     {
       id_contrato: "CON-002",
@@ -77,69 +107,149 @@ const INITIAL_DATA = {
       multas: "Abatimento proporcional e multa contratual de R$ 10.000 por hora.",
       data_inicio: "2024-06-01",
       data_fim: "2026-06-01",
-      id_gerencia: "GER-TIC01" // Getic
+      id_gerencia: "GER-TIC01"
     },
+
+    // === Contratos Gecob (por produto) ===
     {
-      id_contrato: "CON-003",
-      nome: "Contrato Stone Pagamentos - Gateway",
-      valor_faturamento: 890000.00,
-      clausulas_risco: "Indisponibilidade afeta vendas em tempo real.",
-      multas: "Ressarcimento de perdas comprovadas.",
-      data_inicio: "2025-03-01",
-      data_fim: "2027-03-01",
-      id_gerencia: "GER-NEG01" // Gecob
-    },
-    {
-      id_contrato: "CON-ASTEC",
-      nome: "Acúmulo de Contratos de Assistência Técnica (Astec - 13 Contratos)",
-      valor_faturamento: 780000.00,
-      clausulas_risco: "SLAs de atendimento de campo variando entre 8 e 24 horas por região geográfica.",
-      multas: "Redução de repasse de 2% por chamado fora do SLA acordado nas capitais.",
+      id_contrato: "CON-GECOB-001",
+      nome: "PCO Gecob - Produto CRBB (Canal de Recebimentos BB)",
+      valor_faturamento: 3200000.00,
+      clausulas_risco: "Indisponibilidade do canal de recebimentos impacta liquidação financeira.",
+      multas: "Multa de 0,1% ao dia sobre o volume liquidado por dia de interrupção.",
       data_inicio: "2025-01-01",
-      data_fim: "2028-01-01",
-      id_gerencia: "GER-NEG02" // Gered
-    }
-  ],
-  processosCriticos: [
-    {
-      id_processo: "PROC-001",
-      nome: "Processamento de Pagamentos (Checkouts/Gecob)",
-      descricao: "Mapeamento das transações do gateway e fluxos de canais digitais.",
-      id_contrato: "CON-003",
-      criticidade: "Crítica",
-      id_gerencia: "GER-NEG01" // Gecob
+      data_fim: "2028-12-31",
+      id_gerencia: "GER-NEG01"
     },
     {
-      id_processo: "PROC-002",
-      nome: "Infraestrutura do Portal de Serviços",
-      descricao: "Servidores em nuvem sob gestão técnica de infraestrutura da TI.",
+      id_contrato: "CON-GECOB-002",
+      nome: "PCO Gecob - Produto Cobrança Extrajudicial",
+      valor_faturamento: 1800000.00,
+      clausulas_risco: "Interrupção afeta indexação de carteiras de cobrança e vencimentos.",
+      multas: "Penalidade de R$ 50.000 por evento de indisponibilidade superior a 24h.",
+      data_inicio: "2025-03-01",
+      data_fim: "2028-03-01",
+      id_gerencia: "GER-NEG01"
+    },
+    {
+      id_contrato: "CON-GECOB-003",
+      nome: "PCO Gecob - Produto BBmericas (Plataforma Internacional)",
+      valor_faturamento: 2500000.00,
+      clausulas_risco: "Plataforma de câmbio e remessas internacionais. Interrupção viola regulação Bacen.",
+      multas: "Penalidade regulatória e multa contratual proporcional ao volume operado.",
+      data_inicio: "2025-06-01",
+      data_fim: "2027-06-01",
+      id_gerencia: "GER-NEG01"
+    },
+
+    // === 13 Contratos Astec / Gered ===
+    { id_contrato: "CON-ASTEC-01", nome: "Astec #01 - Assistência Técnica Região Norte (AM/PA)", valor_faturamento: 65000.00, clausulas_risco: "SLA de atendimento de 24h para chamados de campo.", multas: "Redução de 2% do repasse por chamado fora do SLA.", data_inicio: "2025-01-01", data_fim: "2028-01-01", id_gerencia: "GER-NEG02" },
+    { id_contrato: "CON-ASTEC-02", nome: "Astec #02 - Assistência Técnica Região Nordeste (BA/CE)", valor_faturamento: 72000.00, clausulas_risco: "SLA de 24h interior e 8h capitais.", multas: "Redução de 2% do repasse por chamado fora do SLA.", data_inicio: "2025-01-01", data_fim: "2028-01-01", id_gerencia: "GER-NEG02" },
+    { id_contrato: "CON-ASTEC-03", nome: "Astec #03 - Assistência Técnica Região Centro-Oeste (GO/MT)", valor_faturamento: 58000.00, clausulas_risco: "SLA de 24h.", multas: "Redução de 2%.", data_inicio: "2025-01-01", data_fim: "2028-01-01", id_gerencia: "GER-NEG02" },
+    { id_contrato: "CON-ASTEC-04", nome: "Astec #04 - Assistência Técnica SP Capital", valor_faturamento: 95000.00, clausulas_risco: "SLA de 4h para capitais.", multas: "Redução de 3% por chamado fora do SLA.", data_inicio: "2025-01-01", data_fim: "2028-01-01", id_gerencia: "GER-NEG02" },
+    { id_contrato: "CON-ASTEC-05", nome: "Astec #05 - Assistência Técnica SP Interior", valor_faturamento: 63000.00, clausulas_risco: "SLA de 24h interior.", multas: "Redução de 2%.", data_inicio: "2025-01-01", data_fim: "2028-01-01", id_gerencia: "GER-NEG02" },
+    { id_contrato: "CON-ASTEC-06", nome: "Astec #06 - Assistência Técnica RJ e ES", valor_faturamento: 78000.00, clausulas_risco: "SLA de 8h capitais / 24h interior.", multas: "Redução de 2%.", data_inicio: "2025-01-01", data_fim: "2028-01-01", id_gerencia: "GER-NEG02" },
+    { id_contrato: "CON-ASTEC-07", nome: "Astec #07 - Assistência Técnica MG e DF", valor_faturamento: 82000.00, clausulas_risco: "SLA de 8h capitais / 24h interior.", multas: "Redução de 2%.", data_inicio: "2025-01-01", data_fim: "2028-01-01", id_gerencia: "GER-NEG02" },
+    { id_contrato: "CON-ASTEC-08", nome: "Astec #08 - Assistência Técnica Sul (RS/SC/PR)", valor_faturamento: 88000.00, clausulas_risco: "SLA de 8h capitais / 24h interior.", multas: "Redução de 2%.", data_inicio: "2025-01-01", data_fim: "2028-01-01", id_gerencia: "GER-NEG02" },
+    { id_contrato: "CON-ASTEC-09", nome: "Astec #09 - Manutenção Preventiva de ATMs Nacional", valor_faturamento: 110000.00, clausulas_risco: "Manutenção preventiva mensal de cada terminal.", multas: "Redução de 5% do repasse por terminal não visitado no mês.", data_inicio: "2025-01-01", data_fim: "2028-01-01", id_gerencia: "GER-NEG02" },
+    { id_contrato: "CON-ASTEC-10", nome: "Astec #10 - Suporte Técnico On-site TEC-4 Agências Norte", valor_faturamento: 42000.00, clausulas_risco: "SLA de 24h.", multas: "Redução de 2%.", data_inicio: "2025-01-01", data_fim: "2028-01-01", id_gerencia: "GER-NEG02" },
+    { id_contrato: "CON-ASTEC-11", nome: "Astec #11 - Suporte Técnico On-site TEC-4 Agências Nordeste", valor_faturamento: 45000.00, clausulas_risco: "SLA de 24h.", multas: "Redução de 2%.", data_inicio: "2025-01-01", data_fim: "2028-01-01", id_gerencia: "GER-NEG02" },
+    { id_contrato: "CON-ASTEC-12", nome: "Astec #12 - Serviços de Logística e Troca de Peças Nacional", valor_faturamento: 52000.00, clausulas_risco: "Entrega de peças em até 48h.", multas: "Redução de 1% por entrega fora do prazo.", data_inicio: "2025-01-01", data_fim: "2028-01-01", id_gerencia: "GER-NEG02" },
+    { id_contrato: "CON-ASTEC-13", nome: "Astec #13 - Instalação e Configuração de Novos ATMs", valor_faturamento: 38000.00, clausulas_risco: "Prazo de instalação de 5 dias úteis.", multas: "Redução de 1% por dia de atraso.", data_inicio: "2025-01-01", data_fim: "2028-01-01", id_gerencia: "GER-NEG02" }
+  ],
+
+  processosCriticos: [
+    // === Gecob - PCO por Produto ===
+    {
+      id_processo: "PROC-COB-001",
+      nome: "Canal de Recebimentos BB (CRBB)",
+      descricao: "Opera o canal de liquidação e recebimento integrado com o Banco do Brasil.",
+      id_contrato: "CON-GECOB-001",
+      criticidade: "Crítica",
+      id_gerencia: "GER-NEG01"
+    },
+    {
+      id_processo: "PROC-COB-002",
+      nome: "Cobrança Extrajudicial de Carteiras",
+      descricao: "Indexação, gestão de vencimentos e cobrança automatizada de carteiras extrajudiciais.",
+      id_contrato: "CON-GECOB-002",
+      criticidade: "Alta",
+      id_gerencia: "GER-NEG01"
+    },
+    {
+      id_processo: "PROC-COB-003",
+      nome: "BBmericas - Plataforma Internacional de Câmbio",
+      descricao: "Remessas internacionais e operações de câmbio sujeitas à regulação Bacen.",
+      id_contrato: "CON-GECOB-003",
+      criticidade: "Crítica",
+      id_gerencia: "GER-NEG01"
+    },
+    // === Gered - Campo e Astec ===
+    {
+      id_processo: "PROC-GER-001",
+      nome: "Assistência Técnica em Campo - Contratos Astec (13 contratos)",
+      descricao: "Gestão de atendimentos técnicos de campo com SLA de 8h (capitais) e 24h (interior).",
+      id_contrato: "CON-ASTEC-01",
+      criticidade: "Alta",
+      id_gerencia: "GER-NEG02"
+    },
+    // === Getic - TI ===
+    {
+      id_processo: "PROC-TIC-001",
+      nome: "Infraestrutura de Nuvem e Data Center",
+      descricao: "Servidores e clusters em nuvem AWS sob gestão da Getic. PRD de TI (ISO 27031).",
       id_contrato: "CON-001",
       criticidade: "Crítica",
-      id_gerencia: "GER-TIC01" // Getic
+      id_gerencia: "GER-TIC01"
     },
     {
-      id_processo: "PROC-003",
-      nome: "Atendimento de Canais e Suporte Técnico",
-      descricao: "Links e ferramentas de atendimento utilizados para receber chamados.",
+      id_processo: "PROC-TIC-002",
+      nome: "Links de Conectividade WAN e Internet",
+      descricao: "Links dedicados Embratel e redundâncias. SLA de 99.95%.",
       id_contrato: "CON-002",
       criticidade: "Alta",
-      id_gerencia: "GER-NEG01" // Gecob
+      id_gerencia: "GER-TIC01"
     },
+    // === Áreas de Apoio Diafi (sem faturamento externo - SLAs internos) ===
     {
-      id_processo: "PROC-004",
-      nome: "Gestão e Apoio: Folha de Pagamento Corporativa",
-      descricao: "Mapeamento interno da folha mensal de colaboradores. Processo de apoio (Sem contrato).",
-      id_contrato: "", // Sem contrato
+      id_processo: "PROC-APO-001",
+      nome: "Folha de Pagamento Corporativa (Gepes)",
+      descricao: "[APOIO/DIAFI] Processamento interno de folha. SLA interno: fechamento até dia 25. Sem contrato com cliente externo.",
+      id_contrato: "",
       criticidade: "Alta",
-      id_gerencia: "GER-APO01" // Gepes
+      id_gerencia: "GER-APO01",
+      sla_interno: "Fechamento da folha até o dia 25 de cada mês. Em crise: processamento emergencial em 48h.",
+      tipo_plano: "PCO-APOIO"
     },
     {
-      id_processo: "PROC-005",
-      nome: "Gestão Predial, Brigada e Evacuação",
-      descricao: "Gerenciamento predial e acionamento de brigadas. Apoio à segurança predial (Sem contrato).",
-      id_contrato: "", // Sem contrato
+      id_processo: "PROC-APO-002",
+      nome: "Liberação de Pagamentos Emergenciais (Gefic)",
+      descricao: "[APOIO/DIAFI] Liberação de pagamentos urgentes em contingências. SLA interno de 4h. Sem contrato externo.",
+      id_contrato: "",
+      criticidade: "Alta",
+      id_gerencia: "GER-APO02",
+      sla_interno: "SLA interno: Liberação de pagamentos em até 4h da solicitação aprovada em crise.",
+      tipo_plano: "PCO-APOIO"
+    },
+    {
+      id_processo: "PROC-APO-003",
+      nome: "Aquisições e Suprimentos de Emergência (Gesuc)",
+      descricao: "[APOIO/DIAFI] Compras emergenciais durante contingências. SLA: aprovação e pedido em 24h. Sem contrato externo.",
+      id_contrato: "",
       criticidade: "Média",
-      id_gerencia: "GER-APO04" // Gesap
+      id_gerencia: "GER-APO03",
+      sla_interno: "SLA interno: Aprovação e emissão de pedido em até 24h. Entrega conforme fornecedor acionado.",
+      tipo_plano: "PCO-APOIO"
+    },
+    {
+      id_processo: "PROC-APO-004",
+      nome: "Evacuação Predial e Brigada de Incêndio (Gesap)",
+      descricao: "[APOIO/DIAFI] Plano de evacuação de emergência, acionamento da brigada de incêndio e gestão do edifício sede. Sem contrato externo.",
+      id_contrato: "",
+      criticidade: "Alta",
+      id_gerencia: "GER-APO04",
+      sla_interno: "SLA Brigada: Tempo de resposta até 5 minutos. Evacuação total concluída em até 15 minutos. Abertura de ocorrência predial: 30 minutos.",
+      tipo_plano: "PCO-APOIO"
     }
   ],
   incidentes: [
@@ -150,92 +260,162 @@ const INITIAL_DATA = {
       descricao: "Indisponibilidade devido a uma instabilidade no provedor de nuvem AWS.",
       tipo_incidente: "Falha de Infraestrutura Nuvem",
       impacto: "Alto",
-      id_processo: "PROC-002",
+      id_processo: "PROC-TIC-001",
       medidas_mitigacao: "Redirecionamento para a região backup em sa-east-1.",
       resultado_resposta: "Sistemas restabelecidos em 45 minutos."
+    },
+    {
+      id_incidente: "INC-102",
+      data_hora: "2026-02-08T09:15:00",
+      local: "Edifício Sede - 3º Andar",
+      descricao: "Princípio de incêndio em sala de servidores locais causado por curto-circuito.",
+      tipo_incidente: "Incidente Predial / Incêndio",
+      impacto: "Alto",
+      id_processo: "PROC-APO-004",
+      medidas_mitigacao: "Acionamento imediato da brigada de incêndio. Evacuação do 3º e 4º andares. Extinção em 12 minutos.",
+      resultado_resposta: "Área liberada em 2 horas. Nenhum ferido. Servidores locais danificados transferidos para nuvem."
+    },
+    {
+      id_incidente: "INC-103",
+      data_hora: "2026-05-20T16:45:00",
+      local: "Sistema CRBB",
+      descricao: "Interrupção no canal de recebimentos BB por atualização não homologada.",
+      tipo_incidente: "Falha de Sistema Crítico",
+      impacto: "Desastroso",
+      id_processo: "PROC-COB-001",
+      medidas_mitigacao: "Rollback da versão. Notificação imediata ao fiscal do contrato Gecob.",
+      resultado_resposta: "Serviço normalizado em 38 minutos. Acionamento da cláusula de SLA."
     }
   ],
   analiseImpactoNegocio: [
-    { id_ain: "AIN-001", id_processo: "PROC-001", probabilidade: "Provável", impacto_financeiro: "Catastrófico", RTO: 15, RPO: 5, MTDCN: 60 },
-    { id_ain: "AIN-002", id_processo: "PROC-002", probabilidade: "Pouco Provável", impacto_financeiro: "Catastrófico", RTO: 30, RPO: 15, MTDCN: 120 },
-    { id_ain: "AIN-003", id_processo: "PROC-003", probabilidade: "Provável", impacto_financeiro: "Moderado", RTO: 120, RPO: 180, MTDCN: 360 },
-    { id_ain: "AIN-004", id_processo: "PROC-004", probabilidade: "Pouco Provável", impacto_financeiro: "Moderado", RTO: 1440, RPO: 1440, MTDCN: 2880 },
-    { id_ain: "AIN-005", id_processo: "PROC-005", probabilidade: "Provável", impacto_financeiro: "Menor", RTO: 360, RPO: 1440, MTDCN: 720 }
+    { id_ain: "AIN-001", id_processo: "PROC-COB-001", probabilidade: "Provável", impacto_financeiro: "Catastrófico", RTO: 15, RPO: 5, MTDCN: 60 },
+    { id_ain: "AIN-002", id_processo: "PROC-COB-002", probabilidade: "Pouco Provável", impacto_financeiro: "Maior", RTO: 120, RPO: 60, MTDCN: 480 },
+    { id_ain: "AIN-003", id_processo: "PROC-COB-003", probabilidade: "Pouco Provável", impacto_financeiro: "Catastrófico", RTO: 30, RPO: 10, MTDCN: 120 },
+    { id_ain: "AIN-004", id_processo: "PROC-GER-001", probabilidade: "Provável", impacto_financeiro: "Moderado", RTO: 480, RPO: 1440, MTDCN: 2880 },
+    { id_ain: "AIN-005", id_processo: "PROC-TIC-001", probabilidade: "Pouco Provável", impacto_financeiro: "Catastrófico", RTO: 30, RPO: 15, MTDCN: 120 },
+    { id_ain: "AIN-006", id_processo: "PROC-TIC-002", probabilidade: "Provável", impacto_financeiro: "Moderado", RTO: 120, RPO: 180, MTDCN: 360 },
+    { id_ain: "AIN-007", id_processo: "PROC-APO-001", probabilidade: "Pouco Provável", impacto_financeiro: "Moderado", RTO: 2880, RPO: 2880, MTDCN: 7200 },
+    { id_ain: "AIN-008", id_processo: "PROC-APO-002", probabilidade: "Pouco Provável", impacto_financeiro: "Maior", RTO: 240, RPO: 480, MTDCN: 1440 },
+    { id_ain: "AIN-009", id_processo: "PROC-APO-003", probabilidade: "Provável", impacto_financeiro: "Menor", RTO: 1440, RPO: 2880, MTDCN: 5760 },
+    { id_ain: "AIN-010", id_processo: "PROC-APO-004", probabilidade: "Provável", impacto_financeiro: "Maior", RTO: 30, RPO: 0, MTDCN: 60 }
   ],
   planosContinuidade: [
     {
-      id_pco: "PCO-001",
-      id_processo: "PROC-001",
-      estrategia_recuperacao: "Failover automático para gateway adquirente reserva e processamento assíncrono.",
-      responsabilidades: "Equipe técnica da Gecob e SRE executam o failover.",
-      recursos_necessarios: "API Reserva, instâncias de contingência.",
-      
-      // Cenários de Crise do PCO
-      cenario_acesso: "Garantir trabalho home office imediato de todos os analistas com VPN corporativa ativa. Liberação de auxílio dados móveis emergencial.",
-      cenario_sistemas: "Passo 1: Validar falha de checkout. Passo 2: Mudar chave API de contingência. Passo 3: Contatar fiscal de serviço do contrato no telefone (11) 98888-7777 e formalizar e-mail em fiscal.SLA@stone.com.br.",
-      cenario_fornecedores: "Se a adquirente Stone falhar integralmente, migrar tráfego em lote para a adquirente Cielo reserva conforme acordo de contingência.",
-      cenario_pessoas: "Em caso de surto/falta de 40% dos analistas, acionar plano de horas extras com equipe de BPO parceira.",
-      escalonamento_crise: "Se o tempo de indisponibilidade exceder 15 minutos (RTO), o gerente executivo da Gecob deve escalonar o chamado para o Comitê de Crise e Getic para ativação do PRD.",
-      
+      id_pco: "PCO-COB-001",
+      id_processo: "PROC-COB-001",
+      estrategia_recuperacao: "Failover automático para gateway adquirente reserva. Transações pendentes enfileiradas em Redis para reprocessamento.",
+      responsabilidades: "SRE da Gecob e equipe de TI (Getic) executam o failover.",
+      recursos_necessarios: "Gateway reserva, instâncias EC2 de contingência, Redis.",
+      cenario_acesso: "Home office imediato para todos os analistas da Gecob. VPN e tokens MFA obrigatórios ativos.",
+      cenario_sistemas: "Passo 1: Detectar falha via alertas PagerDuty. Passo 2: Mudar chave API do gateway. Passo 3: Contatar fiscal CRBB: fiscal.crbb@bb.com.br / (61) 3333-1234. Passo 4: Comunicar cliente via status page.",
+      cenario_fornecedores: "Em caso de falha total do CRBB, ativar processamento manual com equipe de backoffice até normalização.",
+      cenario_pessoas: "Em caso de falta de 30%+ da equipe, acionar BPO parceiro para reforço de analistas de canais.",
+      escalonamento_crise: "Se indisponibilidade exceder 15 min (RTO), o Gerente da Gecob escala para Comitê de Crise e Geric. Ata obrigatória.",
       status_aprovacao: "Aprovado",
-      versao: "1.2.0"
+      versao: "2.1.0"
     },
     {
-      id_pco: "PCO-005",
-      id_processo: "PROC-005",
-      estrategia_recuperacao: "Direcionamento imediato da brigada predial e isolamento de áreas de risco.",
-      responsabilidades: "Gerente Executivo da Gesap aciona o protocolo de segurança predial física.",
-      recursos_necessarios: "Equipamentos de segurança, brigadistas e sinalizadores.",
-      
-      cenario_acesso: "Evacuação total do edifício sede. Transferência das equipes para escritório de contingência em Alphaville ou home office temporário.",
-      cenario_sistemas: "Acionamento manual do alarme predial. Disparo de alertas via WhatsApp institucional para os funcionários do prédio.",
-      cenario_fornecedores: "Acionar fornecedor de manutenção predial em até 2 horas conforme SLA para restabelecimento elétrico ou hidráulico.",
-      cenario_pessoas: "Em caso de incapacidade predial, escalonar equipe de segurança física substituta.",
-      escalonamento_crise: "Escalonamento imediato para a Geric e Diretoria Administrativa (Diafi) se houver riscos à integridade física.",
-      
+      id_pco: "PCO-COB-002",
+      id_processo: "PROC-COB-002",
+      estrategia_recuperacao: "Suspensão temporária de novos protestos. Processamento manual das carteiras prioritárias.",
+      responsabilidades: "Analistas sêniores de cobrança da Gecob gerenciam a fila manual.",
+      recursos_necessarios: "Planilhas de contingência, acesso off-line às carteiras.",
+      cenario_acesso: "Home office com acesso a planilhas compartilhadas no SharePoint.",
+      cenario_sistemas: "Passo 1: Isolar a fila de cobrança. Passo 2: Contatar fiscal: fiscal.cobranca@gecob.com.br. Passo 3: Exportar carteiras ativas para planilha contingência.",
+      cenario_fornecedores: "Não há dependência de fornecedor externo crítico. Contingência interna.",
+      cenario_pessoas: "Redistribuição da fila entre analistas disponíveis.",
+      escalonamento_crise: "Se indisponibilidade exceder 2h, escalar para Gerente da Gecob e Geric.",
+      status_aprovacao: "Pendente",
+      versao: "1.0.0"
+    },
+    {
+      id_pco: "PCO-COB-003",
+      id_processo: "PROC-COB-003",
+      estrategia_recuperacao: "Suspensão de novas operações de câmbio. Notificação ao BACEN conforme Circular 3.691.",
+      responsabilidades: "Gerente da Gecob notifica BACEN e aciona equipe jurídica (Gecoj).",
+      recursos_necessarios: "Canal seguro BACEN, suporte jurídico emergencial Gecoj.",
+      cenario_acesso: "Home office com VPN e autenticação dupla. Acesso restrito a analistas certificados BACEN.",
+      cenario_sistemas: "Passo 1: Suspender operações. Passo 2: Notificar BACEN via portal regulatório em até 30min. Passo 3: Contatar fiscal regulatório: regulatorio@gecob.com.br.",
+      cenario_fornecedores: "Migração temporária para câmbio manual via banco correspondente.",
+      cenario_pessoas: "Equipe mínima de 2 analistas certificados BACEN para operação de contingência.",
+      escalonamento_crise: "Qualquer interrupção > 30min é crise regulatória. Acionamento imediato de Geemp + Geric + Gerin.",
+      status_aprovacao: "Pendente",
+      versao: "1.0.0"
+    },
+    {
+      id_pco: "PCO-GER-001",
+      id_processo: "PROC-GER-001",
+      estrategia_recuperacao: "Redistribuição geográfica dos chamados entre técnicos parceiros de região adjacente.",
+      responsabilidades: "Coordenador de campo da Gered gerencia a redistribuição. Fiscal do contrato Astec é notificado.",
+      recursos_necessarios: "Lista de técnicos reservas por região, veículo de contingência.",
+      cenario_acesso: "Trabalho de campo não depende de escritório central. Técnicos operam remotamente.",
+      cenario_sistemas: "Passo 1: Abrir chamado de contingência no sistema. Passo 2: Contatar fiscal Astec regional: fiscal.astec@gered.com.br / 0800-111-2233. Passo 3: Redistribuir chamados.",
+      cenario_fornecedores: "Astec é fornecedor único em algumas regiões. Política: Em renovações de licitação, distribuir contratos entre 2+ fornecedores por região.",
+      cenario_pessoas: "Em caso de afastamento de técnicos, acionar lista de técnicos reservas cadastrados.",
+      escalonamento_crise: "SLA descumprido por > 3 chamados consecutivos = acionamento do Gerente Gered e Gesuc.",
       status_aprovacao: "Aprovado",
       versao: "1.0.0"
-    }
-  ],
-  planosRecuperacaoDesastres: [
-    {
-      id_prd: "PRD-001",
-      id_processo: "PROC-001",
-      procedimentos_restauracao: "1. Verificar logs. 2. Restaurar snapshot transacional de 5 minutos do S3.",
-      local_backup: "AWS S3 Glacier (eu-west-1)",
-      frequencia_backup: "A cada 5 minutos",
-      comunicacao_emergencia: "Notificar time SRE via PagerDuty e Slack #incidentes-graves.",
-      
-      // Procedimento de War Room (ISO 27031)
-      procedimento_war_room: "1. Identificar falha prolongada. 2. Criar sala Teams 'War-Room-Crise-01'. 3. Convocar líderes de Getic, Gesec, Geape e o fiscal do contrato da AWS. 4. Manter status page operacional a cada 15 minutos."
     },
     {
-      id_prd: "PRD-002",
-      id_processo: "PROC-002",
-      procedimentos_restauracao: "1. Verificar status geral da AWS. 2. Mudar Cloudflare DNS para contingência em Azure VM.",
-      local_backup: "Azure Blob Storage (Geo-redundante)",
+      id_pco: "PCO-APO-004",
+      id_processo: "PROC-APO-004",
+      estrategia_recuperacao: "Evacuação imediata do edifício e ativação da brigada de incêndio. Transferência para escritório secundário ou home office.",
+      responsabilidades: "Brigadista líder coordena evacuação. Gerente Gesap aciona CBMERJ e comunica Geric.",
+      recursos_necessarios: "Extintores, mangueiras, rotas de fuga sinalizadas, lista de brigadistas ativos.",
+      cenario_acesso: "Evacuação obrigatória de todos os andares. Muster point: Estacionamento Bloco B. Home office ativado automaticamente.",
+      cenario_sistemas: "Passo 1: Acionar alarme predial. Passo 2: Ligar para Bombeiros (193). Passo 3: Acionar WhatsApp da Brigada. Passo 4: Disparar alerta para todos os colaboradores via sistema corporativo.",
+      cenario_fornecedores: "Acionar fornecedor de manutenção predial (SLA 2h) para inspeção e liberação do edifício.",
+      cenario_pessoas: "Verificar lista de presença nos muster points. Comunicar Gepes sobre afastamentos médicos de emergência.",
+      escalonamento_crise: "Qualquer incidente com vítimas ou dano estrutural = acionamento imediato do Comitê de Crise (Geemp + Geric + Gemac).",
+      status_aprovacao: "Aprovado",
+      versao: "1.3.0"
+    }
+  ],
+
+  planosRecuperacaoDesastres: [
+    {
+      id_prd: "PRD-TIC-001",
+      id_processo: "PROC-TIC-001",
+      procedimentos_restauracao: "1. Verificar logs CloudWatch. 2. Restaurar snapshot transacional do S3 (RPO = 15 min). 3. Ativar cluster de contingência em sa-east-1.",
+      local_backup: "AWS S3 Glacier (sa-east-1 + eu-west-1)",
       frequencia_backup: "A cada 15 minutos",
-      comunicacao_emergencia: "Disparo PagerDuty para DevOps.",
-      procedimento_war_room: "1. Acionamento de War Room na sala de crises com a presença da governança de TI (Geati). 2. Notificação da Gesec para análise de ameaças de segurança."
+      comunicacao_emergencia: "Notificar time SRE via PagerDuty e Slack #incidentes-graves. E-mail automático para Getic e Gesec.",
+      procedimento_war_room: "1. Identificar falha prolongada (> 30 min). 2. Criar sala Teams 'War-Room-Crise-Infra'. 3. Convocar: Gerente Getic, Gesec, Geape e fiscal AWS. 4. Status page atualizada a cada 15 min. 5. Gemac emite boletim externo a cada 30 min."
+    },
+    {
+      id_prd: "PRD-TIC-002",
+      id_processo: "PROC-COB-001",
+      procedimentos_restauracao: "1. Verificar logs da API do gateway. 2. Ativar API de contingência. 3. Reprocessar transações enfileiradas no Redis.",
+      local_backup: "AWS S3 (us-east-1) - Snapshots de filas Redis",
+      frequencia_backup: "A cada 5 minutos",
+      comunicacao_emergencia: "Notificar SRE Gecob via PagerDuty. Canal Slack #incidentes-checkout.",
+      procedimento_war_room: "1. Falha > 15 min: Criar War Room Teams 'War-Room-CRBB'. 2. Convocar Gecob, Getic e fiscal CRBB. 3. Acionamento de Geemp se SLA contratual ultrapassado."
     }
   ],
   testesAvaliacoes: [
-    { id_teste: "TST-001", id_pco: "PCO-001", id_prd: "PRD-001", data_teste: "2026-03-10", resultado: "Sucesso", areas_melhoria: "O tempo de failover automático foi de 12 minutos (dentro dos 15 minutos de RTO)." }
+    { id_teste: "TST-001", id_pco: "PCO-COB-001", id_prd: "PRD-TIC-002", data_teste: "2026-03-10", resultado: "Sucesso", areas_melhoria: "Failover do CRBB concluído em 12 min (RTO = 15 min). Melhoria: automatizar notificação ao fiscal." },
+    { id_teste: "TST-002", id_pco: "PCO-APO-004", id_prd: null, data_teste: "2026-06-01", resultado: "Sucesso", areas_melhoria: "Simulação de incêndio: evacuação em 13 min. Meta: reduzir para 10 min. Atualizar lista de brigadistas." }
   ],
   revisoesAtualizacoes: [
-    { id_revisao: "REV-001", id_pco: "PCO-001", id_prd: "PRD-001", data_revisao: "2026-04-15", motivo: "Mudança no gateway reserva", atualizacao_realizada: "Substituição do gateway reserva para Pagar.me." }
+    { id_revisao: "REV-001", id_pco: "PCO-COB-001", id_prd: "PRD-TIC-002", data_revisao: "2026-04-15", motivo: "Mudança no gateway reserva", atualizacao_realizada: "Substituição do gateway reserva para Pagar.me." },
+    { id_revisao: "REV-002", id_pco: "PCO-APO-004", id_prd: null, data_revisao: "2026-02-09", motivo: "Incidente de incêndio real", atualizacao_realizada: "Atualização do plano após incidente INC-102. Inclusão de procedimento de inspeção elétrica anual." }
   ],
   governancaGCN: [
-    { id_governanca: "GOV-001", responsavel: "Roberto Carlos (Geric)", comunicacao: "Comitê trimestral de crises", treinamento: "Simulado semestral", id_processo: "PROC-001" }
+    { id_governanca: "GOV-001", responsavel: "Roberto Carlos (Geric)", comunicacao: "Comitê trimestral de crises", treinamento: "Simulado semestral obrigatório", id_processo: "PROC-COB-001" },
+    { id_governanca: "GOV-002", responsavel: "Sandro Lima (Gesap)", comunicacao: "Reunião mensal com brigada", treinamento: "Treinamento semestral de brigada certificado CBMERJ", id_processo: "PROC-APO-004" },
+    { id_governanca: "GOV-003", responsavel: "Patrícia Souza (Getic)", comunicacao: "Reunião semanal de operações TI", treinamento: "Simulado de DR trimestral", id_processo: "PROC-TIC-001" }
   ],
   avaliacaoNRGCN: [
-    { id_avaliacao: "EVL-001", id_processo: "PROC-001", nivel_resiliencia: 4.80, aderencia_ISO22301: 96.00, metricas_utilizadas: "{}", grafico_resultado: "radar_PROC-001" },
-    { id_avaliacao: "EVL-002", id_processo: "PROC-002", nivel_resiliencia: 4.20, aderencia_ISO22301: 84.00, metricas_utilizadas: "{}", grafico_resultado: "radar_PROC-002" },
-    { id_avaliacao: "EVL-003", id_processo: "PROC-003", nivel_resiliencia: 3.50, aderencia_ISO22301: 70.00, metricas_utilizadas: "{}", grafico_resultado: "radar_PROC-003" },
-    { id_avaliacao: "EVL-004", id_processo: "PROC-004", nivel_resiliencia: 2.10, aderencia_ISO22301: 42.00, metricas_utilizadas: "{}", grafico_resultado: "radar_PROC-004" },
-    { id_avaliacao: "EVL-005", id_processo: "PROC-005", nivel_resiliencia: 3.80, aderencia_ISO22301: 76.00, metricas_utilizadas: "{}", grafico_resultado: "radar_PROC-005" }
+    { id_avaliacao: "EVL-001", id_processo: "PROC-COB-001", nivel_resiliencia: 4.80, aderencia_ISO22301: 96.00, metricas_utilizadas: "{}", grafico_resultado: "radar_PROC-COB-001" },
+    { id_avaliacao: "EVL-002", id_processo: "PROC-COB-002", nivel_resiliencia: 2.50, aderencia_ISO22301: 50.00, metricas_utilizadas: "{}", grafico_resultado: "radar_PROC-COB-002" },
+    { id_avaliacao: "EVL-003", id_processo: "PROC-COB-003", nivel_resiliencia: 3.20, aderencia_ISO22301: 64.00, metricas_utilizadas: "{}", grafico_resultado: "radar_PROC-COB-003" },
+    { id_avaliacao: "EVL-004", id_processo: "PROC-GER-001", nivel_resiliencia: 3.00, aderencia_ISO22301: 60.00, metricas_utilizadas: "{}", grafico_resultado: "radar_PROC-GER-001" },
+    { id_avaliacao: "EVL-005", id_processo: "PROC-TIC-001", nivel_resiliencia: 4.20, aderencia_ISO22301: 84.00, metricas_utilizadas: "{}", grafico_resultado: "radar_PROC-TIC-001" },
+    { id_avaliacao: "EVL-006", id_processo: "PROC-APO-001", nivel_resiliencia: 2.10, aderencia_ISO22301: 42.00, metricas_utilizadas: "{}", grafico_resultado: "radar_PROC-APO-001" },
+    { id_avaliacao: "EVL-007", id_processo: "PROC-APO-004", nivel_resiliencia: 3.80, aderencia_ISO22301: 76.00, metricas_utilizadas: "{}", grafico_resultado: "radar_PROC-APO-004" }
   ]
 };
+
 
 const getDB = () => {
   const dbStr = localStorage.getItem("gcn_database");
@@ -245,7 +425,8 @@ const getDB = () => {
   }
   try {
     const db = JSON.parse(dbStr);
-    if (db.db_version !== "2.0") {
+    // Se a versão for diferente de 3.0, reseta os dados para o novo schema
+    if (db.db_version !== "3.0") {
       localStorage.setItem("gcn_database", JSON.stringify(INITIAL_DATA));
       return INITIAL_DATA;
     }
@@ -255,6 +436,7 @@ const getDB = () => {
     return INITIAL_DATA;
   }
 };
+
 
 const saveDB = (data) => {
   localStorage.setItem("gcn_database", JSON.stringify(data));

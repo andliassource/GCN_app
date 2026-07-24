@@ -5,6 +5,7 @@ export default function AnaliseImpacto({ db }) {
   const [processos, setProcessos] = useState(db.processosCriticos.list());
   const [ains, setAins] = useState(db.analiseImpactoNegocio.list());
   const [contratos] = useState(db.contratos.list());
+  const [gerencias] = useState(db.gerencias?.list ? db.gerencias.list() : (JSON.parse(localStorage.getItem('gcn_database') || '{}').gerencias || []));
 
   // Estados locais
   const [showProcessForm, setShowProcessForm] = useState(false);
@@ -17,6 +18,9 @@ export default function AnaliseImpacto({ db }) {
     nome: '',
     descricao: '',
     id_contrato: '',
+    id_gerencia: '',
+    tipo_plano: '',
+    sla_interno: '',
     criticidade: 'Baixa'
   });
 
@@ -32,16 +36,16 @@ export default function AnaliseImpacto({ db }) {
   // Salvar novo processo crítico
   const handleProcSubmit = (e) => {
     e.preventDefault();
-    if (!procFormData.nome || !procFormData.criticidade) {
-      setNotification({ type: 'error', text: 'Preencha todos os campos obrigatórios (*).' });
+    if (!procFormData.nome || !procFormData.criticidade || !procFormData.id_gerencia) {
+      setNotification({ type: 'error', text: 'Preencha todos os campos obrigatórios (*). Gerência responsável é obrigatória.' });
       return;
     }
 
     const novoProc = db.processosCriticos.create(procFormData);
     setProcessos(db.processosCriticos.list());
     setShowProcessForm(false);
-    setProcFormData({ nome: '', descricao: '', id_contrato: '', criticidade: 'Baixa' });
-    setNotification({ type: 'success', text: `Processo Crítico ${novoProc.id_processo} mapeado com sucesso! Agora configure sua AIN.` });
+    setProcFormData({ nome: '', descricao: '', id_contrato: '', id_gerencia: '', tipo_plano: '', sla_interno: '', criticidade: 'Baixa' });
+    setNotification({ type: 'success', text: `Processo Crítico ${novoProc.id_processo} mapeado com sucesso! Gerência: ${procFormData.id_gerencia}. Agora configure sua AIN.` });
   };
 
   // Salvar/Editar AIN
@@ -206,13 +210,41 @@ export default function AnaliseImpacto({ db }) {
               </select>
             </div>
             <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-500 uppercase">Gerência Responsável *</label>
+              <select 
+                value={procFormData.id_gerencia} 
+                onChange={(e) => setProcFormData({...procFormData, id_gerencia: e.target.value})} 
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg px-4 py-2.5 text-xs text-slate-850 dark:text-slate-300 focus:outline-indigo-500"
+                required
+              >
+                <option value="">Selecione a Gerência Responsável...</option>
+                {gerencias.map(g => (
+                  <option key={g.id_gerencia} value={g.id_gerencia}>
+                    {g.sigla} - {g.nome} ({g.tipo})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-500 uppercase">Tipo de Plano</label>
+              <select 
+                value={procFormData.tipo_plano} 
+                onChange={(e) => setProcFormData({...procFormData, tipo_plano: e.target.value})} 
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg px-4 py-2.5 text-xs text-slate-850 dark:text-slate-300 focus:outline-indigo-500"
+              >
+                <option value="">PCO de Negócios (padrão)</option>
+                <option value="PCO-APOIO">PCO de Apoio (Diafi - SLA Interno)</option>
+                <option value="PCO-TIC">PCO de TI/PRD (ISO 27031)</option>
+              </select>
+            </div>
+            <div className="space-y-1">
               <label className="text-xs font-bold text-slate-500 uppercase">Contrato Vinculado (SLA/Faturamento)</label>
               <select 
                 value={procFormData.id_contrato} 
                 onChange={(e) => setProcFormData({...procFormData, id_contrato: e.target.value})} 
                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg px-4 py-2.5 text-xs text-slate-850 dark:text-slate-300 focus:outline-indigo-500"
               >
-                <option value="">Nenhum Contrato Associado</option>
+                <option value="">Nenhum Contrato (Processo de Apoio Interno)</option>
                 {contratos.map(c => (
                   <option key={c.id_contrato} value={c.id_contrato}>
                     {c.id_contrato} - {c.nome} (R$ {c.valor_faturamento.toLocaleString('pt-BR')})
@@ -220,6 +252,18 @@ export default function AnaliseImpacto({ db }) {
                 ))}
               </select>
             </div>
+            {(procFormData.tipo_plano === 'PCO-APOIO') && (
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-500 uppercase">SLA Interno (Apoio/Diafi)</label>
+                <input 
+                  type="text" 
+                  value={procFormData.sla_interno} 
+                  onChange={(e) => setProcFormData({...procFormData, sla_interno: e.target.value})} 
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg px-4 py-2.5 text-xs text-slate-800 dark:text-white focus:outline-indigo-500" 
+                  placeholder="Ex: SLA interno de 4h para aprovação de pagamentos emergenciais"
+                />
+              </div>
+            )}
             <div className="space-y-1 md:col-span-2">
               <label className="text-xs font-bold text-slate-500 uppercase">Descrição das Atividades do Processo</label>
               <textarea 
@@ -384,9 +428,20 @@ export default function AnaliseImpacto({ db }) {
                       <div className="text-[10px] text-slate-400 truncate mt-0.5" title={proc.descricao}>
                         {proc.descricao || 'Sem descrição mapeada'}
                       </div>
-                      {proc.id_contrato && (
+                      {proc.id_contrato ? (
                         <div className="text-[9px] text-indigo-500 font-semibold mt-1 uppercase">
-                          SLA Vinculado: {proc.id_contrato}
+                          SLA Contrato: {proc.id_contrato}
+                        </div>
+                      ) : proc.sla_interno ? (
+                        <div className="text-[9px] text-amber-500 font-semibold mt-1">
+                          ⚡ SLA Interno (Apoio): {proc.sla_interno.substring(0, 60)}...
+                        </div>
+                      ) : (
+                        <div className="text-[9px] text-slate-400 mt-1">Processo interno sem contrato externo</div>
+                      )}
+                      {proc.id_gerencia && (
+                        <div className="text-[9px] text-emerald-500 font-semibold mt-0.5 uppercase">
+                          Gerência: {proc.id_gerencia}
                         </div>
                       )}
                     </td>
