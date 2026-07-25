@@ -292,80 +292,225 @@ export const pdfService = {
     else { alert('Permita pop-ups para exportar o PDF.'); }
   },
 
-  // Gera HTML do PCO
-  htmlPCO: (pco, processo, ain, intervenientes, config) => {
+  // Gera HTML do PCO — Versão Robusta ISO 22301/27031 com Cenários Estruturados
+  htmlPCO: (pco, processo, ain, intervenientes, config, ativosContingencia, scenarioC, scenarioD) => {
     const cinc = ain ? `RTO: ${ain.RTO} min | RPO: ${ain.RPO} min | MTDCN: ${ain.MTDCN} min` : 'AIN não configurada';
+    const dataHoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+
+    // Tabela de ativos por sistema (Cenário B)
+    const ativosRows = (ativosContingencia || []).map(a => `
+      <tr>
+        <td><strong>${a.nome}</strong></td>
+        <td>${a.tipo}</td>
+        <td><strong style="color:#d97706">${a.rtoAtivo} min</strong></td>
+        <td><strong style="color:#2563eb">${a.rpoAtivo} min</strong></td>
+        <td style="font-size:7.5pt;color:#6366f1">${a.linkDR || '<em style="color:#94a3b8">Não configurado</em>'}</td>
+      </tr>
+      <tr><td colspan="5" style="padding:4pt 8pt; background:#f8fafc; font-size:7.5pt; color:#475569; white-space:pre-wrap">${a.procedimento || '-'}</td></tr>
+    `).join('');
+
+    // Tabela de intervenientes
     const intRows = (intervenientes || []).map(i => `<tr><td>${i.nome}</td><td>${i.cargo}</td><td>${i.papel}</td><td>${i.email}</td><td>${i.telefone}</td></tr>`).join('');
+
+    // Histórico de acionamentos
+    const acionamentosRows = (pco?.acionamentos || []).map(ac => `
+      <tr>
+        <td>${new Date(ac.data).toLocaleString('pt-BR')}</td>
+        <td><strong>${ac.id_incidente}</strong></td>
+        <td>${ac.acionado_por}</td>
+        <td><span class="badge badge-red">EMERGÊNCIA</span></td>
+      </tr>
+    `).join('');
+
+    const alertaFornecedor = scenarioC && !scenarioC.fornecedorAlternativo && scenarioC.fornecedorPrincipal
+      ? `<div class="warning-box"><p>⚠️ <strong>PONTO DE FALHA ÚNICO IDENTIFICADO:</strong> Este processo depende exclusivamente do fornecedor <strong>${scenarioC.fornecedorPrincipal}</strong>. Recomendação GERIC: Adotar estratégia Multi-Vendor na próxima licitação para reduzir concentração de risco.</p></div>`
+      : '';
+
     return `
+      <style>
+        .exec-box { background: #1e1b4b; color: #e0e7ff; border-radius: 8pt; padding: 12pt; margin-bottom: 14pt; }
+        .exec-box-title { font-size: 8pt; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: #a5b4fc; margin-bottom: 8pt; }
+        .exec-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10pt; }
+        .exec-kpi { text-align: center; background: rgba(255,255,255,0.07); border-radius: 6pt; padding: 8pt 4pt; }
+        .exec-kpi-val { font-size: 16pt; font-weight: 900; }
+        .exec-kpi-lbl { font-size: 6.5pt; text-transform: uppercase; color: #c7d2fe; margin-top: 2pt; }
+        .scenario-header { background: #f1f5f9; border-left: 3pt solid #4f46e5; padding: 6pt 10pt; margin-bottom: 6pt; border-radius: 0 4pt 4pt 0; }
+        .scenario-header p { margin: 0; font-size: 8pt; font-weight: 700; color: #1e293b; }
+        .threshold-badge { display: inline-block; font-size: 7pt; font-weight: 700; padding: 2pt 8pt; border-radius: 20pt; margin-right: 6pt; }
+        .th-amber { background: #fef3c7; color: #92400e; border: 1pt solid #fcd34d; }
+        .th-red { background: #fef2f2; color: #b91c1c; border: 1pt solid #fecaca; }
+        .th-blue { background: #eff6ff; color: #1d4ed8; border: 1pt solid #bfdbfe; }
+      </style>
+
+      <!-- 0. RESUMO EXECUTIVO -->
+      <div class="exec-box">
+        <div class="exec-box-title">🛡️ Resumo Executivo — Plano de Continuidade Operacional</div>
+        <div class="exec-grid">
+          <div class="exec-kpi"><div class="exec-kpi-val" style="color:#a5b4fc">${processo?.id_processo || '-'}</div><div class="exec-kpi-lbl">ID do Processo</div></div>
+          <div class="exec-kpi"><div class="exec-kpi-val" style="color:#6ee7b7">${ain?.RTO || 'N/A'}</div><div class="exec-kpi-lbl">RTO (min)</div></div>
+          <div class="exec-kpi"><div class="exec-kpi-val" style="color:#93c5fd">${ain?.RPO || 'N/A'}</div><div class="exec-kpi-lbl">RPO (min)</div></div>
+          <div class="exec-kpi"><div class="exec-kpi-val" style="color:#fca5a5">${ain?.MTDCN || 'N/A'}</div><div class="exec-kpi-lbl">MTDCN (min)</div></div>
+        </div>
+        <div style="margin-top: 10pt; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8pt; font-size: 8pt;">
+          <div><span style="color:#a5b4fc; font-weight:700">Gerência:</span><br/>${processo?.id_gerencia || '-'}</div>
+          <div><span style="color:#a5b4fc; font-weight:700">Status:</span><br/><span style="color:${pco?.status_aprovacao === 'Aprovado' ? '#6ee7b7' : '#fcd34d'}">${pco?.status_aprovacao || 'Pendente'}</span></div>
+          <div><span style="color:#a5b4fc; font-weight:700">Válido até:</span><br/>${pco?.vigente_ate ? new Date(pco.vigente_ate).toLocaleDateString('pt-BR') : '-'}</div>
+        </div>
+      </div>
+
+      <!-- 1. IDENTIFICAÇÃO -->
       <div class="section">
         <div class="section-title">1. Identificação do Processo Crítico</div>
         <table>
           <tr><th>Campo</th><th>Valor</th></tr>
-          <tr><td>Código do Processo</td><td>${processo?.id_processo || '-'}</td></tr>
+          <tr><td>Código do Processo</td><td><strong>${processo?.id_processo || '-'}</strong></td></tr>
           <tr><td>Nome do Processo</td><td><strong>${processo?.nome || '-'}</strong></td></tr>
+          <tr><td>Descrição Operacional</td><td>${processo?.descricao || '-'}</td></tr>
           <tr><td>Gerência Responsável</td><td>${processo?.id_gerencia || '-'}</td></tr>
-          <tr><td>Criticidade</td><td>${processo?.criticidade || '-'}</td></tr>
-          <tr><td>Contrato Vinculado</td><td>${processo?.id_contrato || 'Processo de apoio (sem contrato externo)'}</td></tr>
+          <tr><td>Criticidade</td><td><span class="badge ${(processo?.criticidade === 'Crítica' || processo?.criticidade === 'Alta') ? 'badge-red' : 'badge-gray'}">${processo?.criticidade || '-'}</span></td></tr>
+          <tr><td>Contrato / Fornecedor Vinculado</td><td>${processo?.id_contrato || 'Processo de apoio (sem contrato externo)'}</td></tr>
+          <tr><td>Nível de Confidencialidade</td><td>${pco?.nivel_confidencialidade?.toUpperCase() || 'RESTRITO'}</td></tr>
         </table>
       </div>
-      
+
+      <!-- 2. BIA -->
       <div class="section">
         <div class="section-title">2. Parâmetros de Continuidade (AIN/BIA)</div>
         <div class="highlight-box"><p>📊 ${cinc}</p></div>
+        <div class="kpi-grid">
+          <div class="kpi-card"><div class="kpi-value" style="color:#d97706">${ain?.RTO || 'N/A'}</div><div class="kpi-label">RTO — Recovery Time Objective (min)</div></div>
+          <div class="kpi-card"><div class="kpi-value" style="color:#2563eb">${ain?.RPO || 'N/A'}</div><div class="kpi-label">RPO — Recovery Point Objective (min)</div></div>
+          <div class="kpi-card"><div class="kpi-value" style="color:#dc2626">${ain?.MTDCN || 'N/A'}</div><div class="kpi-label">MTDCN — Tempo Máx. de Disrupção (min)</div></div>
+        </div>
       </div>
-      
+
+      <!-- 3. ESTRATÉGIA -->
       <div class="section">
-        <div class="section-title">3. Estratégia de Recuperação</div>
-        <p>${pco?.estrategia_recuperacao || 'Não definida.'}</p>
+        <div class="section-title">3. Estratégia Geral de Recuperação (ISO 22301 §8.4)</div>
+        <p style="white-space: pre-wrap">${pco?.estrategia_recuperacao || 'Não definida.'}</p>
       </div>
-      
+
+      <!-- 4. CENÁRIO A -->
       <div class="section">
-        <div class="section-title">4. Cenário A — Acesso/Bloqueio Predial</div>
-        <p>${pco?.cenario_acesso || 'Não definido.'}</p>
+        <div class="section-title">4. Cenário A — Bloqueio de Acesso Predial / Home Office</div>
+        <div class="scenario-header">
+          <p>
+            <span class="threshold-badge th-amber">Modo Degradado ≥${pco?.pct_minimo || 30}%</span>
+            <span class="threshold-badge th-red">Modo Crítico ≥${pco?.pct_critico || 60}%</span>
+            ${pco?.local_contingencia ? `<span class="threshold-badge th-blue">📍 ${pco.local_contingencia}</span>` : ''}
+          </p>
+        </div>
+        <p style="white-space: pre-wrap">${pco?.cenario_acesso || 'Não definido.'}</p>
       </div>
+
+      <!-- 5. CENÁRIO B — SISTEMAS (tabela por ativo) -->
       <div class="section">
-        <div class="section-title">5. Cenário B — Indisponibilidade de Sistemas</div>
-        <p>${pco?.cenario_sistemas || 'Não definido.'}</p>
+        <div class="section-title">5. Cenário B — Indisponibilidade de Sistemas / TI</div>
+        ${ativosRows ? `
+        <table>
+          <tr>
+            <th>Sistema / Ativo</th>
+            <th>Tipo</th>
+            <th>RTO (min)</th>
+            <th>RPO (min)</th>
+            <th>Link de Contingência (DR)</th>
+          </tr>
+          ${ativosRows}
+        </table>` : `<p style="white-space: pre-wrap">${pco?.cenario_sistemas || 'Não definido.'}</p>`}
       </div>
+
+      <!-- 6. CENÁRIO C — FORNECEDORES -->
       <div class="section">
-        <div class="section-title">6. Cenário C — Fornecedores Críticos</div>
-        <p>${pco?.cenario_fornecedores || 'Não definido.'}</p>
+        <div class="section-title">6. Cenário C — Fornecedores Críticos e Contingências Contratuais</div>
+        ${alertaFornecedor}
+        <table>
+          <tr><th>Campo</th><th>Valor</th></tr>
+          <tr><td>Fornecedor Principal</td><td><strong>${scenarioC?.fornecedorPrincipal || pco?.fornecedor_principal || '[Não cadastrado]'}</strong></td></tr>
+          <tr><td>Contato do Fiscal do Contrato</td><td>${scenarioC?.contato_fiscal || pco?.contato_fiscal || '[Não informado]'}</td></tr>
+          <tr><td>Fornecedor Alternativo (Multi-Vendor)</td><td>${scenarioC?.fornecedorAlternativo || pco?.fornecedor_alternativo ? `<strong style="color:#16a34a">${scenarioC?.fornecedorAlternativo || pco?.fornecedor_alternativo}</strong>` : '<span style="color:#dc2626; font-weight:700">⚠️ NÃO DEFINIDO — RISCO DE PONTO ÚNICO</span>'}</td></tr>
+        </table>
+        <p style="white-space: pre-wrap; margin-top: 8pt">${scenarioC?.protocolo || pco?.cenario_fornecedores || 'Não definido.'}</p>
       </div>
+
+      <!-- 7. CENÁRIO D — PESSOAS -->
       <div class="section">
-        <div class="section-title">7. Cenário D — Absenteísmo / Pessoas</div>
-        <p>${pco?.cenario_pessoas || 'Não definido.'}</p>
+        <div class="section-title">7. Cenário D — Absenteísmo e Indisponibilidade de Pessoas</div>
+        <table>
+          <tr><th>Limiar</th><th>% de Ausência</th><th>Ações a Adotar</th></tr>
+          <tr>
+            <td><span class="badge badge-orange">Modo Degradado</span></td>
+            <td>≥ <strong>${scenarioD?.pctDegradado || pco?.pct_degradado || 30}%</strong></td>
+            <td style="font-size:7.5pt; white-space:pre-wrap">${scenarioD?.acaoDegradado || pco?.acao_degradado || '-'}</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-red">Modo Crítico</span></td>
+            <td>≥ <strong>${scenarioD?.pctCritico || pco?.pct_critico_pessoas || 60}%</strong></td>
+            <td style="font-size:7.5pt; white-space:pre-wrap">${scenarioD?.acaoCritica || pco?.acao_critica || '-'}</td>
+          </tr>
+        </table>
+        <div class="highlight-box" style="margin-top: 8pt"><p>👤 <strong>Substituto de Liderança em Ausência:</strong> ${scenarioD?.substituto || pco?.substituto_lideranca || '[Não definido]'}</p></div>
       </div>
-      
+
+      <!-- 8. ESCALONAMENTO -->
       <div class="section">
-        <div class="section-title">8. Escalonamento de Crise</div>
-        <div class="warning-box"><p>⚠️ ${pco?.escalonamento_crise || 'Não definido.'}</p></div>
+        <div class="section-title">8. Regra de Escalonamento e Acionamento do Comitê de Crise</div>
+        <div class="warning-box"><p>⚠️ <strong>MTDCN: ${ain?.MTDCN || 'N/A'} minutos.</strong> Se ultrapassado, acionar obrigatoriamente o Comitê de Crise (ISO 22301 §8.4.4).</p></div>
+        <p style="white-space: pre-wrap">${pco?.escalonamento_crise || 'Não definido.'}</p>
       </div>
-      
+
+      <!-- 9. RESPONSABILIDADES -->
       <div class="section">
-        <div class="section-title">9. Responsabilidades e Recursos</div>
+        <div class="section-title">9. Responsabilidades e Recursos Necessários</div>
         <p><strong>Responsabilidades:</strong> ${pco?.responsabilidades || '-'}</p>
-        <p><strong>Recursos necessários:</strong> ${pco?.recursos_necessarios || '-'}</p>
+        <p style="margin-top:6pt"><strong>Recursos necessários:</strong> ${pco?.recursos_necessarios || '-'}</p>
       </div>
-      
+
+      <!-- 10. PRD -->
+      <div class="section">
+        <div class="section-title">10. PRD — Plano de Recuperação de Desastres de TI (ISO 27031)</div>
+        ${pco?.procedimento_war_room || pco?.prd_war_room ? `
+        <div class="highlight-box">
+          <p><strong>🏛️ Protocolo de War Room:</strong></p>
+          <p style="white-space: pre-wrap; margin-top: 4pt">${pco?.procedimento_war_room || '-'}</p>
+        </div>` : ''}
+        <p><strong>Local de Backup:</strong> ${pco?.local_backup || '-'}</p>
+        <p style="margin-top:4pt"><strong>Frequência de Backup:</strong> ${pco?.frequencia_backup || '-'}</p>
+        <p style="margin-top:4pt; white-space:pre-wrap"><strong>Procedimentos de Restauração:</strong> ${pco?.procedimentos_restauracao || '-'}</p>
+        <p style="margin-top:4pt"><strong>Acionamento de Emergência TI:</strong> ${pco?.comunicacao_emergencia || '-'}</p>
+      </div>
+
+      <!-- 11. INTERVENIENTES -->
       ${intRows ? `
       <div class="section">
-        <div class="section-title">10. Intervenientes do Plano</div>
+        <div class="section-title">11. Intervenientes do Plano</div>
         <table>
-          <tr><th>Nome</th><th>Cargo</th><th>Papel</th><th>E-mail</th><th>Telefone</th></tr>
+          <tr><th>Nome</th><th>Cargo</th><th>Papel no Plano</th><th>E-mail</th><th>Telefone</th></tr>
           ${intRows}
         </table>
       </div>` : ''}
-      
+
+      <!-- 12. HISTÓRICO DE ACIONAMENTOS -->
+      ${acionamentosRows ? `
       <div class="section">
-        <div class="section-title">11. Controle de Versão</div>
+        <div class="section-title">12. Histórico de Acionamentos Emergenciais</div>
         <table>
-          <tr><th>Versão</th><th>Status</th><th>Última Revisão</th><th>Próxima Revisão</th><th>Validade</th></tr>
+          <tr><th>Data/Hora</th><th>Incidente Gerador</th><th>Acionado por</th><th>Tipo</th></tr>
+          ${acionamentosRows}
+        </table>
+      </div>` : ''}
+
+      <!-- 13. CONTROLE DE VERSÃO -->
+      <div class="section">
+        <div class="section-title">${acionamentosRows ? '13' : '12'}. Controle de Versão e Validade</div>
+        <table>
+          <tr><th>Versão</th><th>Status</th><th>Última Revisão</th><th>Próxima Revisão</th><th>Validade</th><th>Periodicidade</th></tr>
           <tr>
-            <td>${pco?.versao || '1.0.0'}</td>
+            <td><strong>${pco?.versao || '1.0.0'}</strong></td>
             <td><span class="badge ${pco?.status_aprovacao === 'Aprovado' ? 'badge-green' : 'badge-orange'}">${pco?.status_aprovacao || 'Pendente'}</span></td>
             <td>${pco?.data_ultima_revisao ? new Date(pco.data_ultima_revisao).toLocaleDateString('pt-BR') : 'Nunca'}</td>
             <td>${pco?.data_proxima_revisao ? new Date(pco.data_proxima_revisao).toLocaleDateString('pt-BR') : '-'}</td>
-            <td>${pco?.vigente_ate ? new Date(pco.vigente_ate).toLocaleDateString('pt-BR') : '-'}</td>
+            <td><strong>${pco?.vigente_ate ? new Date(pco.vigente_ate).toLocaleDateString('pt-BR') : '-'}</strong></td>
+            <td>${pco?.periodicidade_anos === 2 ? 'Bianual' : 'Anual (ISO 22301)'}</td>
           </tr>
         </table>
       </div>
