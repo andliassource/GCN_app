@@ -3,7 +3,7 @@ import { Plus, Trash2, Calendar, AlertOctagon, ShieldAlert, CheckCircle2, Search
 import { useAuth } from '../contexts/AuthContext';
 
 export default function BaseIncidentes({ db }) {
-  const { usuario, isAdmin, filterByGerencia, canCreate } = useAuth();
+  const { usuario, isAdmin, filterByGerencia, canCreate, canEdit } = useAuth();
   const todosIncidentes = db.incidentes.list();
   const [incidentes, setIncidentes] = useState(filterByGerencia(todosIncidentes, ['id_gerencia', 'processo.id_gerencia']));
   const todosProcessos = db.processosCriticos.list();
