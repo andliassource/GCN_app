@@ -30,6 +30,43 @@ export default function GestaoCrises({ db }) {
     setNotification({ type: 'success', text: 'Ata do Comitê de Crise registrada e arquivada com sucesso!' });
   };
 
+  // Estados para disparo de alertas de crise
+  const [comunicados, setComunicados] = useState(
+    (db.notificacoes?.list() || []).filter(n => n.origem === 'comite_crise')
+  );
+  const [comunicadoForm, setComunicadoForm] = useState({
+    titulo: '',
+    mensagem: '',
+    destino: 'ALL',
+    severidade: 'Alerta Crítico',
+    canal: 'app_email'
+  });
+
+  const handleDispararAlerta = (e) => {
+    e.preventDefault();
+    if (!comunicadoForm.titulo || !comunicadoForm.mensagem) {
+      setNotification({ type: 'error', text: 'Preencha o título e as instruções do comunicado!' });
+      return;
+    }
+
+    const novoAlerta = db.notificacoes.create({
+      titulo: `📢 [${comunicadoForm.severidade.toUpperCase()}] ${comunicadoForm.titulo}`,
+      mensagem: comunicadoForm.mensagem,
+      tipo: comunicadoForm.severidade === 'Evacuação / Desastre' || comunicadoForm.severidade === 'Alerta Crítico' ? 'critico' : 'alerta',
+      id_destino: comunicadoForm.destino,
+      origem: 'comite_crise',
+      canal: comunicadoForm.canal
+    });
+
+    // Enviar notificação de sucesso e atualizar lista local
+    setComunicados((db.notificacoes.list() || []).filter(n => n.origem === 'comite_crise'));
+    setComunicadoForm({ titulo: '', mensagem: '', destino: 'ALL', severidade: 'Alerta Crítico', canal: 'app_email' });
+    setNotification({ 
+      type: 'success', 
+      text: `Alerta disparado com sucesso! Destinatários: ${comunicadoForm.destino === 'ALL' ? 'Todas as áreas (Geral)' : comunicadoForm.destino}. Notificações registradas.` 
+    });
+  };
+
   return (
     <div className="space-y-8 animate-fade-in">
       
@@ -45,13 +82,16 @@ export default function GestaoCrises({ db }) {
           onClick={() => setCrisisTab('comunicacao')}
           className={`pb-3 transition-all ${crisisTab === 'comunicacao' ? 'border-b-2 border-indigo-650 dark:border-indigo-400 text-indigo-650 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`}
         >
-          Comunicação de Crise (Gemac)
+          Painel de Acionamento & Comunicação (Gemac)
         </button>
       </div>
 
       {notification && (
-        <div className="p-4 rounded-xl border border-indigo-500/20 bg-indigo-50/50 dark:bg-indigo-950/20 text-indigo-800 dark:text-indigo-400 text-xs font-semibold">
-          {notification.text}
+        <div className={`p-4 rounded-xl border flex items-center gap-3 text-xs font-semibold ${
+          notification.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-950/20 dark:text-emerald-400' : 'bg-rose-50 border-rose-200 text-rose-800'
+        }`}>
+          <AlertTriangle className="w-4 h-4 text-indigo-500" />
+          <span>{notification.text}</span>
         </div>
       )}
 
@@ -150,7 +190,7 @@ export default function GestaoCrises({ db }) {
                     <span className="font-bold text-indigo-500 uppercase">{ata.id_ata}</span>
                     <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {ata.data_reuniao}</span>
                   </div>
-                  <h4 className="font-extrabold text-slate-850 dark:text-white text-xs leading-normal">{ata.pauta}</h4>
+                  <h4 className="font-extrabold text-slate-855 dark:text-white text-xs leading-normal">{ata.pauta}</h4>
                   <div className="p-3 bg-slate-50 dark:bg-slate-950/40 rounded border border-slate-200 dark:border-slate-850 text-xs text-slate-650 dark:text-slate-400 leading-relaxed">
                     <strong>Deliberações:</strong> {ata.deliberacoes}
                   </div>
@@ -166,39 +206,145 @@ export default function GestaoCrises({ db }) {
 
       {/* ABA: COMUNICAÇÃO DE CRISE */}
       {crisisTab === 'comunicacao' && (
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6 text-xs text-slate-700 dark:text-slate-350">
-          <div className="border-b border-slate-150 dark:border-slate-800 pb-3 flex items-center gap-2">
-            <MessageSquare className="w-5 h-5 text-indigo-500" />
-            <h3 className="font-bold text-slate-855 dark:text-white text-sm">Plano de Comunicação de Crises (Gemac)</h3>
+        <div className="space-y-6 text-xs">
+          
+          {/* Alerta de Protocolo da Gemac */}
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+            <div className="border-b border-slate-150 dark:border-slate-800 pb-3 flex items-center gap-2">
+              <MessageSquare className="w-5 h-5 text-indigo-500" />
+              <h3 className="font-bold text-slate-855 dark:text-white text-sm">Plano de Comunicação de Crises (Gemac / ISO 22301 §8.4.3)</h3>
+            </div>
+            <p className="text-xs leading-relaxed text-slate-550 dark:text-slate-450">
+              A Gemac coordena todos os canais de informação externa e interna em cenários de acionamento do Plano de Gestão de Crise (PGC). Em crises graves, o disparo de comunicados em massa é executado a partir do painel de acionamento abaixo para mitigar ruídos de informação e focar na contingência.
+            </p>
           </div>
 
-          <p className="text-xs leading-relaxed text-slate-500">
-            A Gemac (Gerência de Marketing e Comunicação) coordena todos os canais de informação externa e interna em cenários de acionamento do Plano de Gestão de Crise (PGC). É vedado o pronunciamento de funcionários sem validação da Gemac.
-          </p>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            {/* Form de Disparo em Massa */}
+            <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+              <h4 className="font-bold text-slate-850 dark:text-white text-xs uppercase tracking-wider flex items-center gap-2">
+                📢 Disparar Comunicado de Emergência / Crise (MNS)
+              </h4>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-            <div className="p-4 bg-slate-50 dark:bg-slate-950/30 rounded-xl border border-slate-200 dark:border-slate-850 space-y-3">
-              <div className="flex items-center gap-2">
-                <Send className="w-4 h-4 text-indigo-500" />
-                <h4 className="font-extrabold text-indigo-650 dark:text-indigo-400 uppercase text-[10px] tracking-wider">Protocolo de Comunicação Interna</h4>
-              </div>
-              <p className="leading-relaxed">
-                <strong>Destinatários:</strong> Colaboradores, Fiscais de Contratos e Terceirizados.<br/>
-                <strong>Canais:</strong> Notificações push via aplicativo corporativo, e-mail institucional interno e WhatsApp Business do comitê.<br/>
-                <strong>Prazo de Disparo:</strong> Até 30 minutos após a ata de acionamento do PGC.
-              </p>
+              {isAdmin() ? (
+                <form onSubmit={handleDispararAlerta} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase">Severidade / Nível do Disparo</label>
+                      <select 
+                        value={comunicadoForm.severidade}
+                        onChange={e => setComunicadoForm({...comunicadoForm, severidade: e.target.value})}
+                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 text-slate-850 dark:text-slate-300 focus:outline-indigo-500"
+                      >
+                        <option value="Informativo Geral">Informativo Geral</option>
+                        <option value="Alerta Crítico">Alerta Crítico (Severidade Média)</option>
+                        <option value="Evacuação / Desastre">🚨 Evacuação / Desastre (Severidade Alta)</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase">Gerência Destinatária (Foco)</label>
+                      <select 
+                        value={comunicadoForm.destino}
+                        onChange={e => setComunicadoForm({...comunicadoForm, destino: e.target.value})}
+                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 text-slate-850 dark:text-slate-300 focus:outline-indigo-500"
+                      >
+                        <option value="ALL">Todas as Áreas (Empresa Geral)</option>
+                        {db.gerencias.list().map(g => (
+                          <option key={g.id_gerencia} value={g.id_gerencia}>{g.sigla} - {g.nome}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase">Assunto / Título do Comunicado *</label>
+                    <input 
+                      type="text"
+                      value={comunicadoForm.titulo}
+                      onChange={e => setComunicadoForm({...comunicadoForm, titulo: e.target.value})}
+                      placeholder="Ex: Evasão Predial do Bloco A ou Falha Geral do Sistema de Pagamentos"
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 text-slate-850 dark:text-slate-300 focus:outline-indigo-500"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase">Instruções de Contingência e Detalhes *</label>
+                    <textarea 
+                      rows="4"
+                      value={comunicadoForm.mensagem}
+                      onChange={e => setComunicadoForm({...comunicadoForm, mensagem: e.target.value})}
+                      placeholder="Descreva as ações imediatas que os colaboradores ou a gerência destino devem tomar. Ex: favor realizar home office emergencial e aguardar normalização."
+                      className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 text-slate-850 dark:text-slate-200 focus:outline-indigo-500"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase">Canais de Transmissão Simulados</label>
+                    <select 
+                      value={comunicadoForm.canal}
+                      onChange={e => setComunicadoForm({...comunicadoForm, canal: e.target.value})}
+                      className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 text-slate-850 dark:text-slate-300"
+                    >
+                      <option value="app_email">Notificação Push no App GCN + E-mail Corporativo</option>
+                      <option value="sms_emergency">🚨 SMS de Emergência (Mass Broadcast)</option>
+                      <option value="all_channels">Todos os Canais Simultaneamente (App, E-mail, SMS, Status Page)</option>
+                    </select>
+                  </div>
+
+                  <div className="flex justify-end">
+                    <button type="submit" className="px-6 py-2.5 bg-rose-650 hover:bg-rose-700 text-white font-extrabold rounded-lg text-xs flex items-center gap-1.5 transition-all shadow-sm cursor-pointer">
+                      <Send className="w-3.5 h-3.5" /> Disparar em Massa (MNS)
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <div className="p-8 text-center bg-slate-50 dark:bg-slate-955 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 text-slate-450 font-semibold">
+                  Modo Leitura — Apenas membros do Comitê de Crise (Geric/Geemp) possuem permissão para realizar disparos em massa.
+                </div>
+              )}
             </div>
-            <div className="p-4 bg-slate-50 dark:bg-slate-950/30 rounded-xl border border-slate-200 dark:border-slate-850 space-y-3">
-              <div className="flex items-center gap-2">
-                <ShieldAlert className="w-4 h-4 text-purple-500" />
-                <h4 className="font-extrabold text-purple-650 dark:text-purple-400 uppercase text-[10px] tracking-wider">Protocolo de Comunicação Externa</h4>
+
+            {/* Histórico de Disparos de Crise */}
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 flex flex-col justify-between">
+              <div>
+                <h4 className="font-bold text-slate-850 dark:text-white text-xs uppercase tracking-wider mb-3">
+                  📜 Histórico de Disparos Recentes
+                </h4>
+                
+                {comunicados.length === 0 ? (
+                  <p className="text-[11px] text-slate-450 italic">Nenhum comunicado de emergência disparado no ciclo atual.</p>
+                ) : (
+                  <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+                    {comunicados.map(c => (
+                      <div key={c.id_notificacao} className="p-3 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-850 rounded-lg space-y-1.5 hover:border-slate-350 transition-colors">
+                        <div className="flex justify-between items-center text-[8px] font-bold">
+                          <span className="text-rose-500 uppercase">{c.id_notificacao}</span>
+                          <span className="text-slate-400 font-normal">{new Date(c.data_hora).toLocaleString('pt-BR')}</span>
+                        </div>
+                        <h5 className="font-extrabold text-[10px] text-slate-800 dark:text-white leading-normal">{c.titulo}</h5>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-450 line-clamp-2 leading-relaxed">{c.mensagem}</p>
+                        <div className="flex items-center justify-between text-[8px] text-indigo-500 font-semibold pt-1 border-t border-slate-200 dark:border-slate-850">
+                          <span>Destino: {c.id_destino === 'ALL' ? 'Todos (Geral)' : c.id_destino}</span>
+                          <span className="text-slate-400 capitalize">via {c.canal?.replace('_', ' ')}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-              <p className="leading-relaxed">
-                <strong>Destinatários:</strong> Clientes, Acionistas e Imprensa.<br/>
-                <strong>Canais:</strong> Atualização da Status Page pública da empresa, envio de boletins via e-mail e notas à imprensa especializada.<br/>
-                <strong>Prazo de Disparo:</strong> Em até 60 minutos após confirmação da indisponibilidade que exceda o RTO do checkout.
-              </p>
+
+              {/* Protocolos rápidos da Gemac */}
+              <div className="border-t border-slate-100 dark:border-slate-850 pt-4 space-y-2 text-[11px] text-slate-450">
+                <div className="font-bold text-[9px] uppercase tracking-wider text-slate-400">Prazos de Protocolo Gemac:</div>
+                <p>• <strong>Interno:</strong> Até 30 min via App corporativo.</p>
+                <p>• <strong>Externo:</strong> Até 60 min via Status Page pública.</p>
+              </div>
             </div>
+
           </div>
         </div>
       )}
