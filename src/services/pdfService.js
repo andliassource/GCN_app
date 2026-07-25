@@ -416,5 +416,173 @@ export const pdfService = {
         ${(nrgcnData || []).map(n => `<tr><td>${n.gerencia}</td><td>${n.nrgcn}</td><td>${n.aderencia}%</td></tr>`).join('')}
       </table>
     </div>
-  `
+  `,
+
+  // HTML de Visão 360 do Processo Completo
+  htmlProcessoCompleto: (processo, ain, pco, prd, ativos, riscos, incidentes, intervenientes, perdas) => {
+    const ativosRows = (ativos || []).map(a => `
+      <tr>
+        <td><strong>${a.id_ativo}</strong></td>
+        <td>${a.nome}</td>
+        <td>${a.tipo}</td>
+        <td><span class="badge ${a.criticidade === 'Critica' || a.criticidade === 'Alta' ? 'badge-red' : 'badge-gray'}">${a.criticidade}</span></td>
+        <td>${a.suporte_valido_ate ? new Date(a.suporte_valido_ate).toLocaleDateString('pt-BR') : 'N/A'}</td>
+      </tr>
+    `).join('');
+
+    const riscosRows = (riscos || []).map(r => {
+      const score = (r.impacto_residual * r.probabilidade_residual) || (r.impacto * r.probabilidade) || 0;
+      const badge = score >= 15 ? 'badge-red' : score >= 8 ? 'badge-orange' : 'badge-green';
+      return `
+        <tr>
+          <td><strong>${r.id_risco}</strong></td>
+          <td>${r.titulo}</td>
+          <td>${r.probabilidade} x ${r.impacto}</td>
+          <td><span class="badge ${badge}">Score: ${score}</span></td>
+          <td>${r.plano_acao_mitigacao || '-'}</td>
+        </tr>
+      `;
+    }).join('');
+
+    const incidentesRows = (incidentes || []).map(i => {
+      const rtoColor = i.rto_ultrapassado ? 'badge-red' : 'badge-green';
+      const statusBadge = i.status_incidente === 'fechado' ? 'badge-green' : 'badge-orange';
+      return `
+        <tr>
+          <td><strong>${i.id_incidente}</strong></td>
+          <td>${i.descricao}</td>
+          <td><span class="badge ${statusBadge}">${i.status_incidente}</span></td>
+          <td>${i.rto_meta_minutos ? `${i.rto_meta_minutos}m` : '-'}</td>
+          <td><span class="badge ${rtoColor}">${i.rto_real_minutos ? `${i.rto_real_minutos}m` : '-'}</span></td>
+        </tr>
+      `;
+    }).join('');
+
+    const intervenientesRows = (intervenientes || []).map(i => `
+      <tr>
+        <td>${i.nome}</td>
+        <td>${i.cargo}</td>
+        <td>${i.papel}</td>
+        <td>${i.email}</td>
+        <td>${i.telefone}</td>
+      </tr>
+    `).join('');
+
+    return `
+      <div class="section">
+        <div class="section-title">1. Dados do Processo Crítico</div>
+        <table>
+          <tr><th>Campo</th><th>Valor</th></tr>
+          <tr><td>Código do Processo</td><td><strong>${processo?.id_processo || '-'}</strong></td></tr>
+          <tr><td>Nome do Processo</td><td>${processo?.nome || '-'}</td></tr>
+          <tr><td>Descrição operacional</td><td>${processo?.descricao || '-'}</td></tr>
+          <tr><td>Gerência Responsável</td><td>${processo?.id_gerencia || '-'}</td></tr>
+          <tr><td>Criticidade</td><td><span class="badge ${processo?.criticidade === 'Crítica' || processo?.criticidade === 'Alta' ? 'badge-red' : 'badge-gray'}">${processo?.criticidade || '-'}</span></td></tr>
+          <tr><td>Contrato Vinculado</td><td>${processo?.id_contrato || 'Sem contrato externo'}</td></tr>
+          <tr><td>SLA Interno (Apoio)</td><td>${processo?.sla_interno || 'N/A'}</td></tr>
+        </table>
+      </div>
+
+      <div class="section">
+        <div class="section-title">2. Parâmetros de Tempo e Financeiros (AIN/BIA)</div>
+        <table>
+          <tr><th>Probabilidade</th><th>Impacto Geral</th><th>RTO</th><th>RPO</th><th>MTDCN</th></tr>
+          <tr>
+            <td>${ain?.probabilidade || '-'}</td>
+            <td>${ain?.impacto_financeiro || '-'}</td>
+            <td>${ain?.RTO ? `${ain.RTO} min` : '-'}</td>
+            <td>${ain?.RPO ? `${ain.RPO} min` : '-'}</td>
+            <td><strong style="color:#b91c1c">${ain?.MTDCN ? `${ain.MTDCN} min` : '-'}</strong></td>
+          </tr>
+        </table>
+        
+        <div style="margin-top: 8pt;" class="highlight-box">
+          <p>
+            💰 <strong>Perda Financeira Estimada em Paralisação:</strong> 
+            ${perdas?.hasContrato 
+              ? `R$ ${perdas.hora.toLocaleString('pt-BR', { maximumFractionDigits: 2 })} / Hora | R$ ${perdas.dia.toLocaleString('pt-BR', { maximumFractionDigits: 2 })} / Dia (Multa Estimada: R$ ${perdas.multaEstimada.toLocaleString('pt-BR')})` 
+              : 'Sem perdas financeiras contratuais diretas mapeadas.'}
+          </p>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">3. Plano de Continuidade Operacional (PCO)</div>
+        ${pco ? `
+          <table>
+            <tr><th>Status de Aprovação</th><th>Versão</th><th>Última Revisão</th></tr>
+            <tr>
+              <td><span class="badge ${pco.status_aprovacao === 'Aprovado' ? 'badge-green' : 'badge-orange'}">${pco.status_aprovacao}</span></td>
+              <td>${pco.versao}</td>
+              <td>${pco.data_ultima_revisao ? new Date(pco.data_ultima_revisao).toLocaleDateString('pt-BR') : 'Sem revisão'}</td>
+            </tr>
+          </table>
+          <div style="margin-top: 6pt; font-size: 8.5pt;">
+            <p><strong>Estratégia de Recuperação:</strong> ${pco.estrategia_recuperacao || '-'}</p>
+            <p style="margin-top:4pt;"><strong>Cenário A (Acesso Predial):</strong> ${pco.cenario_acesso || '-'}</p>
+            <p style="margin-top:4pt;"><strong>Cenário B (Sistemas/TI):</strong> ${pco.cenario_sistemas || '-'}</p>
+            <p style="margin-top:4pt;"><strong>Cenário C (Fornecedores):</strong> ${pco.cenario_fornecedores || '-'}</p>
+            <p style="margin-top:4pt;"><strong>Cenário D (Pessoas):</strong> ${pco.cenario_pessoas || '-'}</p>
+            <p style="margin-top:4pt;"><strong>Escalonamento de Crise:</strong> ${pco.escalonamento_crise || '-'}</p>
+          </div>
+        ` : `<p class="badge badge-gray">Nenhum PCO cadastrado para este processo.</p>`}
+      </div>
+
+      <div class="section">
+        <div class="section-title">4. Plano de Recuperação de Desastres de TI (PRD - ISO 27031)</div>
+        ${prd ? `
+          <table>
+            <tr><th>Status de Aprovação</th><th>Versão</th><th>Última Revisão</th></tr>
+            <tr>
+              <td><span class="badge ${prd.status_aprovacao === 'Aprovado' ? 'badge-green' : 'badge-orange'}">${prd.status_aprovacao}</span></td>
+              <td>${prd.versao}</td>
+              <td>${prd.atualizado_em ? new Date(prd.atualizado_em).toLocaleDateString('pt-BR') : 'Sem atualização'}</td>
+            </tr>
+          </table>
+          <div style="margin-top: 6pt; font-size: 8.5pt;">
+            <p><strong>Escopo de TI:</strong> ${prd.escopo_ti || '-'}</p>
+            <p style="margin-top:4pt;"><strong>RTO do Site Alternativo:</strong> ${prd.rto_site_alternativo ? `${prd.rto_site_alternativo} min` : '-'}</p>
+            <p style="margin-top:4pt;"><strong>Procedimentos de Backup:</strong> ${prd.procedimentos_backup || '-'}</p>
+            <p style="margin-top:4pt;"><strong>Plano de Failover/Switchback:</strong> ${prd.plano_failover || '-'}</p>
+          </div>
+        ` : `<p class="badge badge-gray">Nenhum PRD cadastrado para este processo.</p>`}
+      </div>
+
+      ${ativosRows ? `
+      <div class="section">
+        <div class="section-title">5. Ativos de Tecnologia Vinculados</div>
+        <table>
+          <tr><th>ID</th><th>Nome do Ativo</th><th>Tipo</th><th>Criticidade</th><th>Vencimento Suporte</th></tr>
+          ${ativosRows}
+        </table>
+      </div>` : ''}
+
+      ${riscosRows ? `
+      <div class="section">
+        <div class="section-title">6. Matriz de Riscos Dinâmicos</div>
+        <table>
+          <tr><th>ID</th><th>Título do Risco</th><th>Prob. x Imp.</th><th>Risco Residual</th><th>Mitigacao</th></tr>
+          ${riscosRows}
+        </table>
+      </div>` : ''}
+
+      ${incidentesRows ? `
+      <div class="section">
+        <div class="section-title">7. Histórico de Incidentes e Tracking de RTO</div>
+        <table>
+          <tr><th>ID</th><th>Descrição</th><th>Status</th><th>RTO Meta</th><th>RTO Real</th></tr>
+          ${incidentesRows}
+        </table>
+      </div>` : ''}
+
+      ${intervenientesRows ? `
+      <div class="section">
+        <div class="section-title">8. Intervenientes e Acionamentos de Emergência</div>
+        <table>
+          <tr><th>Nome</th><th>Cargo</th><th>Papel no Plano</th><th>E-mail</th><th>Telefone</th></tr>
+          ${intervenientesRows}
+        </table>
+      </div>` : ''}
+    `;
+  }
 };

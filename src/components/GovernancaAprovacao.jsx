@@ -1,8 +1,20 @@
 import React, { useState } from 'react';
 import { ShieldCheck, CheckCircle2, XCircle, AlertTriangle, User, Calendar, RefreshCw, FileText, Plus, Users, MessageSquare } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function GovernancaAprovacao({ db }) {
-  const [planosPco, setPlanosPco] = useState(db.planosContinuidade.list());
+  const { usuario, isAdmin, isGestor } = useAuth();
+  
+  // Função para recarregar a lista localmente
+  const recarregarPlanos = () => {
+    const list = db.planosContinuidade.list();
+    return isAdmin()
+      ? list
+      : list.filter(p => p.processo?.id_gerencia === usuario?.id_gerencia);
+  };
+
+  const [planosPco, setPlanosPco] = useState(recarregarPlanos());
+
   const [governanca, setGovernanca] = useState(db.governancaGCN.list());
   const [atas, setAtas] = useState(db.atasComiteCrise.list());
   
@@ -40,7 +52,7 @@ export default function GovernancaAprovacao({ db }) {
       status_aprovacao: status
     });
 
-    setPlanosPco(db.planosContinuidade.list());
+    setPlanosPco(recarregarPlanos());
     setNotification({
       type: 'success',
       text: `Status do plano do processo ${id_processo} atualizado para "${status}".`
@@ -75,10 +87,11 @@ export default function GovernancaAprovacao({ db }) {
   };
 
   const getStatusBadge = (status) => {
-    if (status === 'Aprovado') return 'bg-emerald-50 text-emerald-600 border border-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-450 dark:border-emerald-900/30';
-    if (status === 'Pendente') return 'bg-amber-50 text-amber-600 border border-amber-100 dark:bg-amber-950/20 dark:text-amber-450 dark:border-amber-900/30';
-    if (status === 'Em Revisão') return 'bg-indigo-50 text-indigo-650 border border-indigo-105 dark:bg-indigo-950/20 dark:text-indigo-400 dark:border-indigo-900/30';
-    return 'bg-rose-50 text-rose-600 border border-rose-100 dark:bg-rose-950/20 dark:text-rose-450 dark:border-rose-900/30';
+    if (status === 'Aprovado') return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-250 dark:border-emerald-800/60';
+    if (status === 'Aprovado pela Área') return 'bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300 border-teal-250 dark:border-teal-800/60';
+    if (status === 'Pendente') return 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border-amber-250 dark:border-amber-800/60';
+    if (status === 'Em Revisão') return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-350 border-indigo-250 dark:border-indigo-800/60';
+    return 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-350 border-rose-250 dark:border-rose-900/60';
   };
 
   return (
@@ -199,21 +212,86 @@ export default function GovernancaAprovacao({ db }) {
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      {p.status_aprovacao !== 'Aprovado' && (
-                        <button
-                          onClick={() => handleAprovarPlano(p.id_processo, 'Aprovado')}
-                          className="bg-emerald-50 hover:bg-emerald-100 text-emerald-600 dark:bg-emerald-950/25 dark:text-emerald-400 px-2.5 py-1.5 rounded text-[10px] font-bold flex items-center gap-1 transition-all"
-                        >
-                          Aprovar
-                        </button>
+                      {/* LÓGICA DE ALÇADAS POR PAPEL */}
+                      
+                      {/* 1. Visão do Gestor da Área */}
+                      {usuario?.role === 'gestor_area' && (
+                        <>
+                          {p.status_aprovacao === 'Pendente' && (
+                            <>
+                              <button
+                                onClick={() => handleAprovarPlano(p.id_processo, 'Aprovado pela Área')}
+                                className="bg-teal-50 hover:bg-teal-100 text-teal-650 dark:bg-teal-950/40 dark:text-teal-400 px-2.5 py-1.5 rounded text-[10px] font-bold transition-all cursor-pointer border border-teal-200/40"
+                              >
+                                Aprovar (1ª Alçada)
+                              </button>
+                              <button
+                                onClick={() => handleAprovarPlano(p.id_processo, 'Rejeitado')}
+                                className="bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:text-rose-450 px-2.5 py-1.5 rounded text-[10px] font-bold transition-all cursor-pointer border border-rose-200/40"
+                              >
+                                Rejeitar
+                              </button>
+                            </>
+                          )}
+                          {p.status_aprovacao === 'Aprovado pela Área' && (
+                            <span className="text-[10px] text-slate-400 italic font-semibold">
+                              Aguardando 2ª Alçada (Geric)
+                            </span>
+                          )}
+                          {p.status_aprovacao === 'Aprovado' && (
+                            <span className="text-[10px] text-emerald-500 font-bold">
+                              ✓ Homologado
+                            </span>
+                          )}
+                        </>
                       )}
-                      {p.status_aprovacao !== 'Rejeitado' && (
-                        <button
-                          onClick={() => handleAprovarPlano(p.id_processo, 'Rejeitado')}
-                          className="bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/25 dark:text-rose-450 px-2.5 py-1.5 rounded text-[10px] font-bold flex items-center gap-1 transition-all"
-                        >
-                          Rejeitar
-                        </button>
+
+                      {/* 2. Visão do Administrador GERIC */}
+                      {isAdmin() && (
+                        <>
+                          {p.status_aprovacao === 'Pendente' && (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded italic">
+                                Pendente na Área
+                              </span>
+                              <button
+                                onClick={() => handleAprovarPlano(p.id_processo, 'Aprovado pela Área')}
+                                className="bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 px-2 py-1 rounded text-[9px] font-bold transition-all cursor-pointer"
+                                title="Aprovar pela área administrativamente"
+                              >
+                                Forçar 1ª Alçada
+                              </button>
+                            </div>
+                          )}
+                          {p.status_aprovacao === 'Aprovado pela Área' && (
+                            <>
+                              <button
+                                onClick={() => handleAprovarPlano(p.id_processo, 'Aprovado')}
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1.5 rounded text-[10px] font-bold transition-all cursor-pointer shadow-2xs"
+                              >
+                                Homologar (2ª Alçada)
+                              </button>
+                              <button
+                                onClick={() => handleAprovarPlano(p.id_processo, 'Rejeitado')}
+                                className="bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:text-rose-450 px-2.5 py-1.5 rounded text-[10px] font-bold transition-all cursor-pointer border border-rose-200/40"
+                              >
+                                Rejeitar
+                              </button>
+                            </>
+                          )}
+                          {p.status_aprovacao === 'Aprovado' && (
+                            <span className="text-[10px] text-emerald-500 font-bold flex items-center gap-1">
+                              ✓ Homologação Finalizada
+                            </span>
+                          )}
+                        </>
+                      )}
+
+                      {/* 3. Visão do Visualizador */}
+                      {usuario?.role === 'visualizador' && (
+                        <span className="text-[10px] text-slate-450 italic">
+                          Apenas Leitura
+                        </span>
                       )}
                     </div>
                   </div>

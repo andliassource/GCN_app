@@ -6,6 +6,7 @@ import {
   Calendar, ArrowUp, ArrowDown, Minus
 } from 'lucide-react';
 import { pdfService } from '../services/pdfService';
+import { useAuth } from '../contexts/AuthContext';
 
 // ─── MINI GRÁFICO DE BARRA ────────────────────────────────────────────────────
 const MiniBar = ({ value, max, color = '#4f46e5', label }) => {
@@ -146,16 +147,37 @@ const MatrizRisco = ({ riscos }) => {
 
 // ─── PRINCIPAL ────────────────────────────────────────────────────────────────
 export default function DashboardGeric({ db }) {
+  const { usuario, isAdmin } = useAuth();
   const [refreshAt, setRefreshAt] = useState(Date.now());
   const [alertTab, setAlertTab] = useState('planos');
 
-  const kpis = useMemo(() => db.analytics.getKPIs(), [refreshAt]);
-  const nrgcnPorGerencia = useMemo(() => db.analytics.getNRGCNporGerencia(), [refreshAt]);
-  const evolucaoIncidentes = useMemo(() => db.analytics.getEvolucaoIncidentes(), [refreshAt]);
-  const riscos = useMemo(() => db.riscos.list(), [refreshAt]);
-  const planosCO = useMemo(() => db.planosContinuidade.list(), [refreshAt]);
-  const planosAcao = useMemo(() => db.planosAcao.list(), [refreshAt]);
-  const incidentes = useMemo(() => db.incidentes.list(), [refreshAt]);
+  const idGerencia = isAdmin() ? null : usuario?.id_gerencia;
+
+  const kpis = useMemo(() => db.analytics.getKPIs(idGerencia), [refreshAt, idGerencia]);
+  const nrgcnPorGerencia = useMemo(() => db.analytics.getNRGCNporGerencia(idGerencia), [refreshAt, idGerencia]);
+  const evolucaoIncidentes = useMemo(() => db.analytics.getEvolucaoIncidentes(idGerencia), [refreshAt, idGerencia]);
+  
+  // Listas locais filtradas por papel
+  const todosRiscos = useMemo(() => db.riscos.list(), [refreshAt]);
+  const riscos = useMemo(() => {
+    return idGerencia ? todosRiscos.filter(r => r.processo?.id_gerencia === idGerencia) : todosRiscos;
+  }, [todosRiscos, idGerencia]);
+
+  const todosPlanosCO = useMemo(() => db.planosContinuidade.list(), [refreshAt]);
+  const planosCO = useMemo(() => {
+    return idGerencia ? todosPlanosCO.filter(p => p.processo?.id_gerencia === idGerencia) : todosPlanosCO;
+  }, [todosPlanosCO, idGerencia]);
+
+  const todosPlanosAcao = useMemo(() => db.planosAcao.list(), [refreshAt]);
+  const planosAcao = useMemo(() => {
+    return idGerencia ? todosPlanosAcao.filter(pa => pa.processo?.id_gerencia === idGerencia) : todosPlanosAcao;
+  }, [todosPlanosAcao, idGerencia]);
+
+  const todosIncidentes = useMemo(() => db.incidentes.list(), [refreshAt]);
+  const incidentes = useMemo(() => {
+    return idGerencia ? todosIncidentes.filter(i => i.processo?.id_gerencia === idGerencia) : todosIncidentes;
+  }, [todosIncidentes, idGerencia]);
+
   const config = useMemo(() => db.configSistema.get(), []);
 
   const hoje = new Date();
@@ -257,11 +279,11 @@ export default function DashboardGeric({ db }) {
                 const hCrit = (m.criticos / maxTotal) * 88;
                 return (
                   <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
-                    <div className="w-full flex flex-col items-center gap-0.5" style={{ height: '88px' }}>
+                    <div className="w-full flex flex-col items-center gap-0.5 relative" style={{ height: '88px' }}>
                       <div className="flex-1" />
                       <div className="w-full rounded-t-sm" style={{ height: hTotal, backgroundColor: '#c7d2fe', transition: 'height 0.5s ease', minHeight: m.total > 0 ? 2 : 0 }} />
                       {m.criticos > 0 && (
-                        <div className="w-full rounded-t-sm absolute" style={{ height: hCrit, backgroundColor: '#ef4444', bottom: 0 }} />
+                        <div className="w-full rounded-t-sm absolute bottom-0 left-0" style={{ height: hCrit, backgroundColor: '#ef4444' }} />
                       )}
                     </div>
                     <span className="text-[8px] text-slate-400 text-center leading-tight">{m.mes}</span>
@@ -335,15 +357,20 @@ export default function DashboardGeric({ db }) {
           <div className="space-y-2 flex-1 overflow-y-auto max-h-48">
             {alertTab === 'planos' && (pcosVencendo.length > 0 ? pcosVencendo.map(pco => {
               const diff = Math.round((new Date(pco.vigente_ate) - hoje) / (1000 * 60 * 60 * 24));
-              const cor = diff <= 7 ? 'rose' : diff <= 30 ? 'amber' : 'indigo';
+              const style = diff <= 7
+                ? { card: 'bg-rose-50/50 dark:bg-rose-950/20 border-rose-100 dark:border-rose-900/30', icon: 'text-rose-500', badge: 'bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-400' }
+                : diff <= 30
+                ? { card: 'bg-amber-50/50 dark:bg-amber-950/20 border-amber-100 dark:border-amber-900/30', icon: 'text-amber-500', badge: 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400' }
+                : { card: 'bg-indigo-50/50 dark:bg-indigo-950/20 border-indigo-100 dark:border-indigo-900/30', icon: 'text-indigo-500', badge: 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-400' };
+
               return (
-                <div key={pco.id_pco} className={`flex items-center gap-3 p-2.5 rounded-lg border text-xs bg-${cor}-50/50 dark:bg-${cor}-950/20 border-${cor}-100 dark:border-${cor}-900/30`}>
-                  <Calendar className={`w-4 h-4 text-${cor}-500 flex-shrink-0`} />
+                <div key={pco.id_pco} className={`flex items-center gap-3 p-2.5 rounded-lg border text-xs ${style.card}`}>
+                  <Calendar className={`w-4 h-4 ${style.icon} flex-shrink-0`} />
                   <div className="flex-1 min-w-0">
                     <div className="font-bold text-slate-800 dark:text-slate-200 truncate">{pco.id_pco}</div>
                     <div className="text-[10px] text-slate-500 dark:text-slate-400">Vence em {diff} dias · {new Date(pco.vigente_ate).toLocaleDateString('pt-BR')}</div>
                   </div>
-                  <span className={`text-[9px] font-black px-2 py-0.5 rounded-full bg-${cor}-100 dark:bg-${cor}-900/50 text-${cor}-700 dark:text-${cor}-400`}>
+                  <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${style.badge}`}>
                     {diff <= 7 ? 'CRÍTICO' : diff <= 30 ? '30 DIAS' : '60 DIAS'}
                   </span>
                 </div>
@@ -431,10 +458,14 @@ export default function DashboardGeric({ db }) {
               .map(r => ({ ...r, score: (PROB_SCORE[r.probabilidade_atual || r.probabilidade] || 1) * (IMP_SCORE[r.impacto] || 1) }))
               .sort((a, b) => b.score - a.score)
               .map(risco => {
-                const cor = risco.score >= 15 ? 'rose' : risco.score >= 10 ? 'amber' : risco.score >= 5 ? 'yellow' : 'emerald';
+                const badgeCls = risco.score >= 15
+                  ? 'bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-400'
+                  : risco.score >= 10
+                  ? 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400'
+                  : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400';
                 return (
                   <div key={risco.id_risco} className="px-5 py-3 flex items-center gap-3 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-black bg-${cor}-100 dark:bg-${cor}-950 text-${cor}-700 dark:text-${cor}-400 flex-shrink-0`}>
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-black ${badgeCls} flex-shrink-0`}>
                       {risco.score}
                     </div>
                     <div className="flex-1 min-w-0">

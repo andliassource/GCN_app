@@ -7,6 +7,7 @@ export default function OrganizacaoRiscos({ db }) {
   const [ativos, setAtivos] = useState(db.ativosSistemas.list());
   const [riscos, setRiscos] = useState(db.riscos.list());
   const [processos] = useState(db.processosCriticos.list());
+  const [planosAcao] = useState(db.planosAcao ? db.planosAcao.list() : []);
 
   // Estados locais de controle de abas internas
   const [subTab, setSubTab] = useState('estrutura'); // 'estrutura', 'riscos', 'ativos'
@@ -32,14 +33,26 @@ export default function OrganizacaoRiscos({ db }) {
     descricao: '',
     probabilidade: 'Provável',
     impacto: 'Moderado',
-    id_processo: ''
+    id_processo: '',
+    risco_residual_prob: 'Pouco Provável',
+    risco_residual_imp: 'Menor',
+    id_plano_acao: ''
   });
 
   // Form Fields - Ativo/Sistema
   const [ativoForm, setAtivoForm] = useState({
     nome: '',
     tipo: 'Sistema',
-    criticidade: 'Média'
+    criticidade: 'Média',
+    id_gerencia: 'GER-TIC01',
+    responsavel_tecnico: '',
+    fornecedor: '',
+    data_aquisicao: '',
+    data_fim_suporte: '',
+    tipo_redundancia: 'nenhuma',
+    rto_proprio_minutos: 60,
+    dados_classificacao: 'interno',
+    status_ativo: 'operacional'
   });
 
   // Submissão do cadastro de Gerência
@@ -59,11 +72,31 @@ export default function OrganizacaoRiscos({ db }) {
     e.preventDefault();
     if (!riscoForm.nome || !riscoForm.id_processo) return;
 
-    db.riscos.create(riscoForm);
+    const PROB_SCORE = { 'Rara': 1, 'Pouco Provável': 2, 'Provável': 3, 'Muito Provável': 4, 'Quase Certa': 5 };
+    const IMP_SCORE = { 'Insignificante': 1, 'Menor': 2, 'Moderado': 3, 'Maior': 4, 'Catastrófico': 5 };
+
+    const score_risco = (PROB_SCORE[riscoForm.probabilidade] || 3) * (IMP_SCORE[riscoForm.impacto] || 3);
+    const score_residual = (PROB_SCORE[riscoForm.risco_residual_prob || 'Rara'] || 1) * (IMP_SCORE[riscoForm.risco_residual_imp || 'Insignificante'] || 1);
+
+    db.riscos.create({
+      ...riscoForm,
+      score_risco,
+      score_residual
+    });
+
     setRiscos(db.riscos.list());
     setShowRiscoForm(false);
-    setRiscoForm({ nome: '', descricao: '', probabilidade: 'Provável', impacto: 'Moderado', id_processo: '' });
-    setNotification({ type: 'success', text: `Risco cadastrado e mapeado no processo!` });
+    setRiscoForm({
+      nome: '',
+      descricao: '',
+      probabilidade: 'Provável',
+      impacto: 'Moderado',
+      id_processo: '',
+      risco_residual_prob: 'Pouco Provável',
+      risco_residual_imp: 'Menor',
+      id_plano_acao: ''
+    });
+    setNotification({ type: 'success', text: `Risco cadastrado e mapeado com sucesso!` });
   };
 
   // Submissão de Ativo
@@ -74,8 +107,80 @@ export default function OrganizacaoRiscos({ db }) {
     db.ativosSistemas.create(ativoForm);
     setAtivos(db.ativosSistemas.list());
     setShowAtivoForm(false);
-    setAtivoForm({ nome: '', tipo: 'Sistema', criticidade: 'Média' });
+    setAtivoForm({
+      nome: '',
+      tipo: 'Sistema',
+      criticidade: 'Média',
+      id_gerencia: 'GER-TIC01',
+      responsavel_tecnico: '',
+      fornecedor: '',
+      data_aquisicao: '',
+      data_fim_suporte: '',
+      tipo_redundancia: 'nenhuma',
+      rto_proprio_minutos: 60,
+      dados_classificacao: 'interno',
+      status_ativo: 'operacional'
+    });
     setNotification({ type: 'success', text: `Ativo de tecnologia cadastrado!` });
+  };
+
+  // Importação de ativos em lote
+  const handleImportarAtivos = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = event.target.result;
+        let novosAtivos = [];
+        if (file.name.endsWith('.json')) {
+          novosAtivos = JSON.parse(text);
+          if (!Array.isArray(novosAtivos)) novosAtivos = [novosAtivos];
+        } else if (file.name.endsWith('.csv')) {
+          const lines = text.split('\n');
+          if (lines.length < 2) throw new Error('CSV vazio ou inválido');
+          const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+          for (let i = 1; i < lines.length; i++) {
+            if (!lines[i].trim()) continue;
+            const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+            const obj = {};
+            headers.forEach((h, idx) => {
+              obj[h] = values[idx] || '';
+            });
+            novosAtivos.push(obj);
+          }
+        } else {
+          throw new Error('Extensão de arquivo não suportada. Use .json ou .csv');
+        }
+        
+        let count = 0;
+        novosAtivos.forEach(at => {
+          if (at.nome) {
+            db.ativosSistemas.create({
+              nome: at.nome,
+              tipo: at.tipo || 'Sistema',
+              criticidade: at.criticidade || 'Média',
+              id_gerencia: at.id_gerencia || 'GER-TIC01',
+              responsavel_tecnico: at.responsavel_tecnico || '',
+              fornecedor: at.fornecedor || '',
+              data_aquisicao: at.data_aquisicao || '',
+              data_fim_suporte: at.data_fim_suporte || '',
+              tipo_redundancia: at.tipo_redundancia || 'nenhuma',
+              rto_proprio_minutos: at.rto_proprio_minutos ? parseInt(at.rto_proprio_minutos) : 60,
+              dados_classificacao: at.dados_classificacao || 'interno',
+              status_ativo: at.status_ativo || 'operacional'
+            });
+            count++;
+          }
+        });
+        
+        setAtivos(db.ativosSistemas.list());
+        setNotification({ type: 'success', text: `${count} ativos importados com sucesso em lote!` });
+      } catch (err) {
+        setNotification({ type: 'error', text: `Erro ao processar importação: ${err.message}` });
+      }
+    };
+    reader.readAsText(file);
   };
 
   const handleDeleteRisco = (id) => {
@@ -272,66 +377,127 @@ export default function OrganizacaoRiscos({ db }) {
           {showRiscoForm && (
             <form onSubmit={handleRiscoSubmit} className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
               <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
-                <h4 className="font-bold text-slate-800 dark:text-white text-xs uppercase tracking-wider">Novo Cadastro de Risco / Ameaça</h4>
+                <h4 className="font-bold text-slate-800 dark:text-white text-xs uppercase tracking-wider">Novo Cadastro de Risco / Ameaça (Geric)</h4>
                 <button type="button" onClick={() => setShowRiscoForm(false)} className="text-xs text-slate-400 hover:text-slate-600 font-semibold">Cancelar</button>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase">Nome do Risco *</label>
-                  <input 
-                    type="text" 
-                    value={riscoForm.nome} 
-                    onChange={(e) => setRiscoForm({...riscoForm, nome: e.target.value})} 
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-indigo-500" 
-                    placeholder="Ex: Queda Geral de Link WAN"
-                    required
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase">Processo Crítico Afetado *</label>
-                  <select 
-                    value={riscoForm.id_processo} 
-                    onChange={(e) => setRiscoForm({...riscoForm, id_processo: e.target.value})} 
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-850 dark:text-slate-350 focus:outline-indigo-500"
-                    required
-                  >
-                    <option value="">Selecione o Processo</option>
-                    {processos.map(p => (
-                      <option key={p.id_processo} value={p.id_processo}>{p.id_processo} - {p.nome}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
+              
+              <div className="space-y-4 text-xs">
+                {/* Informações Gerais */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Probabilidade *</label>
+                    <label className="text-xs font-bold text-slate-500 uppercase">Nome do Risco *</label>
+                    <input 
+                      type="text" 
+                      value={riscoForm.nome} 
+                      onChange={(e) => setRiscoForm({...riscoForm, nome: e.target.value})} 
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-indigo-500" 
+                      placeholder="Ex: Queda Geral de Link WAN"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-500 uppercase">Processo Crítico Afetado *</label>
                     <select 
-                      value={riscoForm.probabilidade} 
-                      onChange={(e) => setRiscoForm({...riscoForm, probabilidade: e.target.value})} 
+                      value={riscoForm.id_processo} 
+                      onChange={(e) => setRiscoForm({...riscoForm, id_processo: e.target.value})} 
                       className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-850 dark:text-slate-350 focus:outline-indigo-500"
+                      required
                     >
-                      <option value="Rara">Rara</option>
-                      <option value="Pouco Provável">Pouco Provável</option>
-                      <option value="Provável">Provável</option>
-                      <option value="Muito Provável">Muito Provável</option>
-                      <option value="Quase Certa">Quase Certa</option>
+                      <option value="">Selecione o Processo</option>
+                      {processos.map(p => (
+                        <option key={p.id_processo} value={p.id_processo}>{p.id_processo} - {p.nome}</option>
+                      ))}
                     </select>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Impacto *</label>
+                    <label className="text-xs font-bold text-slate-500 uppercase">Plano de Ação Associado</label>
                     <select 
-                      value={riscoForm.impacto} 
-                      onChange={(e) => setRiscoForm({...riscoForm, impacto: e.target.value})} 
+                      value={riscoForm.id_plano_acao} 
+                      onChange={(e) => setRiscoForm({...riscoForm, id_plano_acao: e.target.value})} 
                       className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-850 dark:text-slate-350 focus:outline-indigo-500"
                     >
-                      <option value="Insignificante">Insignificante</option>
-                      <option value="Menor">Menor</option>
-                      <option value="Moderado">Moderado</option>
-                      <option value="Maior">Maior</option>
-                      <option value="Catastrófico">Catastrófico</option>
+                      <option value="">Nenhum</option>
+                      {planosAcao.map(pa => (
+                        <option key={pa.id_plano_acao} value={pa.id_plano_acao}>{pa.id_plano_acao} - {pa.descricao.substring(0, 50)}...</option>
+                      ))}
                     </select>
                   </div>
                 </div>
-                <div className="space-y-1 md:col-span-3">
+
+                {/* Score Original vs. Score Residual */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 dark:bg-slate-950/40 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+                  {/* Risco Inerente / Original */}
+                  <div className="space-y-3">
+                    <h5 className="font-bold text-indigo-600 dark:text-indigo-400 text-xs uppercase tracking-wider">1. Risco Inerente (Original)</h5>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase">Probabilidade *</label>
+                        <select 
+                          value={riscoForm.probabilidade} 
+                          onChange={(e) => setRiscoForm({...riscoForm, probabilidade: e.target.value})} 
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-850 dark:text-slate-350 focus:outline-indigo-500"
+                        >
+                          <option value="Rara">Rara</option>
+                          <option value="Pouco Provável">Pouco Provável</option>
+                          <option value="Provável">Provável</option>
+                          <option value="Muito Provável">Muito Provável</option>
+                          <option value="Quase Certa">Quase Certa</option>
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase">Impacto *</label>
+                        <select 
+                          value={riscoForm.impacto} 
+                          onChange={(e) => setRiscoForm({...riscoForm, impacto: e.target.value})} 
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-850 dark:text-slate-350 focus:outline-indigo-500"
+                        >
+                          <option value="Insignificante">Insignificante</option>
+                          <option value="Menor">Menor</option>
+                          <option value="Moderado">Moderado</option>
+                          <option value="Maior">Maior</option>
+                          <option value="Catastrófico">Catastrófico</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Risco Residual (Mitigado) */}
+                  <div className="space-y-3">
+                    <h5 className="font-bold text-emerald-600 dark:text-emerald-400 text-xs uppercase tracking-wider">2. Risco Residual (Pós Controles)</h5>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase">Probabilidade Residual *</label>
+                        <select 
+                          value={riscoForm.risco_residual_prob} 
+                          onChange={(e) => setRiscoForm({...riscoForm, risco_residual_prob: e.target.value})} 
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-850 dark:text-slate-350 focus:outline-indigo-500"
+                        >
+                          <option value="Rara">Rara</option>
+                          <option value="Pouco Provável">Pouco Provável</option>
+                          <option value="Provável">Provável</option>
+                          <option value="Muito Provável">Muito Provável</option>
+                          <option value="Quase Certa">Quase Certa</option>
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase">Impacto Residual *</label>
+                        <select 
+                          value={riscoForm.risco_residual_imp} 
+                          onChange={(e) => setRiscoForm({...riscoForm, risco_residual_imp: e.target.value})} 
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-850 dark:text-slate-350 focus:outline-indigo-500"
+                        >
+                          <option value="Insignificante">Insignificante</option>
+                          <option value="Menor">Menor</option>
+                          <option value="Moderado">Moderado</option>
+                          <option value="Maior">Maior</option>
+                          <option value="Catastrófico">Catastrófico</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
                   <label className="text-xs font-bold text-slate-500 uppercase">Descrição da Ameaça</label>
                   <textarea 
                     rows="2"
@@ -359,46 +525,82 @@ export default function OrganizacaoRiscos({ db }) {
                 <tr className="bg-slate-50 dark:bg-slate-950/40 text-[10px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200 dark:border-slate-800">
                   <th className="px-6 py-3">Código / Nome</th>
                   <th className="px-6 py-3">Descrição da Ameaça</th>
-                  <th className="px-6 py-3 text-center">Probabilidade / Impacto</th>
+                  <th className="px-6 py-3 text-center">Score Inerente</th>
+                  <th className="px-6 py-3 text-center">Score Residual</th>
+                  <th className="px-6 py-3">Controle / Plano de Ação</th>
                   <th className="px-6 py-3">Processo Vinculado</th>
                   <th className="px-6 py-3 text-center">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {riscos.map(r => (
-                  <tr key={r.id_risco} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors">
-                    <td className="px-6 py-4">
-                      <span className="text-[10px] text-indigo-500 font-bold uppercase">{r.id_risco}</span>
-                      <p className="font-bold text-slate-800 dark:text-white mt-0.5">{r.nome}</p>
-                    </td>
-                    <td className="px-6 py-4 max-w-sm text-slate-600 dark:text-slate-400 text-[11px] leading-relaxed">
-                      {r.descricao || 'Sem descrição cadastrada'}
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="inline-block bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded text-[10px] font-bold">
-                        {r.probabilidade} x {r.impacto}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      {r.processo ? (
-                        <span className="bg-indigo-50 dark:bg-indigo-950 text-indigo-650 dark:text-indigo-400 px-2 py-0.5 rounded text-[10px] font-bold">
-                          {r.processo.id_processo} - {r.processo.nome}
-                        </span>
-                      ) : (
-                        <span className="text-slate-400 text-[10px]">Processo Geral</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <button 
-                        onClick={() => handleDeleteRisco(r.id_risco)}
-                        className="text-slate-450 hover:text-rose-600 p-1 rounded hover:bg-rose-50 dark:hover:bg-rose-950/25 transition-all"
-                        title="Deletar risco"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {riscos.map(r => {
+                  const PROB_SCORE = { 'Rara': 1, 'Pouco Provável': 2, 'Provável': 3, 'Muito Provável': 4, 'Quase Certa': 5 };
+                  const IMP_SCORE = { 'Insignificante': 1, 'Menor': 2, 'Moderado': 3, 'Maior': 4, 'Catastrófico': 5 };
+                  
+                  const scoreInerente = (PROB_SCORE[r.probabilidade] || 3) * (IMP_SCORE[r.impacto] || 3);
+                  const scoreResidual = (PROB_SCORE[r.risco_residual_prob || 'Rara'] || 1) * (IMP_SCORE[r.risco_residual_imp || 'Insignificante'] || 1);
+
+                  const getScoreBadge = (sc) => {
+                    if (sc >= 15) return 'bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-400';
+                    if (sc >= 10) return 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400';
+                    return 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400';
+                  };
+
+                  return (
+                    <tr key={r.id_risco} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors">
+                      <td className="px-6 py-4">
+                        <span className="text-[10px] text-indigo-500 font-bold uppercase">{r.id_risco}</span>
+                        <p className="font-bold text-slate-800 dark:text-white mt-0.5">{r.nome}</p>
+                      </td>
+                      <td className="px-6 py-4 max-w-sm text-slate-600 dark:text-slate-400 text-[11px] leading-relaxed">
+                        {r.descricao || 'Sem descrição cadastrada'}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <div className="flex flex-col items-center">
+                          <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-black ${getScoreBadge(scoreInerente)}`}>
+                            {scoreInerente}
+                          </span>
+                          <span className="text-[9px] text-slate-400 mt-0.5">{r.probabilidade} x {r.impacto}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <div className="flex flex-col items-center">
+                          <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-black ${getScoreBadge(scoreResidual)}`}>
+                            {scoreResidual}
+                          </span>
+                          <span className="text-[9px] text-slate-400 mt-0.5">{r.risco_residual_prob || 'Rara'} x {r.risco_residual_imp || 'Insignificante'}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        {r.id_plano_acao ? (
+                          <span className="bg-emerald-50 dark:bg-emerald-950 text-emerald-750 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/40 px-2 py-0.5 rounded text-[10px] font-bold">
+                            PA: {r.id_plano_acao}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 dark:text-slate-600 italic text-[10px]">Sem PA associado</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        {r.processo ? (
+                          <span className="bg-indigo-50 dark:bg-indigo-950 text-indigo-650 dark:text-indigo-400 px-2 py-0.5 rounded text-[10px] font-bold">
+                            {r.processo.id_processo} - {r.processo.nome}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 text-[10px]">Processo Geral</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <button 
+                          onClick={() => handleDeleteRisco(r.id_risco)}
+                          className="text-slate-450 hover:text-rose-600 p-1 rounded hover:bg-rose-50 dark:hover:bg-rose-950/25 transition-all"
+                          title="Deletar risco"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -408,19 +610,57 @@ export default function OrganizacaoRiscos({ db }) {
       {/* ABA 3: ATIVOS E SISTEMAS */}
       {subTab === 'ativos' && (
         <div className="space-y-6">
-          <div className="flex justify-between items-center bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm gap-4">
             <div>
               <h3 className="font-bold text-slate-850 dark:text-white">Inventário de Ativos de Tecnologia e Links</h3>
               <p className="text-xs text-slate-500 dark:text-slate-450 mt-1 max-w-xl leading-relaxed">
                 Mapeamento de ativos críticos como Links de Telecom (Embratel), Bancos de Dados e servidores em nuvem. Os ativos devem estar associados aos processos na AIN.
               </p>
             </div>
-            <button 
-              onClick={() => { setShowAtivoForm(true); setNotification(null); }}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-lg text-xs flex items-center justify-center gap-2 shadow-sm transition-colors"
-            >
-              <Plus className="w-4 h-4" /> Cadastrar Ativo
-            </button>
+            <div className="flex gap-2">
+              <label className="cursor-pointer bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 font-semibold px-4 py-2 rounded-lg text-xs flex items-center justify-center gap-2 shadow-sm transition-colors border border-slate-200 dark:border-slate-700">
+                📥 Importar Lote (JSON/CSV)
+                <input 
+                  type="file" 
+                  accept=".csv,.json" 
+                  onChange={handleImportarAtivos} 
+                  className="hidden" 
+                />
+              </label>
+              <button 
+                onClick={() => {
+                  const templateJSON = JSON.stringify([{
+                    nome: "Banco de Dados Produção",
+                    tipo: "Sistema",
+                    criticidade: "Crítica",
+                    responsavel_tecnico: "admin@empresa.com",
+                    fornecedor: "Oracle Inc.",
+                    data_aquisicao: "2024-01-10",
+                    data_fim_suporte: "2027-12-31",
+                    tipo_redundancia: "geografica",
+                    rto_proprio_minutos: 30,
+                    dados_classificacao: "confidencial",
+                    status_ativo: "operacional"
+                  }], null, 2);
+                  const blob = new Blob([templateJSON], { type: "application/json" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = "template_ativos.json";
+                  a.click();
+                }}
+                className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 font-semibold px-3 py-2 rounded-lg text-xs transition-colors border border-slate-200 dark:border-slate-700"
+                title="Download Template JSON"
+              >
+                📋 Template JSON
+              </button>
+              <button 
+                onClick={() => { setShowAtivoForm(true); setNotification(null); }}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-lg text-xs flex items-center justify-center gap-2 shadow-sm transition-colors"
+              >
+                <Plus className="w-4 h-4" /> Cadastrar Ativo
+              </button>
+            </div>
           </div>
 
           {/* Form Ativo */}
@@ -430,7 +670,7 @@ export default function OrganizacaoRiscos({ db }) {
                 <h4 className="font-bold text-slate-800 dark:text-white text-xs uppercase tracking-wider">Novo Cadastro de Ativo de Tecnologia</h4>
                 <button type="button" onClick={() => setShowAtivoForm(false)} className="text-xs text-slate-400 hover:text-slate-600 font-semibold">Cancelar</button>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 text-xs">
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-slate-500 uppercase">Nome do Ativo *</label>
                   <input 
@@ -467,6 +707,106 @@ export default function OrganizacaoRiscos({ db }) {
                     <option value="Crítica">Crítica</option>
                   </select>
                 </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500 uppercase">Gerência Vinculada *</label>
+                  <select 
+                    value={ativoForm.id_gerencia} 
+                    onChange={(e) => setAtivoForm({...ativoForm, id_gerencia: e.target.value})} 
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-850 dark:text-slate-350 focus:outline-indigo-500"
+                    required
+                  >
+                    {gerencias.map(g => (
+                      <option key={g.id_gerencia} value={g.id_gerencia}>{g.sigla} - {g.nome}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500 uppercase">Responsável Técnico</label>
+                  <input 
+                    type="email" 
+                    value={ativoForm.responsavel_tecnico} 
+                    onChange={(e) => setAtivoForm({...ativoForm, responsavel_tecnico: e.target.value})} 
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-indigo-500" 
+                    placeholder="Ex: responsavel@empresa.com"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500 uppercase">Fornecedor / Fabricante</label>
+                  <input 
+                    type="text" 
+                    value={ativoForm.fornecedor} 
+                    onChange={(e) => setAtivoForm({...ativoForm, fornecedor: e.target.value})} 
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-indigo-500" 
+                    placeholder="Ex: AWS, Embratel, Oracle"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500 uppercase">Data de Aquisição</label>
+                  <input 
+                    type="date" 
+                    value={ativoForm.data_aquisicao} 
+                    onChange={(e) => setAtivoForm({...ativoForm, data_aquisicao: e.target.value})} 
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-indigo-500" 
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500 uppercase">Fim do Suporte / Garantia</label>
+                  <input 
+                    type="date" 
+                    value={ativoForm.data_fim_suporte} 
+                    onChange={(e) => setAtivoForm({...ativoForm, data_fim_suporte: e.target.value})} 
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-indigo-500" 
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500 uppercase">Tipo de Redundância</label>
+                  <select 
+                    value={ativoForm.tipo_redundancia} 
+                    onChange={(e) => setAtivoForm({...ativoForm, tipo_redundancia: e.target.value})} 
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-850 dark:text-slate-350 focus:outline-indigo-500"
+                  >
+                    <option value="nenhuma">Nenhuma</option>
+                    <option value="passiva">Passiva (Cold/Warm Standby)</option>
+                    <option value="ativa">Ativa (Hot Standby/Load Balance)</option>
+                    <option value="geografica">Geográfica (Multi-região)</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500 uppercase">RTO Próprio (Minutos)</label>
+                  <input 
+                    type="number" 
+                    value={ativoForm.rto_proprio_minutos} 
+                    onChange={(e) => setAtivoForm({...ativoForm, rto_proprio_minutos: parseInt(e.target.value) || 0})} 
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-indigo-500" 
+                    min="1"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500 uppercase">Classificação dos Dados</label>
+                  <select 
+                    value={ativoForm.dados_classificacao} 
+                    onChange={(e) => setAtivoForm({...ativoForm, dados_classificacao: e.target.value})} 
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-850 dark:text-slate-350 focus:outline-indigo-500"
+                  >
+                    <option value="publico">Público</option>
+                    <option value="interno">Uso Interno</option>
+                    <option value="confidencial">Confidencial</option>
+                    <option value="secreto">Secreto</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500 uppercase">Status Operacional *</label>
+                  <select 
+                    value={ativoForm.status_ativo} 
+                    onChange={(e) => setAtivoForm({...ativoForm, status_ativo: e.target.value})} 
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-850 dark:text-slate-350 focus:outline-indigo-500"
+                    required
+                  >
+                    <option value="operacional">Operacional</option>
+                    <option value="degradado">Degradado</option>
+                    <option value="inoperante">Inoperante / Fora do Ar</option>
+                  </select>
+                </div>
               </div>
               <div className="flex justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
                 <button type="button" onClick={() => setShowAtivoForm(false)} className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-350 font-medium rounded-lg text-xs">Cancelar</button>
@@ -476,7 +816,7 @@ export default function OrganizacaoRiscos({ db }) {
           )}
 
           {/* Grid de Ativos */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {ativos.map((at) => {
               const getIcon = (tipo) => {
                 if (tipo === 'Sistema') return <Database className="w-5 h-5 text-indigo-500" />;
@@ -490,20 +830,97 @@ export default function OrganizacaoRiscos({ db }) {
                 return 'text-slate-600 bg-slate-50 dark:bg-slate-950/40 border-slate-200 dark:border-slate-800';
               };
 
+              const getStatusColor = (status) => {
+                if (status === 'operacional') return 'bg-emerald-500';
+                if (status === 'degradado') return 'bg-amber-500';
+                return 'bg-rose-500';
+              };
+
+              // Verificação de expiração de suporte em menos de 90 dias
+              const hoje = new Date();
+              const diasFaltando = at.data_fim_suporte ? Math.round((new Date(at.data_fim_suporte) - hoje) / (1000 * 60 * 60 * 24)) : null;
+              const alertaSuporte = diasFaltando !== null && diasFaltando <= 90;
+
+              // Processos vinculados (mapeamento N:M)
+              const procsVinculados = processos.filter(p => p.ativos && p.ativos.some(a => a.id_ativo === at.id_ativo));
+
               return (
-                <div key={at.id_ativo} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl flex items-center justify-between shadow-xs">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-slate-50 dark:bg-slate-950 flex items-center justify-center border border-slate-200 dark:border-slate-850">
+                <div key={at.id_ativo} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-xl flex flex-col justify-between shadow-sm space-y-4 hover:shadow-md transition-shadow relative overflow-hidden">
+                  {/* Status Semáforo Top Right */}
+                  <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-slate-50 dark:bg-slate-950 px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-850">
+                    <span className={`w-2.5 h-2.5 rounded-full ${getStatusColor(at.status_ativo)}`} />
+                    <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 capitalize">{at.status_ativo || 'operacional'}</span>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-slate-50 dark:bg-slate-950 flex items-center justify-center border border-slate-200 dark:border-slate-850 flex-shrink-0">
                       {getIcon(at.tipo)}
                     </div>
                     <div>
                       <span className="text-[9px] text-slate-400 font-bold uppercase">{at.id_ativo} ({at.tipo})</span>
                       <h4 className="font-bold text-slate-800 dark:text-white text-xs mt-0.5">{at.nome}</h4>
+                      <div className="flex gap-2 mt-1">
+                        <span className={`text-[8px] px-1.5 py-0.2 rounded font-black uppercase border ${getCritColor(at.criticidade)}`}>
+                          {at.criticidade}
+                        </span>
+                        {at.tipo_redundancia && at.tipo_redundancia !== 'nenhuma' && (
+                          <span className="text-[8px] bg-indigo-50 dark:bg-indigo-950 text-indigo-650 dark:text-indigo-400 px-1.5 py-0.2 rounded font-bold uppercase border border-indigo-100 dark:border-indigo-900/35">
+                            🔁 {at.tipo_redundancia}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <span className={`text-[9px] px-2 py-0.5 rounded font-black uppercase border ${getCritColor(at.criticidade)}`}>
-                    {at.criticidade}
-                  </span>
+
+                  {/* Detalhes do Ativo */}
+                  <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-850 pt-3">
+                    <div>
+                      <span className="font-bold text-slate-400 dark:text-slate-500 block text-[8px] uppercase">Responsável Técnico</span>
+                      <span className="truncate block font-semibold text-slate-700 dark:text-slate-350">{at.responsavel_tecnico || 'N/A'}</span>
+                    </div>
+                    <div>
+                      <span className="font-bold text-slate-400 dark:text-slate-500 block text-[8px] uppercase">Fornecedor</span>
+                      <span className="truncate block font-semibold text-slate-700 dark:text-slate-350">{at.fornecedor || 'N/A'}</span>
+                    </div>
+                    <div>
+                      <span className="font-bold text-slate-400 dark:text-slate-500 block text-[8px] uppercase">RTO de TI</span>
+                      <span className="block font-semibold text-slate-700 dark:text-slate-350">{at.rto_proprio_minutos || 60} min</span>
+                    </div>
+                    <div>
+                      <span className="font-bold text-slate-400 dark:text-slate-500 block text-[8px] uppercase">Dados</span>
+                      <span className="block font-semibold text-slate-700 dark:text-slate-350 uppercase">{at.dados_classificacao || 'interno'}</span>
+                    </div>
+                  </div>
+
+                  {/* Alerta de Expiração de Suporte */}
+                  {at.data_fim_suporte && (
+                    <div className={`p-2 rounded text-[9px] flex items-center justify-between font-medium ${
+                      alertaSuporte 
+                        ? 'bg-rose-50 dark:bg-rose-950/20 text-rose-700 dark:text-rose-450 border border-rose-200 dark:border-rose-900/35' 
+                        : 'bg-slate-50 dark:bg-slate-950 text-slate-450 dark:text-slate-500'
+                    }`}>
+                      <span>Suporte até: {new Date(at.data_fim_suporte).toLocaleDateString('pt-BR')}</span>
+                      {alertaSuporte && (
+                        <span className="font-bold uppercase tracking-wider animate-pulse text-[8px]">
+                          ⚠️ Expira em {diasFaltando} dias!
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Processos Críticos Vinculados */}
+                  {procsVinculados.length > 0 && (
+                    <div className="border-t border-slate-100 dark:border-slate-850 pt-2.5">
+                      <span className="font-bold text-slate-400 dark:text-slate-500 text-[8px] uppercase block mb-1">Processos Vinculados AIN:</span>
+                      <div className="flex flex-wrap gap-1">
+                        {procsVinculados.map(p => (
+                          <span key={p.id_processo} className="text-[8px] bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-450 border border-slate-100 dark:border-slate-800 px-1.5 py-0.2 rounded font-semibold">
+                            {p.nome.substring(0, 20)}...
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}

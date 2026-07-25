@@ -4,7 +4,7 @@
 // ============================================================================
 
 const INITIAL_DATA = {
-  db_version: "4.0",
+  db_version: "6.0",
 
   // ── CONFIG DO SISTEMA ─────────────────────────────────────────────────────
   configSistema: {
@@ -20,14 +20,14 @@ const INITIAL_DATA = {
 
   // ── USUÁRIOS SIMULADOS (ROLES) ────────────────────────────────────────────
   usuariosSimulados: [
-    { id_usuario: "USR-001", nome: "Roberto Carlos", email: "rcarlod@empresa.com.br", id_gerencia: "GER-GOV01", role: "admin_geric", senha: "geric2024" },
-    { id_usuario: "USR-002", nome: "Arthur Mendes", email: "amendes@empresa.com.br", id_gerencia: "GER-GOV02", role: "admin_geric", senha: "geemp2024" },
-    { id_usuario: "USR-003", nome: "Patrícia Lima", email: "plima@empresa.com.br", id_gerencia: "GER-TIC01", role: "gestor_area", senha: "getic2024" },
-    { id_usuario: "USR-004", nome: "Vanessa Lopes", email: "vlopes@empresa.com.br", id_gerencia: "GER-GOV03", role: "gestor_area", senha: "gemac2024" },
-    { id_usuario: "USR-005", nome: "Marcos Costa", email: "mcosta@empresa.com.br", id_gerencia: "GER-NEG01", role: "gestor_area", senha: "gecob2024" },
-    { id_usuario: "USR-006", nome: "Sandro Lima", email: "slima@empresa.com.br", id_gerencia: "GER-APO04", role: "gestor_area", senha: "gesap2024" },
-    { id_usuario: "USR-007", nome: "Carla Souza", email: "csouza@empresa.com.br", id_gerencia: "GER-NEG02", role: "gestor_area", senha: "gered2024" },
-    { id_usuario: "USR-008", nome: "Visitante", email: "visitante@empresa.com.br", id_gerencia: "GER-GOV01", role: "visualizador", senha: "visualizador" }
+    { id_usuario: "USR-001", nome: "Roberto Carlos", email: "geric@empresa.com.br", id_gerencia: "GER-GOV01", role: "admin_geric", senha: "geric2026" },
+    { id_usuario: "USR-002", nome: "Arthur Mendes", email: "geemp@empresa.com.br", id_gerencia: "GER-GOV02", role: "admin_geric", senha: "geemp2026" },
+    { id_usuario: "USR-003", nome: "Patrícia Lima", email: "getic@empresa.com.br", id_gerencia: "GER-TIC01", role: "gestor_area", senha: "getic2026" },
+    { id_usuario: "USR-004", nome: "Vanessa Lopes", email: "gemac@empresa.com.br", id_gerencia: "GER-GOV03", role: "gestor_area", senha: "gemac2026" },
+    { id_usuario: "USR-005", nome: "Marcos Costa", email: "gecob@empresa.com.br", id_gerencia: "GER-NEG01", role: "gestor_area", senha: "gecob2026" },
+    { id_usuario: "USR-006", nome: "Sandro Lima", email: "gesap@empresa.com.br", id_gerencia: "GER-APO04", role: "gestor_area", senha: "gesap2026" },
+    { id_usuario: "USR-007", nome: "Carla Souza", email: "gered@empresa.com.br", id_gerencia: "GER-NEG02", role: "gestor_area", senha: "gered2026" },
+    { id_usuario: "USR-008", nome: "Visitante", email: "visitante@empresa.com.br", id_gerencia: "GER-GOV01", role: "visualizador", senha: "visitante2026" }
   ],
 
   // ── DIRETORIAS ────────────────────────────────────────────────────────────
@@ -123,7 +123,7 @@ const INITIAL_DATA = {
       historico_alteracoes: []
     },
     {
-      id_risco: "RISK-005", nome: "Falha Regulatória BACEN — BBmericas", descricao: "Interrupção no sistema BBmericas por mais de 30min viola circular BACEN.",
+      id_risco: "RISK-005", nome: "Falha Regulatória BACEN — Plataforma Internacional", descricao: "Interrupção na Plataforma Internacional de Câmbio por mais de 30min viola regulamentação BACEN.",
       probabilidade: "Pouco Provável", probabilidade_original: "Pouco Provável", probabilidade_atual: "Pouco Provável",
       impacto: "Catastrófico", id_processo: "PROC-COB-003",
       score_risco: 8, score_residual: 4,
@@ -135,13 +135,13 @@ const INITIAL_DATA = {
 
   // ── INTERVENIENTES ────────────────────────────────────────────────────────
   intervenientes: [
-    { id_interveniente: "INT-001", nome: "Roberto Carlos", cargo: "Gerente de Riscos e GCN", email: "rcarlos@empresa.com.br", telefone: "(11) 98001-0001", id_gerencia: "GER-GOV01", id_processo: "PROC-COB-001", papel: "aprovador" },
-    { id_interveniente: "INT-002", nome: "Marcos Costa", cargo: "Gerente Gecob", email: "mcosta@empresa.com.br", telefone: "(11) 98001-0002", id_gerencia: "GER-NEG01", id_processo: "PROC-COB-001", papel: "responsavel" },
-    { id_interveniente: "INT-003", nome: "Patrícia Lima", cargo: "Gerente Getic", email: "plima@empresa.com.br", telefone: "(11) 98001-0003", id_gerencia: "GER-TIC01", id_processo: "PROC-COB-001", papel: "executante" },
-    { id_interveniente: "INT-004", nome: "Diego Ferreira", cargo: "Analista de Segurança", email: "dferreira@empresa.com.br", telefone: "(11) 98001-0004", id_gerencia: "GER-TIC04", id_processo: "PROC-TIC-001", papel: "executante" },
-    { id_interveniente: "INT-005", nome: "Vanessa Lopes", cargo: "Gerente de Comunicação", email: "vlopes@empresa.com.br", telefone: "(11) 98001-0005", id_gerencia: "GER-GOV03", id_processo: null, papel: "comunicador" },
-    { id_interveniente: "INT-006", nome: "Sandro Lima", cargo: "Gerente Predial", email: "slima@empresa.com.br", telefone: "(11) 98001-0006", id_gerencia: "GER-APO04", id_processo: "PROC-APO-004", papel: "responsavel" },
-    { id_interveniente: "INT-007", nome: "Carla Souza", cargo: "Coordenadora de Campo Gered", email: "csouza@empresa.com.br", telefone: "(11) 98001-0007", id_gerencia: "GER-NEG02", id_processo: "PROC-GER-001", papel: "responsavel" }
+    { id_interveniente: "INT-001", nome: "Roberto Carlos", cargo: "Gerente de Riscos e GCN", email: "geric@empresa.com.br", telefone: "(11) 98001-0001", id_gerencia: "GER-GOV01", id_processo: "PROC-COB-001", papel: "aprovador" },
+    { id_interveniente: "INT-002", nome: "Marcos Costa", cargo: "Gerente Gecob", email: "gecob@empresa.com.br", telefone: "(11) 98001-0002", id_gerencia: "GER-NEG01", id_processo: "PROC-COB-001", papel: "responsavel" },
+    { id_interveniente: "INT-003", nome: "Patrícia Lima", cargo: "Gerente Getic", email: "getic@empresa.com.br", telefone: "(11) 98001-0003", id_gerencia: "GER-TIC01", id_processo: "PROC-COB-001", papel: "executante" },
+    { id_interveniente: "INT-004", nome: "Diego Ferreira", cargo: "Analista de Cibersegurança", email: "gesec@empresa.com.br", telefone: "(11) 98001-0004", id_gerencia: "GER-TIC04", id_processo: "PROC-TIC-001", papel: "executante" },
+    { id_interveniente: "INT-005", nome: "Vanessa Lopes", cargo: "Gerente de Comunicação", email: "gemac@empresa.com.br", telefone: "(11) 98001-0005", id_gerencia: "GER-GOV03", id_processo: null, papel: "comunicador" },
+    { id_interveniente: "INT-006", nome: "Sandro Lima", cargo: "Gerente Predial", email: "gesap@empresa.com.br", telefone: "(11) 98001-0006", id_gerencia: "GER-APO04", id_processo: "PROC-APO-004", papel: "responsavel" },
+    { id_interveniente: "INT-007", nome: "Carla Souza", cargo: "Coordenadora de Campo Gered", email: "gered@empresa.com.br", telefone: "(11) 98001-0007", id_gerencia: "GER-NEG02", id_processo: "PROC-GER-001", papel: "responsavel" }
   ],
 
   // ── ATAS DO COMITÊ DE CRISE ───────────────────────────────────────────────
@@ -154,9 +154,9 @@ const INITIAL_DATA = {
   contratos: [
     { id_contrato: "CON-001", nome: "Contrato AWS - Hosting e Infraestrutura Cloud", valor_faturamento: 450000.00, clausulas_risco: "Resolução em menos de 4 horas para instâncias críticas. Multa em caso de indisponibilidade superior a 99.9%.", multas: "Multa de 5% do faturamento mensal por hora de indisponibilidade além do SLA.", data_inicio: "2025-01-01", data_fim: "2027-12-31", id_gerencia: "GER-TIC01" },
     { id_contrato: "CON-002", nome: "Contrato Embratel - Link de Fibra Dedicado", valor_faturamento: 120000.00, clausulas_risco: "SLA de conectividade de 99.95%.", multas: "Abatimento proporcional e multa contratual de R$ 10.000 por hora.", data_inicio: "2024-06-01", data_fim: "2026-06-01", id_gerencia: "GER-TIC01" },
-    { id_contrato: "CON-GECOB-001", nome: "PCO Gecob - Produto CRBB (Canal de Recebimentos BB)", valor_faturamento: 3200000.00, clausulas_risco: "Indisponibilidade do canal de recebimentos impacta liquidação financeira.", multas: "Multa de 0,1% ao dia sobre o volume liquidado por dia de interrupção.", data_inicio: "2025-01-01", data_fim: "2028-12-31", id_gerencia: "GER-NEG01" },
+    { id_contrato: "CON-GECOB-001", nome: "PCO Gecob - Produto Canais de Recebimentos", valor_faturamento: 3200000.00, clausulas_risco: "Indisponibilidade do canal de recebimentos impacta liquidação financeira.", multas: "Multa de 0,1% ao dia sobre o volume liquidado por dia de interrupção.", data_inicio: "2025-01-01", data_fim: "2028-12-31", id_gerencia: "GER-NEG01" },
     { id_contrato: "CON-GECOB-002", nome: "PCO Gecob - Produto Cobrança Extrajudicial", valor_faturamento: 1800000.00, clausulas_risco: "Interrupção afeta indexação de carteiras de cobrança e vencimentos.", multas: "Penalidade de R$ 50.000 por evento de indisponibilidade superior a 24h.", data_inicio: "2025-03-01", data_fim: "2028-03-01", id_gerencia: "GER-NEG01" },
-    { id_contrato: "CON-GECOB-003", nome: "PCO Gecob - Produto BBmericas (Plataforma Internacional)", valor_faturamento: 2500000.00, clausulas_risco: "Plataforma de câmbio e remessas internacionais. Interrupção viola regulação Bacen.", multas: "Penalidade regulatória e multa contratual proporcional ao volume operado.", data_inicio: "2025-06-01", data_fim: "2027-06-01", id_gerencia: "GER-NEG01" },
+    { id_contrato: "CON-GECOB-003", nome: "PCO Gecob - Produto Plataforma Internacional", valor_faturamento: 2500000.00, clausulas_risco: "Plataforma de câmbio e remessas internacionais. Interrupção viola regulação Bacen.", multas: "Penalidade regulatória e multa contratual proporcional ao volume operado.", data_inicio: "2025-06-01", data_fim: "2027-06-01", id_gerencia: "GER-NEG01" },
     { id_contrato: "CON-ASTEC-01", nome: "Astec #01 - Assistência Técnica Região Norte (AM/PA)", valor_faturamento: 65000.00, clausulas_risco: "SLA de atendimento de 24h para chamados de campo.", multas: "Redução de 2% do repasse por chamado fora do SLA.", data_inicio: "2025-01-01", data_fim: "2028-01-01", id_gerencia: "GER-NEG02" },
     { id_contrato: "CON-ASTEC-02", nome: "Astec #02 - Assistência Técnica Região Nordeste (BA/CE)", valor_faturamento: 72000.00, clausulas_risco: "SLA de 24h interior e 8h capitais.", multas: "Redução de 2% do repasse por chamado fora do SLA.", data_inicio: "2025-01-01", data_fim: "2028-01-01", id_gerencia: "GER-NEG02" },
     { id_contrato: "CON-ASTEC-03", nome: "Astec #03 - Assistência Técnica Região Centro-Oeste", valor_faturamento: 58000.00, clausulas_risco: "SLA de 24h.", multas: "Redução de 2%.", data_inicio: "2025-01-01", data_fim: "2028-01-01", id_gerencia: "GER-NEG02" },
@@ -166,13 +166,13 @@ const INITIAL_DATA = {
 
   // ── PROCESSOS CRÍTICOS ────────────────────────────────────────────────────
   processosCriticos: [
-    { id_processo: "PROC-COB-001", nome: "Canal de Recebimentos BB (CRBB)", descricao: "Opera o canal de liquidação e recebimento integrado com o Banco do Brasil.", id_contrato: "CON-GECOB-001", criticidade: "Crítica", id_gerencia: "GER-NEG01" },
+    { id_processo: "PROC-COB-001", nome: "Canal de Recebimentos Integrados", descricao: "Opera o canal de liquidação e recebimento integrado com a rede adquirente.", id_contrato: "CON-GECOB-001", criticidade: "Crítica", id_gerencia: "GER-NEG01" },
     { id_processo: "PROC-COB-002", nome: "Cobrança Extrajudicial de Carteiras", descricao: "Indexação, gestão de vencimentos e cobrança automatizada de carteiras extrajudiciais.", id_contrato: "CON-GECOB-002", criticidade: "Alta", id_gerencia: "GER-NEG01" },
-    { id_processo: "PROC-COB-003", nome: "BBmericas - Plataforma Internacional de Câmbio", descricao: "Remessas internacionais e operações de câmbio sujeitas à regulação Bacen.", id_contrato: "CON-GECOB-003", criticidade: "Crítica", id_gerencia: "GER-NEG01" },
+    { id_processo: "PROC-COB-003", nome: "Plataforma Internacional de Câmbio", descricao: "Remessas internacionais e operações de câmbio sujeitas à regulação Bacen.", id_contrato: "CON-GECOB-003", criticidade: "Crítica", id_gerencia: "GER-NEG01" },
     { id_processo: "PROC-GER-001", nome: "Assistência Técnica em Campo - Contratos Astec (13 contratos)", descricao: "Gestão de atendimentos técnicos de campo com SLA de 8h (capitais) e 24h (interior).", id_contrato: "CON-ASTEC-01", criticidade: "Alta", id_gerencia: "GER-NEG02" },
     { id_processo: "PROC-TIC-001", nome: "Infraestrutura de Nuvem e Data Center", descricao: "Servidores e clusters em nuvem AWS sob gestão da Getic. PRD de TI (ISO 27031).", id_contrato: "CON-001", criticidade: "Crítica", id_gerencia: "GER-TIC01" },
     { id_processo: "PROC-TIC-002", nome: "Links de Conectividade WAN e Internet", descricao: "Links dedicados Embratel e redundâncias. SLA de 99.95%.", id_contrato: "CON-002", criticidade: "Alta", id_gerencia: "GER-TIC01" },
-    { id_processo: "PROC-APO-001", nome: "Folha de Pagamento Corporativa (Gepes)", descricao: "[APOIO/DIAFI] Processamento interno de folha. SLA interno: fechamento até dia 25.", id_contrato: "", criticidade: "Alta", id_gerencia: "GER-APO01", sla_interno: "Fechamento da folha até o dia 25 de cada mês. Em crise: processamento emergencial em 48h.", tipo_plano: "PCO-APOIO" },
+    { id_processo: "PROC-APO-001", nome: "Folha de Pagamento Corporativa (Gepes)", descricao: "[APOIO/DIAFI] Processamento interno de folha. SLA interno: fechamento até dia 25.", id_contrato: "", criticidade: "Alta", id_gerencia: "GER-APO01", sla_interno: "Fechamento da folha até o dia 25 de cada mês. Em crise: processamento emergencial in 48h.", tipo_plano: "PCO-APOIO" },
     { id_processo: "PROC-APO-002", nome: "Liberação de Pagamentos Emergenciais (Gefic)", descricao: "[APOIO/DIAFI] Liberação de pagamentos urgentes em contingências. SLA interno de 4h.", id_contrato: "", criticidade: "Alta", id_gerencia: "GER-APO02", sla_interno: "SLA interno: Liberação de pagamentos em até 4h da solicitação aprovada em crise.", tipo_plano: "PCO-APOIO" },
     { id_processo: "PROC-APO-003", nome: "Aquisições e Suprimentos de Emergência (Gesuc)", descricao: "[APOIO/DIAFI] Compras emergenciais durante contingências. SLA: aprovação e pedido em 24h.", id_contrato: "", criticidade: "Média", id_gerencia: "GER-APO03", sla_interno: "SLA interno: Aprovação e emissão de pedido em até 24h.", tipo_plano: "PCO-APOIO" },
     { id_processo: "PROC-APO-004", nome: "Evacuação Predial e Brigada de Incêndio (Gesap)", descricao: "[APOIO/DIAFI] Plano de evacuação de emergência, acionamento da brigada de incêndio.", id_contrato: "", criticidade: "Alta", id_gerencia: "GER-APO04", sla_interno: "SLA Brigada: Resposta até 5 minutos. Evacuação total em até 15 minutos.", tipo_plano: "PCO-APOIO" }
@@ -198,7 +198,7 @@ const INITIAL_DATA = {
       status_incidente: "fechado", critico: true
     },
     {
-      id_incidente: "INC-103", data_hora: "2026-05-20T16:45:00", local: "Sistema CRBB", descricao: "Interrupção no canal de recebimentos BB por atualização não homologada.",
+      id_incidente: "INC-103", data_hora: "2026-05-20T16:45:00", local: "Sistema de Recebimentos", descricao: "Interrupção no canal de recebimentos integrados por atualização não homologada.",
       tipo_incidente: "Falha de Sistema Crítico", impacto: "Desastroso", id_processo: "PROC-COB-001",
       medidas_mitigacao: "Rollback da versão. Notificação imediata ao fiscal do contrato Gecob.",
       resultado_resposta: "Serviço normalizado em 38 minutos. Acionamento da cláusula de SLA.",
@@ -224,7 +224,7 @@ const INITIAL_DATA = {
 
   // ── NOTIFICAÇÕES ──────────────────────────────────────────────────────────
   notificacoes: [
-    { id_notificacao: "NOT-001", tipo: "incidente_critico", titulo: "⚠️ Incidente Crítico — RTO Ultrapassado (INC-103)", mensagem: "O incidente INC-103 no processo CRBB ultrapassou o RTO definido de 15 minutos. RTO real: 38 minutos. Plano de ação PA-001 foi criado automaticamente.", id_destino: "GER-GOV01", prioridade: "critica", status: "nao_lida", criado_em: "2026-05-20T17:30:00Z", prazo_acao: "2026-05-21T17:30:00Z", link_acao: "incidentes" },
+    { id_notificacao: "NOT-001", tipo: "incidente_critico", titulo: "⚠️ Incidente Crítico — RTO Ultrapassado (INC-103)", mensagem: "O incidente INC-103 no processo de Recebimentos ultrapassou o RTO definido de 15 minutos. RTO real: 38 minutos. Plano de ação PA-001 foi criado automaticamente.", id_destino: "GER-GOV01", prioridade: "critica", status: "nao_lida", criado_em: "2026-05-20T17:30:00Z", prazo_acao: "2026-05-21T17:30:00Z", link_acao: "incidentes" },
     { id_notificacao: "NOT-002", tipo: "plano_vencendo", titulo: "📅 Contrato CON-002 vencendo em 60 dias", mensagem: "O contrato Embratel (Link de Fibra Dedicado) vence em 01/06/2026. Acione a Gesuc para renovação.", id_destino: "GER-TIC01", prioridade: "alta", status: "nao_lida", criado_em: "2026-04-01T08:00:00Z", prazo_acao: "2026-05-01T08:00:00Z", link_acao: "contratos" },
     { id_notificacao: "NOT-003", tipo: "plano_acao_prazo", titulo: "⏰ Plano de Ação PA-003 com prazo próximo", mensagem: "O plano de ação PA-003 (Melhoria de Evacuação — Gesap) vence em 30/09/2026. Verificar andamento.", id_destino: "GER-APO04", prioridade: "media", status: "lida", criado_em: "2026-07-01T08:00:00Z", prazo_acao: "2026-09-30T00:00:00Z", link_acao: "organizacao" }
   ],
@@ -251,8 +251,8 @@ const INITIAL_DATA = {
       responsabilidades: "SRE da Gecob e equipe de TI (Getic) executam o failover.",
       recursos_necessarios: "Gateway reserva, instâncias EC2 de contingência, Redis.",
       cenario_acesso: "Home office imediato para todos os analistas da Gecob. VPN e tokens MFA obrigatórios ativos.",
-      cenario_sistemas: "Passo 1: Detectar falha via alertas PagerDuty. Passo 2: Mudar chave API do gateway. Passo 3: Contatar fiscal CRBB: fiscal.crbb@bb.com.br / (61) 3333-1234. Passo 4: Comunicar cliente via status page.",
-      cenario_fornecedores: "Em caso de falha total do CRBB, ativar processamento manual com equipe de backoffice até normalização.",
+      cenario_sistemas: "Passo 1: Detectar falha via alertas PagerDuty. Passo 2: Mudar chave API do gateway. Passo 3: Contatar fiscal do contrato de canais: fiscal.canais@empresa.com.br / (61) 3333-1234. Passo 4: Comunicar cliente via status page.",
+      cenario_fornecedores: "Em caso de falha total do canal de recebimentos, ativar processamento manual com equipe de backoffice até normalização.",
       cenario_pessoas: "Em caso de falta de 30%+ da equipe, acionar BPO parceiro para reforço de analistas de canais.",
       escalonamento_crise: "Se indisponibilidade exceder 15 min (RTO), o Gerente da Gecob escala para Comitê de Crise e Geric. Ata obrigatória.",
       status_aprovacao: "Aprovado", versao: "2.1.0",
@@ -311,7 +311,7 @@ const INITIAL_DATA = {
       procedimentos_restauracao: "1. Verificar logs da API do gateway. 2. Ativar API de contingência. 3. Reprocessar transações enfileiradas no Redis.",
       local_backup: "AWS S3 (us-east-1) - Snapshots de filas Redis", frequencia_backup: "A cada 5 minutos",
       comunicacao_emergencia: "Notificar SRE Gecob via PagerDuty. Canal Slack #incidentes-checkout.",
-      procedimento_war_room: "1. Falha > 15 min: Criar War Room Teams 'War-Room-CRBB'. 2. Convocar Gecob, Getic e fiscal CRBB. 3. Acionamento de Geemp se SLA contratual ultrapassado.",
+      procedimento_war_room: "1. Falha > 15 min: Criar War Room Teams 'War-Room-Canais'. 2. Convocar Gecob, Getic e fiscal de canais. 3. Acionamento de Geemp se SLA contratual ultrapassado.",
       status_aprovacao: "Aprovado", versao: "1.0.0",
       data_proxima_revisao: "2027-01-01", vigente_ate: "2027-01-01"
     }
@@ -322,7 +322,7 @@ const INITIAL_DATA = {
     {
       id_teste: "TST-001", id_pco: "PCO-COB-001", id_prd: "PRD-TIC-002", data_teste: "2026-03-10",
       tipo_teste: "simulacao_mesa", resultado: "Sucesso",
-      areas_melhoria: "Failover do CRBB concluído em 12 min (RTO = 15 min). Melhoria: automatizar notificação ao fiscal.",
+      areas_melhoria: "Failover do canal de recebimentos concluído em 12 min (RTO = 15 min). Melhoria: automatizar notificação ao fiscal.",
       cenarios_testados: [
         { cenario: "acesso", resultado: "passou", observacoes: "Home office ativado em 5 min." },
         { cenario: "sistemas", resultado: "passou", observacoes: "Failover concluído em 12 min." },
@@ -361,13 +361,13 @@ const INITIAL_DATA = {
   ],
 
   avaliacaoNRGCN: [
-    { id_avaliacao: "EVL-001", id_processo: "PROC-COB-001", nivel_resiliencia: 4.80, aderencia_ISO22301: 96.00, metricas_utilizadas: "{}", grafico_resultado: "radar_PROC-COB-001" },
-    { id_avaliacao: "EVL-002", id_processo: "PROC-COB-002", nivel_resiliencia: 2.50, aderencia_ISO22301: 50.00, metricas_utilizadas: "{}", grafico_resultado: "radar_PROC-COB-002" },
-    { id_avaliacao: "EVL-003", id_processo: "PROC-COB-003", nivel_resiliencia: 3.20, aderencia_ISO22301: 64.00, metricas_utilizadas: "{}", grafico_resultado: "radar_PROC-COB-003" },
-    { id_avaliacao: "EVL-004", id_processo: "PROC-GER-001", nivel_resiliencia: 3.00, aderencia_ISO22301: 60.00, metricas_utilizadas: "{}", grafico_resultado: "radar_PROC-GER-001" },
-    { id_avaliacao: "EVL-005", id_processo: "PROC-TIC-001", nivel_resiliencia: 4.20, aderencia_ISO22301: 84.00, metricas_utilizadas: "{}", grafico_resultado: "radar_PROC-TIC-001" },
-    { id_avaliacao: "EVL-006", id_processo: "PROC-APO-001", nivel_resiliencia: 2.10, aderencia_ISO22301: 42.00, metricas_utilizadas: "{}", grafico_resultado: "radar_PROC-APO-001" },
-    { id_avaliacao: "EVL-007", id_processo: "PROC-APO-004", nivel_resiliencia: 3.80, aderencia_ISO22301: 76.00, metricas_utilizadas: "{}", grafico_resultado: "radar_PROC-APO-004" }
+    { id_avaliacao: "EVL-001", id_processo: "PROC-COB-001", nivel_resiliencia: 4.60, aderencia_ISO22301: 90.0, nota_area: 4.50, nota_geric: 4.70, checklist_area: "{\"req_equipe\":true,\"req_remoto\":true,\"req_rto\":true,\"req_testes\":true,\"req_contatos\":true}", checklist_geric: "{\"req_politica\":true,\"req_pco_rev\":true,\"req_simulado\":true,\"req_rto_bia\":true,\"req_matriz\":true,\"req_comite\":true}", comentarios_geric: "Processo com alta governança e eficácia de failover validada.", grafico_resultado: "radar_PROC-COB-001" },
+    { id_avaliacao: "EVL-002", id_processo: "PROC-COB-002", nivel_resiliencia: 2.10, aderencia_ISO22301: 27.5, nota_area: 2.50, nota_geric: 1.80, checklist_area: "{\"req_equipe\":true,\"req_remoto\":false,\"req_rto\":true,\"req_testes\":false,\"req_contatos\":false}", checklist_geric: "{\"req_politica\":true,\"req_pco_rev\":false,\"req_simulado\":false,\"req_rto_bia\":false,\"req_matriz\":false,\"req_comite\":false}", comentarios_geric: "Necessita de revisão urgente do PCO e simulação operacional.", grafico_resultado: "radar_PROC-COB-002" },
+    { id_avaliacao: "EVL-003", id_processo: "PROC-COB-003", nivel_resiliencia: 3.40, aderencia_ISO22301: 60.0, nota_area: 4.00, nota_geric: 3.00, checklist_area: "{\"req_equipe\":true,\"req_remoto\":true,\"req_rto\":true,\"req_testes\":true,\"req_contatos\":false}", checklist_geric: "{\"req_politica\":true,\"req_pco_rev\":true,\"req_simulado\":false,\"req_rto_bia\":true,\"req_matriz\":false,\"req_comite\":false}", comentarios_geric: "Aguardando testes formais de contingência de câmbio.", grafico_resultado: "radar_PROC-COB-003" },
+    { id_avaliacao: "EVL-004", id_processo: "PROC-GER-001", nivel_resiliencia: 3.00, aderencia_ISO22301: 50.0, nota_area: 3.00, nota_geric: 3.00, checklist_area: "{}", checklist_geric: "{}", comentarios_geric: "Inicializado.", grafico_resultado: "radar_PROC-GER-001" },
+    { id_avaliacao: "EVL-005", id_processo: "PROC-TIC-001", nivel_resiliencia: 4.20, aderencia_ISO22301: 80.0, nota_area: 4.00, nota_geric: 4.30, checklist_area: "{}", checklist_geric: "{}", comentarios_geric: "Aprovado no simulado prático.", grafico_resultado: "radar_PROC-TIC-001" },
+    { id_avaliacao: "EVL-006", id_processo: "PROC-APO-001", nivel_resiliencia: 2.10, aderencia_ISO22301: 27.5, nota_area: 2.00, nota_geric: 2.20, checklist_area: "{}", checklist_geric: "{}", comentarios_geric: "Plano de apoio pendente de treinamento.", grafico_resultado: "radar_PROC-APO-001" },
+    { id_avaliacao: "EVL-007", id_processo: "PROC-APO-004", nivel_resiliencia: 3.80, aderencia_ISO22301: 70.0, nota_area: 4.00, nota_geric: 3.70, checklist_area: "{}", checklist_geric: "{}", comentarios_geric: "Concluído o teste predial de evacuação.", grafico_resultado: "radar_PROC-APO-004" }
   ]
 };
 
@@ -382,7 +382,7 @@ const getDB = () => {
   }
   try {
     const db = JSON.parse(dbStr);
-    if (db.db_version !== "4.0") {
+    if (db.db_version !== "6.0") {
       localStorage.setItem("gcn_database", JSON.stringify(INITIAL_DATA));
       return INITIAL_DATA;
     }
@@ -838,18 +838,23 @@ export const dbService = {
 
   // ANALYTICS para Dashboard Geric
   analytics: {
-    getKPIs: () => {
+    getKPIs: (idGerencia = null) => {
       const db = getDB();
       const hoje = new Date();
-      const processos = db.processosCriticos || [];
-      const planosPCO = db.planosContinuidade || [];
-      const planosRD = db.planosRecuperacaoDesastres || [];
-      const incidentes = db.incidentes || [];
-      const riscos = db.riscos || [];
-      const testes = db.testesAvaliacoes || [];
-      const planosAcao = db.planosAcao || [];
-      const avaliacoes = db.avaliacaoNRGCN || [];
-      const ain = db.analiseImpactoNegocio || [];
+      let processos = db.processosCriticos || [];
+      if (idGerencia) {
+        processos = processos.filter(p => p.id_gerencia === idGerencia);
+      }
+      const processosIds = processos.map(p => p.id_processo);
+
+      const planosPCO = (db.planosContinuidade || []).filter(p => processosIds.includes(p.id_processo));
+      const planosRD = (db.planosRecuperacaoDesastres || []).filter(p => processosIds.includes(p.id_processo));
+      const incidentes = (db.incidentes || []).filter(p => processosIds.includes(p.id_processo));
+      const riscos = (db.riscos || []).filter(p => processosIds.includes(p.id_processo));
+      const testes = (db.testesAvaliacoes || []).filter(t => planosPCO.some(pco => pco.id_pco === t.id_pco));
+      const planosAcao = (db.planosAcao || []).filter(pa => incidentes.some(inc => inc.id_incidente === pa.id_incidente) || testes.some(t => t.id_plano_acao === pa.id_plano_acao));
+      const avaliacoes = (db.avaliacaoNRGCN || []).filter(a => processosIds.includes(a.id_processo));
+      const ain = (db.analiseImpactoNegocio || []).filter(a => processosIds.includes(a.id_processo));
 
       // Processos sem PCO
       const processosSemPCO = processos.filter(p => !planosPCO.find(pco => pco.id_processo === p.id_processo));
@@ -927,7 +932,7 @@ export const dbService = {
     },
 
     // NRGCN por gerência para gráfico de barras
-    getNRGCNporGerencia: () => {
+    getNRGCNporGerencia: (idGerencia = null) => {
       const db = getDB();
       const avaliacoes = db.avaliacaoNRGCN || [];
       const processos = db.processosCriticos || [];
@@ -936,6 +941,7 @@ export const dbService = {
       avaliacoes.forEach(av => {
         const proc = processos.find(p => p.id_processo === av.id_processo);
         if (proc && proc.id_gerencia) {
+          if (idGerencia && proc.id_gerencia !== idGerencia) return;
           const ger = gerencias.find(g => g.id_gerencia === proc.id_gerencia);
           const sigla = ger ? ger.sigla : proc.id_gerencia;
           if (!resultado[sigla]) resultado[sigla] = { soma: 0, count: 0, aderencia: 0 };
@@ -952,9 +958,14 @@ export const dbService = {
     },
 
     // Evolução de incidentes (últimos 6 meses)
-    getEvolucaoIncidentes: () => {
+    getEvolucaoIncidentes: (idGerencia = null) => {
       const db = getDB();
-      const incidentes = db.incidentes || [];
+      let incidentes = db.incidentes || [];
+      const processos = db.processosCriticos || [];
+      if (idGerencia) {
+        const procIds = processos.filter(p => p.id_gerencia === idGerencia).map(p => p.id_processo);
+        incidentes = incidentes.filter(inc => procIds.includes(inc.id_processo));
+      }
       const meses = [];
       for (let i = 5; i >= 0; i--) {
         const d = new Date();

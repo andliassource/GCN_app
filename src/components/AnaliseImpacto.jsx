@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, ShieldAlert, Award, ArrowRight, DollarSign, Calculator, Eye, HelpCircle } from 'lucide-react';
+import { Plus, Trash2, ShieldAlert, Award, ArrowRight, DollarSign, Calculator, Eye, HelpCircle, X, Download } from 'lucide-react';
+import { pdfService } from '../services/pdfService';
 
 export default function AnaliseImpacto({ db }) {
   const [processos, setProcessos] = useState(db.processosCriticos.list());
@@ -11,6 +12,7 @@ export default function AnaliseImpacto({ db }) {
   const [showProcessForm, setShowProcessForm] = useState(false);
   const [showAinForm, setShowAinForm] = useState(false);
   const [selectedProcesso, setSelectedProcesso] = useState(null);
+  const [selectedProcessoDrawer, setSelectedProcessoDrawer] = useState(null);
   const [notification, setNotification] = useState(null);
 
   // Form Fields - Processo Crítico
@@ -491,6 +493,13 @@ export default function AnaliseImpacto({ db }) {
                     <td className="px-6 py-4 text-center">
                       <div className="flex items-center justify-center gap-2">
                         <button
+                          onClick={() => setSelectedProcessoDrawer(proc)}
+                          className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-350 font-bold px-2.5 py-1.5 rounded text-[10px] flex items-center gap-1 transition-all"
+                          title="Visão 360° do Processo"
+                        >
+                          <Eye className="w-3.5 h-3.5" /> 360°
+                        </button>
+                        <button
                           onClick={() => handleOpenAinForm(proc)}
                           className="bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950 dark:hover:bg-indigo-900 text-indigo-600 dark:text-indigo-400 font-bold px-2.5 py-1.5 rounded text-[10px] flex items-center gap-1 transition-all"
                         >
@@ -520,6 +529,305 @@ export default function AnaliseImpacto({ db }) {
           </table>
         </div>
       </div>
+
+      {/* Drawer de Contexto Lateral - Visão 360° */}
+      {selectedProcessoDrawer && (() => {
+        const proc = selectedProcessoDrawer;
+        const ain = ains.find(a => a.id_processo === proc.id_processo);
+        const perdas = calcularPerdas(proc);
+        
+        // Planos
+        const pco = db.planosContinuidade.list().find(p => p.id_processo === proc.id_processo);
+        const prd = db.planosRecuperacaoDesastres.list().find(p => p.id_processo === proc.id_processo);
+        
+        // Riscos
+        const riscos = db.riscos.list().filter(r => r.id_processo === proc.id_processo);
+        
+        // Incidentes
+        const incidentes = db.incidentes.list().filter(i => i.id_processo === proc.id_processo);
+        
+        // Intervenientes
+        const intervenientes = db.intervenientes.listForProcesso(proc.id_processo);
+        
+        return (
+          <div className="fixed inset-0 z-50 overflow-hidden flex justify-end">
+            <div 
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"
+              onClick={() => setSelectedProcessoDrawer(null)}
+            />
+            
+            <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 shadow-2xl h-full flex flex-col z-10 border-l border-slate-200 dark:border-slate-800 animate-slide-in">
+              {/* Header */}
+              <div className="px-6 py-5 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-950/40">
+                <div>
+                  <span className="text-[10px] text-indigo-500 font-bold uppercase tracking-wider">Visão 360° do Processo</span>
+                  <h3 className="font-extrabold text-slate-800 dark:text-white text-sm mt-0.5">{proc.nome}</h3>
+                  <span className="text-[9px] text-slate-400 font-mono block mt-1">{proc.id_processo}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => pdfService.exportar(
+                      `Relatório de Visão 360 - ${proc.id_processo}`,
+                      pdfService.htmlProcessoCompleto(proc, ain, pco, prd, proc.ativos, riscos, incidentes, intervenientes, perdas),
+                      { confidencialidade: 'RESTRITO', versao: '1.0' }
+                    )}
+                    className="p-2 bg-indigo-50 dark:bg-indigo-950 text-indigo-650 dark:text-indigo-400 rounded-lg hover:bg-indigo-100 transition-colors"
+                    title="Exportar PDF Completo"
+                  >
+                    <Download className="w-4 h-4" />
+                  </button>
+                  <button 
+                    onClick={() => setSelectedProcessoDrawer(null)}
+                    className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+              
+              {/* Scrollable Body */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-6 text-xs divide-y divide-slate-150 dark:divide-slate-800">
+                {/* 1. Detalhes Gerais */}
+                <div className="space-y-3 pb-4">
+                  <h4 className="font-bold text-slate-800 dark:text-white text-xs uppercase tracking-wider flex items-center gap-1.5">
+                    <span>📋 Informações do Processo</span>
+                  </h4>
+                  <div className="grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-950/20 p-4 rounded-xl border border-slate-150 dark:border-slate-850">
+                    <div>
+                      <span className="text-[9px] text-slate-400 font-bold uppercase">Criticidade</span>
+                      <p className="font-semibold text-slate-800 dark:text-slate-200 mt-0.5">{proc.criticidade}</p>
+                    </div>
+                    <div>
+                      <span className="text-[9px] text-slate-400 font-bold uppercase">Gerência</span>
+                      <p className="font-semibold text-slate-800 dark:text-slate-200 mt-0.5">{proc.id_gerencia}</p>
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-[9px] text-slate-400 font-bold uppercase">Contrato / SLA</span>
+                      <p className="font-semibold text-slate-800 dark:text-slate-200 mt-0.5">{proc.id_contrato || 'Processo de apoio interno'}</p>
+                    </div>
+                    {proc.descricao && (
+                      <div className="col-span-2 border-t border-slate-150 dark:border-slate-800 pt-2">
+                        <span className="text-[9px] text-slate-400 font-bold uppercase">Descrição Operacional</span>
+                        <p className="text-[11px] text-slate-650 dark:text-slate-400 leading-relaxed mt-1">{proc.descricao}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* 2. Parâmetros BIA */}
+                <div className="space-y-3 pt-6 pb-4">
+                  <h4 className="font-bold text-slate-800 dark:text-white text-xs uppercase tracking-wider flex items-center gap-1.5">
+                    <span>📊 Parâmetros AIN / BIA</span>
+                  </h4>
+                  {ain ? (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        <div className="p-3 bg-slate-50 dark:bg-slate-950/20 rounded-xl border border-slate-150 dark:border-slate-850">
+                          <span className="text-[8px] text-slate-400 font-bold uppercase block">RTO Meta</span>
+                          <span className="font-black text-slate-800 dark:text-white text-sm">{ain.RTO}m</span>
+                        </div>
+                        <div className="p-3 bg-slate-50 dark:bg-slate-950/20 rounded-xl border border-slate-150 dark:border-slate-850">
+                          <span className="text-[8px] text-slate-400 font-bold uppercase block">RPO Meta</span>
+                          <span className="font-black text-slate-800 dark:text-white text-sm">{ain.RPO}m</span>
+                        </div>
+                        <div className="p-3 bg-rose-50 dark:bg-rose-950/20 rounded-xl border border-rose-100 dark:border-rose-900/30">
+                          <span className="text-[8px] text-rose-450 font-bold uppercase block">MTDCN</span>
+                          <span className="font-black text-rose-600 dark:text-rose-400 text-sm">{ain.MTDCN}m</span>
+                        </div>
+                      </div>
+                      
+                      <div className="p-4 bg-slate-50 dark:bg-slate-950/20 rounded-xl border border-slate-150 dark:border-slate-850 text-[11px] space-y-1.5">
+                        <div className="flex justify-between">
+                          <span className="text-slate-450">Probabilidade do Risco:</span>
+                          <span className="font-bold text-slate-855 dark:text-slate-300">{ain.probabilidade}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-450">Impacto Geral:</span>
+                          <span className="font-bold text-slate-855 dark:text-slate-300">{ain.impacto_financeiro}</span>
+                        </div>
+                        {perdas.hasContrato && (
+                          <div className="border-t border-slate-150 dark:border-slate-850 pt-2 text-rose-600 dark:text-rose-400 font-semibold space-y-1">
+                            <div className="flex justify-between">
+                              <span>Perda por Hora Parado:</span>
+                              <span>R$ {perdas.hora.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Perda por Dia Parado:</span>
+                              <span>R$ {perdas.dia.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-slate-50 dark:bg-slate-950/20 rounded-xl border border-slate-150 dark:border-slate-850 text-center text-slate-450 italic">
+                      AIN (BIA) não configurada para este processo.
+                    </div>
+                  )}
+                </div>
+
+                {/* 3. PCO e PRD */}
+                <div className="space-y-4 pt-6 pb-4">
+                  <h4 className="font-bold text-slate-800 dark:text-white text-xs uppercase tracking-wider">
+                    🛡️ Planos de Continuidade e TI
+                  </h4>
+                  
+                  <div className="bg-slate-50 dark:bg-slate-950/20 p-4 rounded-xl border border-slate-150 dark:border-slate-850 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-[11px] text-slate-800 dark:text-slate-300">PCO (Plano de Negócio)</span>
+                      {pco ? (
+                        <span className={`px-2 py-0.5 rounded text-[9px] font-bold ${pco.status_aprovacao === 'Aprovado' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-amber-50 text-amber-600 border border-amber-200'}`}>
+                          {pco.status_aprovacao}
+                        </span>
+                      ) : (
+                        <span className="text-[9px] text-slate-400 font-semibold">Não Cadastrado</span>
+                      )}
+                    </div>
+                    {pco && (
+                      <div className="text-[10px] text-slate-500 space-y-1 pt-1 border-t border-slate-150 dark:border-slate-850">
+                        <p><strong>Versão:</strong> {pco.versao}</p>
+                        <p className="truncate"><strong>Estratégia:</strong> {pco.estrategia_recuperacao}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="bg-slate-50 dark:bg-slate-950/20 p-4 rounded-xl border border-slate-150 dark:border-slate-850 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-[11px] text-slate-800 dark:text-slate-300">PRD (Recuperação de Desastres)</span>
+                      {prd ? (
+                        <span className={`px-2 py-0.5 rounded text-[9px] font-bold ${prd.status_aprovacao === 'Aprovado' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-amber-50 text-amber-600 border border-amber-200'}`}>
+                          {prd.status_aprovacao}
+                        </span>
+                      ) : (
+                        <span className="text-[9px] text-slate-400 font-semibold">Não Cadastrado</span>
+                      )}
+                    </div>
+                    {prd && (
+                      <div className="text-[10px] text-slate-500 space-y-1 pt-1 border-t border-slate-150 dark:border-slate-850">
+                        <p><strong>Versão:</strong> {prd.versao}</p>
+                        <p className="truncate"><strong>Escopo TI:</strong> {prd.escopo_ti}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* 4. Ativos */}
+                <div className="space-y-3 pt-6 pb-4">
+                  <h4 className="font-bold text-slate-800 dark:text-white text-xs uppercase tracking-wider">
+                    ⚙️ Ativos de TI Relacionados
+                  </h4>
+                  {proc.ativos && proc.ativos.length > 0 ? (
+                    <div className="space-y-2">
+                      {proc.ativos.map(a => (
+                        <div key={a.id_ativo} className="flex justify-between items-center p-2.5 bg-slate-50 dark:bg-slate-950/20 border border-slate-150 dark:border-slate-850 rounded-lg">
+                          <div>
+                            <span className="font-bold text-slate-700 dark:text-slate-350">{a.nome}</span>
+                            <span className="text-[9px] text-slate-400 block mt-0.5">{a.tipo} | ID: {a.id_ativo}</span>
+                          </div>
+                          <span className={`px-2 py-0.5 rounded text-[9px] font-extrabold uppercase ${a.criticidade === 'Critica' || a.criticidade === 'Alta' ? 'bg-rose-50 text-rose-600 dark:bg-rose-950 dark:text-rose-400 border border-rose-100' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200'}`}>
+                            {a.criticidade}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-slate-50 dark:bg-slate-950/20 rounded-xl text-center text-slate-450 italic border border-slate-150 dark:border-slate-850">
+                      Nenhum ativo tecnológico vinculado a este processo.
+                    </div>
+                  )}
+                </div>
+
+                {/* 5. Riscos Dinâmicos */}
+                <div className="space-y-3 pt-6 pb-4">
+                  <h4 className="font-bold text-slate-800 dark:text-white text-xs uppercase tracking-wider">
+                    ⚡ Matriz de Riscos Dinâmicos
+                  </h4>
+                  {riscos && riscos.length > 0 ? (
+                    <div className="space-y-2">
+                      {riscos.map(r => {
+                        const score = (r.impacto_residual * r.probabilidade_residual) || (r.impacto * r.probabilidade) || 0;
+                        const scoreColor = score >= 15 ? 'text-rose-500 bg-rose-50 dark:bg-rose-950/20' : score >= 8 ? 'text-amber-500 bg-amber-50 dark:bg-amber-950/20' : 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20';
+                        return (
+                          <div key={r.id_risco} className="p-3 bg-slate-50 dark:bg-slate-950/20 border border-slate-150 dark:border-slate-850 rounded-xl space-y-1">
+                            <div className="flex justify-between items-start">
+                              <span className="font-bold text-slate-700 dark:text-slate-350">{r.titulo}</span>
+                              <span className={`px-2 py-0.5 rounded font-black text-[9px] ${scoreColor}`}>Score: {score}</span>
+                            </div>
+                            <p className="text-[10px] text-slate-450 truncate">{r.descricao}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-slate-50 dark:bg-slate-950/20 rounded-xl text-center text-slate-450 italic border border-slate-150 dark:border-slate-850">
+                      Nenhum risco dinâmico identificado para este processo.
+                    </div>
+                  )}
+                </div>
+
+                {/* 6. Incidentes e Tracking RTO */}
+                <div className="space-y-3 pt-6 pb-4">
+                  <h4 className="font-bold text-slate-800 dark:text-white text-xs uppercase tracking-wider">
+                    🚨 Histórico de Incidentes / RTO
+                  </h4>
+                  {incidentes && incidentes.length > 0 ? (
+                    <div className="space-y-2">
+                      {incidentes.map(i => {
+                        const rtoColor = i.rto_ultrapassado ? 'text-rose-500 bg-rose-50 dark:bg-rose-950/20' : 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20';
+                        const statusBadge = i.status_incidente === 'fechado' ? 'bg-emerald-100 text-emerald-800' : 'bg-orange-100 text-orange-850';
+                        return (
+                          <div key={i.id_incidente} className="p-3 bg-slate-50 dark:bg-slate-950/20 border border-slate-150 dark:border-slate-850 rounded-xl space-y-2">
+                            <div className="flex justify-between items-center">
+                              <span className="font-bold text-slate-700 dark:text-slate-350">{i.id_incidente}</span>
+                              <span className={`px-2 py-0.5 rounded text-[9px] font-bold ${statusBadge}`}>{i.status_incidente}</span>
+                            </div>
+                            <p className="text-[10px] text-slate-500 leading-relaxed">{i.descricao}</p>
+                            <div className="flex justify-between text-[10px] pt-1.5 border-t border-slate-150 dark:border-slate-850">
+                              <span className="text-slate-450">RTO Meta: {i.rto_meta_minutos}m</span>
+                              <span className={`px-1.5 py-0.2 rounded font-extrabold ${rtoColor}`}>RTO Real: {i.rto_real_minutos}m</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-slate-50 dark:bg-slate-950/20 rounded-xl text-center text-slate-450 italic border border-slate-150 dark:border-slate-850">
+                      Nenhum incidente registrado para este processo.
+                    </div>
+                  )}
+                </div>
+
+                {/* 7. Intervenientes */}
+                <div className="space-y-3 pt-6 pb-4">
+                  <h4 className="font-bold text-slate-800 dark:text-white text-xs uppercase tracking-wider">
+                    👥 Intervenientes e Contatos de Emergência
+                  </h4>
+                  {intervenientes && intervenientes.length > 0 ? (
+                    <div className="space-y-2">
+                      {intervenientes.map((int, iIdx) => (
+                        <div key={iIdx} className="p-3 bg-slate-50 dark:bg-slate-950/20 border border-slate-150 dark:border-slate-850 rounded-xl flex items-start justify-between">
+                          <div>
+                            <p className="font-bold text-slate-700 dark:text-slate-350">{int.nome}</p>
+                            <span className="text-[9px] text-slate-400 block mt-0.5">{int.cargo} | {int.papel}</span>
+                          </div>
+                          <div className="text-[10px] text-right text-slate-500">
+                            <p>{int.email}</p>
+                            <p className="font-semibold text-slate-700 dark:text-slate-300 mt-0.5">{int.telefone}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-slate-50 dark:bg-slate-950/20 rounded-xl text-center text-slate-450 italic border border-slate-150 dark:border-slate-850">
+                      Nenhum interveniente vinculado a este processo.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
     </div>
   );

@@ -3,11 +3,11 @@ import { Shield, Eye, EyeOff, LogIn, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const DEMO_PERFIS = [
-  { label: 'Administrador Geric (acesso total)', email: 'rcarlos@empresa.com.br', senha: 'geric2024', role: 'admin_geric', cor: 'indigo' },
-  { label: 'Gestor Gecob (negócios)', email: 'mcosta@empresa.com.br', senha: 'gecob2024', role: 'gestor_area', cor: 'emerald' },
-  { label: 'Gestora Getic (TI/PRD)', email: 'plima@empresa.com.br', senha: 'getic2024', role: 'gestor_area', cor: 'purple' },
-  { label: 'Gestor Gesap (predial)', email: 'slima@empresa.com.br', senha: 'gesap2024', role: 'gestor_area', cor: 'amber' },
-  { label: 'Visitante (somente leitura)', email: 'visitante@empresa.com.br', senha: 'visualizador', role: 'visualizador', cor: 'slate' },
+  { label: 'Administrador Geric (acesso total)', email: 'geric@empresa.com.br', senha: 'geric2026', role: 'admin_geric', cor: 'indigo' },
+  { label: 'Gestor Gecob (negócios)', email: 'gecob@empresa.com.br', senha: 'gecob2026', role: 'gestor_area', cor: 'emerald' },
+  { label: 'Gestora Getic (TI/PRD)', email: 'getic@empresa.com.br', senha: 'getic2026', role: 'gestor_area', cor: 'purple' },
+  { label: 'Gestor Gesap (predial)', email: 'gesap@empresa.com.br', senha: 'gesap2026', role: 'gestor_area', cor: 'amber' },
+  { label: 'Visitante (somente leitura)', email: 'visitante@empresa.com.br', senha: 'visitante2026', role: 'visualizador', cor: 'slate' },
 ];
 
 const COR_MAP = {
