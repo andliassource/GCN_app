@@ -257,7 +257,7 @@ export default function AvaliacaoMaturidade({ db }) {
               )}
             </div>
 
-            {/* 2. VISÃO DA GERIC (Auditoria - 2ª Linha de Defesa) */}
+            {/* 2. VISÃO DA GERIC (Validação Técnica - 2ª Linha de Defesa) */}
             <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
               <div className="border-b border-slate-100 dark:border-slate-800 pb-3 flex justify-between items-center">
                 <div className="flex items-center gap-2">
@@ -306,16 +306,16 @@ export default function AvaliacaoMaturidade({ db }) {
                 ))}
               </div>
 
-              {/* Comentários da Auditoria (GERIC) */}
+              {/* Parecer Técnico (GERIC) */}
               <div className="space-y-1 pt-2">
-                <label className="text-[10px] font-bold text-slate-455 uppercase">Comentários e Justificativa de Confronto (GERIC)</label>
+                <label className="text-[10px] font-bold text-slate-455 uppercase">Parecer Técnico e Justificativa de Confronto (GERIC)</label>
                 <textarea
                   rows="2"
                   value={comentariosGeric}
                   onChange={(e) => setComentariosGeric(e.target.value)}
                   disabled={!isAdmin()}
                   className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-indigo-500 disabled:opacity-60"
-                  placeholder={isAdmin() ? "Descreva parecer de auditoria e justificativas de notas..." : "Comentários reservados à Geric."}
+                  placeholder={isAdmin() ? "Descreva parecer técnico de segunda linha e justificativas de notas..." : "Parecer reservado à Geric."}
                 />
               </div>
 
@@ -367,7 +367,7 @@ export default function AvaliacaoMaturidade({ db }) {
                 <p className="text-[10px] text-slate-400 font-bold uppercase">Nota Final Ponderada (NRGCN)</p>
                 <h4 className="text-3xl font-black text-indigo-600 dark:text-indigo-400 mt-1">{notaFinal} <span className="text-xs font-normal text-slate-450">/ 5.0</span></h4>
                 <p className="text-[10px] text-slate-450 mt-2 leading-relaxed">
-                  {notaFinal >= 4.5 ? 'Nível 5: Resiliência Otimizada e Auditada' :
+                  {notaFinal >= 4.5 ? 'Nível 5: Resiliência Otimizada e Validada' :
                    notaFinal >= 3.5 ? 'Nível 4: Resiliência Gerenciada com Testes' :
                    notaFinal >= 2.5 ? 'Nível 3: Planos Definidos e Estruturados' :
                    notaFinal >= 1.5 ? 'Nível 2: Processos Mapeados Inicialmente' :
@@ -389,7 +389,7 @@ export default function AvaliacaoMaturidade({ db }) {
                 </div>
                 <div className="p-2.5 flex justify-between items-center bg-white dark:bg-slate-900">
                   <span className="flex items-center gap-1 text-slate-650 dark:text-slate-350">
-                    <Shield className="w-3 h-3 text-indigo-500" /> Auditoria GERIC (2ª Linha)
+                    <Shield className="w-3 h-3 text-indigo-500" /> Validação GERIC (2ª Linha)
                   </span>
                   <span className="font-extrabold text-indigo-650 dark:text-indigo-400">{notaGeric} / 5.0 ({aderencaGeric}%)</span>
                 </div>
@@ -398,7 +398,7 @@ export default function AvaliacaoMaturidade({ db }) {
               <div className="text-[10px] text-slate-400 flex items-start gap-1.5 leading-normal text-left pt-2 border-t border-slate-100 dark:border-slate-850 w-full">
                 <Info className="w-4 h-4 text-indigo-500 shrink-0 mt-0.5" />
                 <span>
-                  A nota final pondera a auto-avaliação da área (peso 40%) contra a auditoria formal da Geric (peso 60%), confrontando a percepção operacional com a eficácia comprovada.
+                  A nota final pondera a auto-avaliação da área (peso 40%) contra a validação técnica da Geric (peso 60%), confrontando a percepção operacional com a eficácia comprovada.
                 </span>
               </div>
             </div>

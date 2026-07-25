@@ -1,12 +1,23 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Calendar, AlertOctagon, ShieldAlert, CheckCircle2, Search, Filter, Clock, Zap, BookOpen, Target, ChevronRight } from 'lucide-react';
+import { Plus, Trash2, Calendar, AlertOctagon, ShieldAlert, CheckCircle2, Search, Filter, Clock, Zap, BookOpen, Target, ChevronRight, Play, MessageSquare, X, Send, Check } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function BaseIncidentes({ db }) {
+  const { usuario } = useAuth();
   const [incidentes, setIncidentes] = useState(db.incidentes.list());
   const [processos] = useState(db.processosCriticos.list());
   const [planosPCO] = useState(db.planosContinuidade.list());
   const [licoes, setLicoes] = useState(db.licoesAprendidas.list());
   const [planosAcao, setPlanosAcao] = useState(db.planosAcao.list());
+
+  // Estados da War Room
+  const [warRoomIncidente, setWarRoomIncidente] = useState(null);
+  const [warRoomChat, setWarRoomChat] = useState([]);
+  const [chatInput, setChatInput] = useState('');
+  const [warRoomTasks, setWarRoomTasks] = useState({});
+  const [rtoRealInput, setRtoRealInput] = useState('');
+  const [mitigacaoInput, setMitigacaoInput] = useState('');
+  const [solucaoInput, setSolucaoInput] = useState('');
 
   // Abas do Módulo
   const [tab, setTab] = useState('incidentes'); // 'incidentes', 'licoes', 'acoes'
@@ -96,6 +107,112 @@ export default function BaseIncidentes({ db }) {
       setIncidentes(db.incidentes.list());
       setNotification({ type: 'info', text: 'Incidente excluído do histórico.' });
     }
+  };
+
+  const openWarRoom = (inc) => {
+    setWarRoomIncidente(inc);
+    setRtoRealInput(inc.rto_real_minutos || '');
+    setMitigacaoInput(inc.medidas_mitigacao || '');
+    setSolucaoInput(inc.resultado_resposta || '');
+
+    // Inicializa checklist de tarefas
+    setWarRoomTasks({
+      t1: true,
+      t2: inc.status_incidente === 'fechado',
+      t3: inc.status_incidente === 'fechado',
+      t4: inc.status_incidente === 'fechado',
+    });
+
+    // Chat simulado com base no incidente
+    const defaultMessages = [
+      { sender: 'Sistema GCN', text: `🚨 War Room de crise ativada para o incidente ${inc.id_incidente}.`, time: '14:30', role: 'sistema' },
+      { sender: 'Roberto Carlos (Geric)', text: `Sala de situação ativada. Processo afetado: ${inc.processo?.nome || 'N/A'}. RTO Alvo: ${inc.rto_meta_minutos || 30} min.`, time: '14:31', role: 'geric' },
+      { sender: 'Patrícia Lima (Getic)', text: 'Equipe de plantão técnico atuando no diagnóstico e validação dos sistemas secundários.', time: '14:34', role: 'getic' },
+    ];
+    if (inc.status_incidente === 'fechado') {
+      defaultMessages.push(
+        { sender: 'Patrícia Lima (Getic)', text: `Mitigação concluída. Serviço normalizado. RTO real calculado em ${inc.rto_real_minutos} minutos.`, time: '14:48', role: 'getic' },
+        { sender: 'Sistema GCN', text: 'Crise encerrada. Evidências salvas para validação de 2ª linha.', time: '14:50', role: 'sistema' }
+      );
+    }
+    setWarRoomChat(defaultMessages);
+  };
+
+  const handleSendChatMessage = (e) => {
+    e.preventDefault();
+    if (!chatInput.trim()) return;
+
+    const newMsg = {
+      sender: `${usuario?.nome || 'Operador'} (${usuario?.id_gerencia || 'GCN'})`,
+      text: chatInput,
+      time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      role: usuario?.role === 'admin_geric' ? 'geric' : 'gestor'
+    };
+
+    setWarRoomChat(prev => [...prev, newMsg]);
+    setChatInput('');
+
+    setTimeout(() => {
+      const responseMsg = {
+        sender: 'Patrícia Lima (Getic)',
+        text: 'Copiado. Todas as ações operacionais estão sendo coordenadas conforme os cenários do PCO.',
+        time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        role: 'getic'
+      };
+      setWarRoomChat(prev => [...prev, responseMsg]);
+    }, 1200);
+  };
+
+  const handleResolveCrise = (e) => {
+    e.preventDefault();
+    if (!rtoRealInput || !mitigacaoInput || !solucaoInput) {
+      alert('Por favor, preencha todos os campos da resolução antes de fechar a crise.');
+      return;
+    }
+
+    const rtoMeta = warRoomIncidente.rto_meta_minutos || 30;
+    const rtoReal = parseInt(rtoRealInput);
+    const rtoUltrapassado = rtoReal > rtoMeta;
+    const critico = warRoomIncidente.impacto === 'Desastroso' || rtoUltrapassado;
+
+    db.incidentes.update(warRoomIncidente.id_incidente, {
+      status_incidente: 'fechado',
+      rto_real_minutos: rtoReal,
+      rto_ultrapassado: rtoUltrapassado,
+      critico: critico,
+      medidas_mitigacao: mitigacaoInput,
+      resultado_resposta: solucaoInput
+    });
+
+    db.licoesAprendidas.create({
+      id_incidente: warRoomIncidente.id_incidente,
+      descricao: `Validação operacional efetuada na War Room. Medidas executadas: ${mitigacaoInput}.`,
+      categoria: 'Técnica',
+      recomendacao: `Garantir treinamento contínuo das etapas de contingência e validação do PRD. Solução técnica: ${solucaoInput}.`,
+      impacto_no_risco: rtoUltrapassado ? 'elevou_probabilidade' : 'risco_controlado'
+    });
+
+    if (rtoUltrapassado || warRoomIncidente.impacto === 'Desastroso') {
+      db.planosAcao.create({
+        origem: 'incidente',
+        id_origem: warRoomIncidente.id_incidente,
+        descricao: `Plano de Ação Automático — Tratar causa raiz do incidente ${warRoomIncidente.id_incidente} (${warRoomIncidente.processo?.nome}). RTO Real: ${rtoReal} min (Meta: ${rtoMeta} min).`,
+        responsavel: warRoomIncidente.processo?.gerencia?.nome || 'Gestor do Processo',
+        id_gerencia: warRoomIncidente.processo?.id_gerencia || 'GER-GOV01',
+        prazo: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString().split('T')[0],
+        status: 'aberto'
+      });
+      setPlanosAcao(db.planosAcao.list());
+    }
+
+    setIncidentes(db.incidentes.list());
+    setLicoes(db.licoesAprendidas.list());
+    setWarRoomIncidente(null);
+
+    setNotification({
+      type: 'success',
+      text: `🚨 Incidente ${warRoomIncidente.id_incidente} restabelecido com sucesso! Lição aprendida e validações registradas na base GCN.`
+    });
   };
 
   // Filtragem e busca
@@ -352,7 +469,22 @@ export default function BaseIncidentes({ db }) {
                       }`}>
                         Impacto: {inc.impacto}
                       </span>
-                      <button onClick={() => handleDelete(inc.id_incidente)} className="text-slate-400 hover:text-rose-500 p-1">
+                      {inc.status_incidente === 'fechado' ? (
+                        <button
+                          onClick={() => openWarRoom(inc)}
+                          className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-2.5 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-colors border border-slate-200 dark:border-slate-700"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5" /> Ver Sala de Situação
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => openWarRoom(inc)}
+                          className="bg-rose-650 hover:bg-rose-700 text-white px-2.5 py-1 rounded-lg text-[10px] font-extrabold flex items-center gap-1 cursor-pointer transition-colors animate-pulse"
+                        >
+                          <Play className="w-3.5 h-3.5" /> 🚨 Entrar na War Room
+                        </button>
+                      )}
+                      <button onClick={() => handleDelete(inc.id_incidente)} className="text-slate-400 hover:text-rose-500 p-1 cursor-pointer">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
@@ -515,6 +647,221 @@ export default function BaseIncidentes({ db }) {
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+      {/* MODAL: SALA DE SITUAÇÃO / WAR ROOM */}
+      {warRoomIncidente && (
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-5xl h-[85vh] rounded-2xl border border-slate-250 dark:border-slate-800 shadow-2xl flex flex-col overflow-hidden animate-scale-up text-xs">
+            
+            {/* Header do Modal */}
+            <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 flex justify-between items-center">
+              <div className="flex items-center gap-2.5">
+                <span className={`w-3.5 h-3.5 rounded-full ${warRoomIncidente.status_incidente === 'fechado' ? 'bg-emerald-500' : 'bg-rose-500 animate-pulse'} shrink-0`} />
+                <div>
+                  <h3 className="font-extrabold text-slate-850 dark:text-white uppercase tracking-wider text-sm flex items-center gap-1.5">
+                    🚨 Sala de Situação GCN — {warRoomIncidente.id_incidente}
+                  </h3>
+                  <p className="text-[10px] text-slate-450 mt-0.5">
+                    Processo: <strong className="text-indigo-500">{warRoomIncidente.processo?.nome || 'N/D'}</strong> · Meta RTO: {warRoomIncidente.rto_meta_minutos || 30} minutos
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setWarRoomIncidente(null)}
+                className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-655 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Corpo do Modal (Grid 2 Colunas) */}
+            <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 overflow-hidden divide-y lg:divide-y-0 lg:divide-x divide-slate-200 dark:divide-slate-800">
+              
+              {/* LADO ESQUERDO: TRACKER E CHECKLIST DO PCO */}
+              <div className="p-5 space-y-6 flex flex-col justify-between overflow-y-auto h-full">
+                <div className="space-y-6">
+                  {/* Bloco RTO Tracker */}
+                  <div className="bg-slate-50 dark:bg-slate-950/20 p-4 rounded-xl border border-slate-200 dark:border-slate-850 space-y-3">
+                    <h4 className="font-extrabold text-slate-450 uppercase text-[9px] tracking-wider">Métricas de Restabelecimento (RTO)</h4>
+                    <div className="flex justify-between items-center text-xs">
+                      <div>
+                        <span className="text-slate-400 block">Tempo Decorrido Estimado</span>
+                        <strong className={`text-xl font-black ${warRoomIncidente.status_incidente === 'fechado' ? 'text-slate-700 dark:text-slate-300' : 'text-rose-500 animate-pulse'}`}>
+                          {warRoomIncidente.status_incidente === 'fechado' ? `${warRoomIncidente.rto_real_minutos} min` : '22 min'}
+                        </strong>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-slate-400 block">Meta Limite RTO (BIA)</span>
+                        <strong className="text-xl font-black text-indigo-500">
+                          {warRoomIncidente.rto_meta_minutos || 30} min
+                        </strong>
+                      </div>
+                    </div>
+                    {/* Barra de Progresso do RTO */}
+                    <div className="w-full bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full transition-all duration-500 ${warRoomIncidente.status_incidente === 'fechado' && warRoomIncidente.rto_ultrapassado ? 'bg-rose-500' : 'bg-indigo-650'}`} 
+                        style={{ width: warRoomIncidente.status_incidente === 'fechado' ? `${Math.min((warRoomIncidente.rto_real_minutos / (warRoomIncidente.rto_meta_minutos || 30)) * 100, 100)}%` : '73%' }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Checklist do PCO / PRD */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-1.5 border-b border-slate-100 dark:border-slate-800 pb-2">
+                      <BookOpen className="w-4 h-4 text-indigo-500" />
+                      <h4 className="font-extrabold text-slate-800 dark:text-white uppercase text-[10px] tracking-wider">Ações de Contingência do Plano</h4>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      {[
+                        { id: 't1', label: '1. Acionar equipe de sustentação e segurança física' },
+                        { id: 't2', label: '2. Desviar fluxo operacional para redes ou data centers secundários' },
+                        { id: 't3', label: '3. Notificar fornecedores e intervenientes sob contrato emergencial' },
+                        { id: 't4', label: '4. Emitir comunicado corporativo oficial de contingência (Gemac)' },
+                      ].map(t => (
+                        <div 
+                          key={t.id} 
+                          onClick={() => {
+                            if (warRoomIncidente.status_incidente !== 'fechado') {
+                              setWarRoomTasks(prev => ({ ...prev, [t.id]: !prev[t.id] }));
+                            }
+                          }}
+                          className={`p-3 rounded-lg border flex items-center gap-3 transition-all ${
+                            warRoomIncidente.status_incidente !== 'fechado' ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-850/40' : 'opacity-70'
+                          } ${warRoomTasks[t.id] ? 'border-indigo-500 bg-indigo-50/10 dark:bg-indigo-950/10' : 'border-slate-200 dark:border-slate-800'}`}
+                        >
+                          <div className={`w-4 h-4 rounded flex items-center justify-center border transition-all ${
+                            warRoomTasks[t.id] ? 'bg-indigo-650 border-indigo-650 text-white' : 'border-slate-350 dark:border-slate-700 bg-white dark:bg-slate-950'
+                          }`}>
+                            {warRoomTasks[t.id] && <Check className="w-3 h-3" />}
+                          </div>
+                          <span className={`font-semibold ${warRoomTasks[t.id] ? 'text-slate-800 dark:text-slate-200' : 'text-slate-500'}`}>
+                            {t.label}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Formulário de Resolução (Apenas Aberto) */}
+                {warRoomIncidente.status_incidente !== 'fechado' && (
+                  <form onSubmit={handleResolveCrise} className="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-4">
+                    <h4 className="font-extrabold text-slate-800 dark:text-white uppercase text-[10px] tracking-wider">Relatório de Fechamento da Crise</h4>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase">RTO Real Total (Minutos) *</label>
+                        <input 
+                          type="number" 
+                          value={rtoRealInput}
+                          onChange={(e) => setRtoRealInput(e.target.value)}
+                          className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-indigo-500 font-bold"
+                          placeholder="Ex: 45"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase">Eficácia Geral do PCO *</label>
+                        <select className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-750 dark:text-slate-350 focus:outline-indigo-500">
+                          <option>Plano Excelente (Mitigação Total)</option>
+                          <option>Plano Médio (Algumas dificuldades)</option>
+                          <option>Plano Ineficaz (Rever procedimentos)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase">Medidas de Mitigação Aplicadas *</label>
+                      <input 
+                        type="text"
+                        value={mitigacaoInput}
+                        onChange={(e) => setMitigacaoInput(e.target.value)}
+                        className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-indigo-500"
+                        placeholder="Ex: Chaveamento emergencial para o link secundário via embratel"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase">Ações para Normalização do Serviço *</label>
+                      <input 
+                        type="text"
+                        value={solucaoInput}
+                        onChange={(e) => setSolucaoInput(e.target.value)}
+                        className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-indigo-500"
+                        placeholder="Ex: Link principal restabelecido pela concessionária às 14:48h"
+                        required
+                      />
+                    </div>
+
+                    <button 
+                      type="submit"
+                      className="w-full bg-rose-650 hover:bg-rose-700 text-white font-bold py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+                    >
+                      <CheckCircle2 className="w-4 h-4" /> Declarar Restabelecimento Técnico (Encerrar Crise)
+                    </button>
+                  </form>
+                )}
+              </div>
+
+              {/* LADO DIREITO: CHAT OPERACIONAL EM TEMPO REAL */}
+              <div className="p-5 flex flex-col justify-between h-full bg-slate-50/50 dark:bg-slate-950/20 overflow-hidden">
+                <div className="space-y-3 flex-1 flex flex-col overflow-hidden">
+                  <div className="flex items-center gap-1.5 border-b border-slate-100 dark:border-slate-800 pb-2">
+                    <MessageSquare className="w-4 h-4 text-indigo-500" />
+                    <h4 className="font-extrabold text-slate-800 dark:text-white uppercase text-[10px] tracking-wider">Log de Comunicações da Crise (Gemac / Comitê)</h4>
+                  </div>
+                  
+                  {/* Feed do Chat */}
+                  <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+                    {warRoomChat.map((msg, idx) => {
+                      const isSistema = msg.role === 'sistema';
+                      return (
+                        <div key={idx} className={`p-2.5 rounded-xl max-w-[85%] text-xs leading-relaxed space-y-1 shadow-2xs ${
+                          isSistema ? 'bg-slate-200/60 dark:bg-slate-850 text-slate-550 dark:text-slate-400 italic text-center mx-auto max-w-[95%] border border-slate-200 dark:border-slate-800/50' :
+                          msg.role === 'geric' ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-850 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-900/30 mr-auto' :
+                          msg.role === 'getic' ? 'bg-purple-50 dark:bg-purple-950/40 text-purple-855 dark:text-purple-300 border border-purple-100 dark:border-purple-900/30 mr-auto' :
+                          'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-250 border border-slate-150 dark:border-slate-800 ml-auto'
+                        }`}>
+                          {!isSistema && <span className="font-bold text-[9px] block text-slate-400">{msg.sender}</span>}
+                          <p>{msg.text}</p>
+                          {!isSistema && <span className="text-[8px] text-slate-400 block text-right font-mono">{msg.time}</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Input de Mensagem */}
+                {warRoomIncidente.status_incidente !== 'fechado' ? (
+                  <form onSubmit={handleSendChatMessage} className="flex gap-2 pt-3 border-t border-slate-200 dark:border-slate-800">
+                    <input 
+                      type="text" 
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      placeholder="Envie uma mensagem operacional na sala..."
+                      className="flex-1 bg-white dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-indigo-500"
+                    />
+                    <button 
+                      type="submit"
+                      className="bg-indigo-650 hover:bg-indigo-705 text-white p-2 rounded-lg cursor-pointer transition-colors shrink-0"
+                    >
+                      <Send className="w-4 h-4" />
+                    </button>
+                  </form>
+                ) : (
+                  <div className="p-3 text-center text-slate-400 italic border-t border-slate-200 dark:border-slate-800 text-[10px] font-semibold bg-slate-100 dark:bg-slate-955 rounded-lg mt-2">
+                    🔒 Comunicações encerradas e arquivadas para esta crise.
+                  </div>
+                )}
+              </div>
+
+            </div>
+
           </div>
         </div>
       )}

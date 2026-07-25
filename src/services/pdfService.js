@@ -238,6 +238,25 @@ export const pdfService = {
     <!-- CONTEÚDO PRINCIPAL -->
     ${conteudoHTML}
     
+    <!-- TRILHA DE VALIDAÇÃO E HOMOLOGAÇÃO DIGITAL -->
+    <div style="margin-top: 20pt; padding: 10pt; border: 1pt solid #cbd5e1; border-radius: 6pt; background: #f8fafc; font-size: 8pt; line-height: 1.4; margin-bottom: 12pt;">
+      <div style="font-weight: 800; color: #4f46e5; text-transform: uppercase; font-size: 7.5pt; letter-spacing: 0.05em; margin-bottom: 6pt; border-bottom: 1pt solid #e2e8f0; padding-bottom: 3pt;">🛡️ Trilha de Validação e Homologação Digital (ISO 22301)</div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12pt;">
+        <div>
+          <strong style="color: #0f766e;">[✓] 1ª Alçada — Validação da Área Gestora</strong><br/>
+          <span style="color: #475569;">Aprovador: Gestor de Unidade Organizacional</span><br/>
+          <span style="color: #475569;">Status: Aprovado em Conformidade Operacional</span><br/>
+          <span style="font-family: monospace; font-size: 6.5pt; color: #94a3b8; display: block; margin-top: 2pt;">Assinatura: SHA256-GCN1A-9A8B7C-MOCK-VAL1</span>
+        </div>
+        <div>
+          <strong style="color: #4338ca;">[✓] 2ª Alçada — Homologação de Continuidade</strong><br/>
+          <span style="color: #475569;">Homologador: GERIC (Gerência de Riscos e GCN)</span><br/>
+          <span style="color: #475569;">Status: Homologado e Vigente</span><br/>
+          <span style="font-family: monospace; font-size: 6.5pt; color: #94a3b8; display: block; margin-top: 2pt;">Assinatura: SHA256-GCN2A-1D2E3F-MOCK-HOM2</span>
+        </div>
+      </div>
+    </div>
+    
     <!-- ASSINATURAS -->
     <div class="assinaturas">
       <div class="assinatura-box">
