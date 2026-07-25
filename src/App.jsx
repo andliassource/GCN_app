@@ -21,9 +21,16 @@ import { dbService } from './services/db';
 function MainLayout() {
   const { usuario } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [darkMode, setDarkMode] = useState(true);
+  // Bug 1 Fix: ler preferência salva no localStorage; padrão = dark
+  const [darkMode, setDarkMode] = useState(() => {
+    try {
+      const saved = localStorage.getItem('gcn_dark_mode');
+      if (saved !== null) return saved === 'true';
+    } catch (e) {}
+    return true;
+  });
 
-  // Monitora Dark Mode no HTML root
+  // Monitora Dark Mode no HTML root e persiste no localStorage
   useEffect(() => {
     const root = window.document.documentElement;
     if (darkMode) {
@@ -31,6 +38,7 @@ function MainLayout() {
     } else {
       root.classList.remove('dark');
     }
+    try { localStorage.setItem('gcn_dark_mode', String(darkMode)); } catch (e) {}
   }, [darkMode]);
 
   // Se não estiver logado, exibe a página de login
@@ -77,6 +85,7 @@ function MainLayout() {
         darkMode={darkMode}
         setDarkMode={setDarkMode}
         user={usuario}
+        onLogout={() => { /* handled by AuthContext via useAuth */ }}
       />
       <div className="flex-1 flex flex-col min-w-0">
         <Header activeTab={activeTab} db={dbService} onNavigate={setActiveTab} />

@@ -25,6 +25,9 @@ export default function OrganizacaoRiscos({ db }) {
   const [showAtivoForm, setShowAtivoForm] = useState(false);
   
   const [notification, setNotification] = useState(null);
+  // Bug 2 Fix: estado para tooltip da matriz de riscos
+  const [hoverRisco, setHoverRisco] = useState(null);
+  const [hoverPos, setHoverPos] = useState({ x: 0, y: 0 });
 
   // Form Fields - Gerência
   const [gerenciaForm, setGerenciaForm] = useState({
@@ -528,7 +531,41 @@ export default function OrganizacaoRiscos({ db }) {
             </form>
           )}
 
+          {/* Tooltip flutuante da Matriz de Riscos */}
+          {hoverRisco && (
+            <div
+              className="fixed z-[9999] pointer-events-none"
+              style={{ left: hoverPos.x + 16, top: hoverPos.y - 10 }}
+            >
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl p-4 w-72 text-xs">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-[9px] font-black text-indigo-500 uppercase tracking-wider">{hoverRisco.id_risco}</span>
+                </div>
+                <p className="font-bold text-slate-800 dark:text-white mb-1.5">{hoverRisco.nome}</p>
+                {hoverRisco.descricao && <p className="text-[10px] text-slate-500 dark:text-slate-400 mb-2 leading-relaxed">{hoverRisco.descricao}</p>}
+                <div className="grid grid-cols-2 gap-2 text-[10px]">
+                  <div className="bg-rose-50 dark:bg-rose-950/40 rounded-lg p-2">
+                    <p className="text-[9px] font-bold text-rose-500 uppercase mb-1">Risco Inerente</p>
+                    <p className="text-slate-700 dark:text-slate-300">Prob: <strong>{hoverRisco.probabilidade}</strong></p>
+                    <p className="text-slate-700 dark:text-slate-300">Imp: <strong>{hoverRisco.impacto}</strong></p>
+                  </div>
+                  <div className="bg-emerald-50 dark:bg-emerald-950/40 rounded-lg p-2">
+                    <p className="text-[9px] font-bold text-emerald-500 uppercase mb-1">Risco Residual</p>
+                    <p className="text-slate-700 dark:text-slate-300">Prob: <strong>{hoverRisco.risco_residual_prob || 'Rara'}</strong></p>
+                    <p className="text-slate-700 dark:text-slate-300">Imp: <strong>{hoverRisco.risco_residual_imp || 'Insignificante'}</strong></p>
+                  </div>
+                </div>
+                {hoverRisco.id_plano_acao && (
+                  <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <p className="text-[9px] text-slate-400">Plano de Ação: <strong className="text-emerald-600 dark:text-emerald-400">{hoverRisco.id_plano_acao}</strong></p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Tabela de Riscos */}
+
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/20">
               <h3 className="font-bold text-slate-850 dark:text-white text-xs uppercase tracking-wider">Inventário de Riscos Corporativos</h3>
@@ -560,7 +597,13 @@ export default function OrganizacaoRiscos({ db }) {
                   };
 
                   return (
-                    <tr key={r.id_risco} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors">
+                    <tr
+                      key={r.id_risco}
+                      className="hover:bg-indigo-50/30 dark:hover:bg-indigo-950/10 transition-colors cursor-default"
+                      onMouseEnter={(e) => { setHoverRisco(r); setHoverPos({ x: e.clientX, y: e.clientY }); }}
+                      onMouseMove={(e) => setHoverPos({ x: e.clientX, y: e.clientY })}
+                      onMouseLeave={() => setHoverRisco(null)}
+                    >
                       <td className="px-6 py-4">
                         <span className="text-[10px] text-indigo-500 font-bold uppercase">{r.id_risco}</span>
                         <p className="font-bold text-slate-800 dark:text-white mt-0.5">{r.nome}</p>

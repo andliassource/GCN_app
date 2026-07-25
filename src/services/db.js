@@ -246,7 +246,7 @@ const INITIAL_DATA = {
   // ── PLANOS DE CONTINUIDADE (PCO) ──────────────────────────────────────────
   planosContinuidade: [
     {
-      id_pco: "PCO-COB-001", id_processo: "PROC-COB-001",
+      id_pco: "PCO-COB-001", id_processo: "PROC-COB-001", id_gerencia: "GER-COB01",
       estrategia_recuperacao: "Failover automático para gateway adquirente reserva. Transações pendentes enfileiradas em Redis para reprocessamento.",
       responsabilidades: "SRE da Gecob e equipe de TI (Getic) executam o failover.",
       recursos_necessarios: "Gateway reserva, instâncias EC2 de contingência, Redis.",
@@ -256,13 +256,13 @@ const INITIAL_DATA = {
       cenario_pessoas: "Em caso de falta de 30%+ da equipe, acionar BPO parceiro para reforço de analistas de canais.",
       escalonamento_crise: "Se indisponibilidade exceder 15 min (RTO), o Gerente da Gecob escala para Comitê de Crise e Geric. Ata obrigatória.",
       status_aprovacao: "Aprovado", versao: "2.1.0",
-      data_proxima_revisao: "2027-01-01", data_ultima_revisao: "2026-01-01",
+      data_proxima_revisao: "2027-01-01", data_ultima_revisao: "2026-01-01", ultima_revisao: "2026-01-01",
       vigente_ate: "2027-01-01", nivel_confidencialidade: "restrito",
       intervenientes: ["INT-001", "INT-002", "INT-003"],
       acionamentos: [{ data: "2026-05-20T16:45:00", id_incidente: "INC-103", acionado_por: "Marcos Costa (Gecob)" }]
     },
     {
-      id_pco: "PCO-COB-002", id_processo: "PROC-COB-002",
+      id_pco: "PCO-COB-002", id_processo: "PROC-COB-002", id_gerencia: "GER-COB01",
       estrategia_recuperacao: "Suspensão temporária de novos protestos. Processamento manual das carteiras prioritárias.",
       responsabilidades: "Analistas sêniores de cobrança da Gecob gerenciam a fila manual.",
       recursos_necessarios: "Planilhas de contingência, acesso off-line às carteiras.",
@@ -272,13 +272,13 @@ const INITIAL_DATA = {
       cenario_pessoas: "Redistribuição da fila entre analistas disponíveis.",
       escalonamento_crise: "Se indisponibilidade exceder 2h, escalar para Gerente da Gecob e Geric.",
       status_aprovacao: "Pendente", versao: "1.0.0",
-      data_proxima_revisao: "2027-01-01", data_ultima_revisao: null,
+      data_proxima_revisao: "2027-01-01", data_ultima_revisao: null, ultima_revisao: null,
       vigente_ate: "2027-01-01", nivel_confidencialidade: "restrito",
       intervenientes: ["INT-001", "INT-002"],
       acionamentos: []
     },
     {
-      id_pco: "PCO-APO-004", id_processo: "PROC-APO-004",
+      id_pco: "PCO-APO-004", id_processo: "PROC-APO-004", id_gerencia: "GER-SAP01",
       estrategia_recuperacao: "Evacuação imediata do edifício e ativação da brigada de incêndio. Transferência para escritório secundário ou home office.",
       responsabilidades: "Brigadista líder coordena evacuação. Gerente Gesap aciona CBMERJ e comunica Geric.",
       recursos_necessarios: "Extintores, mangueiras, rotas de fuga sinalizadas, lista de brigadistas ativos.",
@@ -288,7 +288,7 @@ const INITIAL_DATA = {
       cenario_pessoas: "Verificar lista de presença nos muster points. Comunicar Gepes sobre afastamentos médicos de emergência.",
       escalonamento_crise: "Qualquer incidente com vítimas ou dano estrutural = acionamento imediato do Comitê de Crise.",
       status_aprovacao: "Aprovado", versao: "1.3.0",
-      data_proxima_revisao: "2027-01-01", data_ultima_revisao: "2026-02-09",
+      data_proxima_revisao: "2027-01-01", data_ultima_revisao: "2026-02-09", ultima_revisao: "2026-02-09",
       vigente_ate: "2027-01-01", nivel_confidencialidade: "restrito",
       intervenientes: ["INT-001", "INT-006"],
       acionamentos: [{ data: "2026-02-08T09:15:00", id_incidente: "INC-102", acionado_por: "Sandro Lima (Gesap)" }]
