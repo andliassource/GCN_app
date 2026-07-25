@@ -12,7 +12,7 @@ export default function OrganizacaoRiscos({ db }) {
   // Estado para o Visualizador BIA Tree
   const [selectedBiaProcId, setSelectedBiaProcId] = useState(db.processosCriticos.list()[0]?.id_processo || '');
   const selectedBiaProc = processos.find(p => p.id_processo === selectedBiaProcId);
-  const biaContrato = selectedBiaProc ? db.contratosDocs.list().find(c => c.id_contrato === selectedBiaProc.id_contrato) : null;
+  const biaContrato = selectedBiaProc ? db.contratos.list().find(c => c.id_contrato === selectedBiaProc.id_contrato) : null;
   const biaAtivos = selectedBiaProc ? ativos.filter(a => a.id_gerencia === selectedBiaProc.id_gerencia) : [];
   const biaRiscos = selectedBiaProc ? riscos.filter(r => r.id_processo === selectedBiaProc.id_processo) : [];
 

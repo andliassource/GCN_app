@@ -603,5 +603,65 @@ export const pdfService = {
         </table>
       </div>` : ''}
     `;
+  },
+
+  htmlMaturidade: (processo, avaliacao, notasPilares) => {
+    return `
+      <div class="section">
+        <div class="section-title">1. Dados do Processo sob Avaliação</div>
+        <table>
+          <tr><th>Campo</th><th>Valor</th></tr>
+          <tr><td>ID do Processo</td><td><strong>${processo?.id_processo || '-'}</strong></td></tr>
+          <tr><td>Nome do Processo</td><td>${processo?.nome || '-'}</td></tr>
+          <tr><td>Gerência Responsável</td><td>${processo?.id_gerencia || '-'}</td></tr>
+          <tr><td>Criticidade regulatória</td><td>${processo?.criticidade || '-'}</td></tr>
+        </table>
+      </div>
+      
+      <div class="section">
+        <div class="section-title">2. Resultados da Avaliação de Maturidade (NRGCN)</div>
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-value" style="color: #0f766e;">${avaliacao.nota_area?.toFixed(2) || '0.00'}</div>
+            <div class="kpi-label">Auto-avaliação da Área (1ª Linha)</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-value" style="color: #4338ca;">${avaliacao.nota_geric?.toFixed(2) || '0.00'}</div>
+            <div class="kpi-label">Validação da Geric (2ª Linha)</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-value" style="color: #4f46e5;">${avaliacao.nivel_resiliencia?.toFixed(2) || '0.00'}</div>
+            <div class="kpi-label">Nota Final Ponderada (NRGCN)</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">3. Maturidade por Pilar de Resiliência</div>
+        <table>
+          <tr><th>Pilar de Resiliência</th><th>Nota Obtida</th><th>Status de Aderência</th></tr>
+          <tr><td>Pessoas & Treinamento</td><td><strong>${notasPilares.pessoas} / 5.0</strong></td><td>${notasPilares.pessoas >= 4.0 ? 'Alta Aderência' : notasPilares.pessoas >= 2.5 ? 'Aderência Parcial' : 'Necessita Ajustes'}</td></tr>
+          <tr><td>Estrutura & Tecnologia</td><td><strong>${notasPilares.tecnologia} / 5.0</strong></td><td>${notasPilares.tecnologia >= 4.0 ? 'Alta Aderência' : notasPilares.tecnologia >= 2.5 ? 'Aderência Parcial' : 'Necessita Ajustes'}</td></tr>
+          <tr><td>BIA & Alinhamento</td><td><strong>${notasPilares.alinhamento} / 5.0</strong></td><td>${notasPilares.alinhamento >= 4.0 ? 'Alta Aderência' : notasPilares.alinhamento >= 2.5 ? 'Aderência Parcial' : 'Necessita Ajustes'}</td></tr>
+          <tr><td>Testes & Validação</td><td><strong>${notasPilares.testes} / 5.0</strong></td><td>${notasPilares.testes >= 4.0 ? 'Alta Aderência' : notasPilares.testes >= 2.5 ? 'Aderência Parcial' : 'Necessita Ajustes'}</td></tr>
+          <tr><td>Estratégia & Riscos</td><td><strong>${notasPilares.estrategia} / 5.0</strong></td><td>${notasPilares.estrategia >= 4.0 ? 'Alta Aderência' : notasPilares.estrategia >= 2.5 ? 'Aderência Parcial' : 'Necessita Ajustes'}</td></tr>
+        </table>
+      </div>
+
+      <div class="section">
+        <div class="section-title">4. Parecer Técnico da Segunda Linha (GERIC)</div>
+        <div class="warning-box" style="background: #f8fafc; border-color: #cbd5e1; border-left: 4px solid #64748b;">
+          <p style="color: #334155; font-style: italic; margin: 0;">
+            "${avaliacao.comentarios_geric || 'Nenhum parecer técnico registrado até o momento.'}"
+          </p>
+        </div>
+      </div>
+      
+      <div class="section" style="margin-top: 10pt;">
+        <div style="font-size: 7.5pt; color: #64748b; text-align: center;">
+          A nota ponderada final segue a metodologia corporativa: peso de 40% para Auto Assessment operacional e peso de 60% para Validação Regulatória da segunda linha de defesa.
+        </div>
+      </div>
+    `;
   }
 };

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Award, Info, CheckSquare, Save, Users, Shield, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, Award, Info, CheckSquare, Save, Users, Shield, AlertTriangle, CheckCircle2, Download } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { pdfService } from '../services/pdfService';
 
 export default function AvaliacaoMaturidade({ db }) {
   const { usuario, isAdmin } = useAuth();
@@ -134,6 +135,50 @@ export default function AvaliacaoMaturidade({ db }) {
 
   const currentProcess = processosGerais.find(p => p.id_processo === selectedProcId);
   const { aderencaArea, notaArea, aderencaGeric, notaGeric, notaFinal, aderencaFinal } = calcularMaturidade();
+
+  const obterNotasPilares = () => {
+    const p1Marcados = (checklistArea.req_equipe ? 1 : 0) + (checklistGeric.req_politica ? 1 : 0);
+    const p1Nota = 1.0 + (p1Marcados / 2) * 4.0;
+
+    const p2Marcados = (checklistArea.req_remoto ? 1 : 0) + (checklistGeric.req_rto_bia ? 1 : 0);
+    const p2Nota = 1.0 + (p2Marcados / 2) * 4.0;
+
+    const p3Marcados = (checklistArea.req_rto ? 1 : 0) + (checklistGeric.req_pco_rev ? 1 : 0);
+    const p3Nota = 1.0 + (p3Marcados / 2) * 4.0;
+
+    const p4Marcados = (checklistArea.req_testes ? 1 : 0) + (checklistGeric.req_simulado ? 1 : 0);
+    const p4Nota = 1.0 + (p4Marcados / 2) * 4.0;
+
+    const p5Marcados = (checklistArea.req_contatos ? 1 : 0) + (checklistGeric.req_matriz ? 1 : 0) + (checklistGeric.req_comite ? 1 : 0);
+    const p5Nota = 1.0 + (p5Marcados / 3) * 4.0;
+
+    return {
+      pessoas: Number(p1Nota.toFixed(1)),
+      tecnologia: Number(p2Nota.toFixed(1)),
+      alinhamento: Number(p3Nota.toFixed(1)),
+      testes: Number(p4Nota.toFixed(1)),
+      estrategia: Number(p5Nota.toFixed(1))
+    };
+  };
+
+  const handleExportarPDF = () => {
+    if (!currentProcess) return;
+    const pilares = obterNotasPilares();
+    const html = pdfService.htmlMaturidade(currentProcess, {
+      nota_area: notaArea,
+      nota_geric: notaGeric,
+      nivel_resiliencia: notaFinal,
+      aderencia_ISO22301: aderencaFinal,
+      comentarios_geric: comentariosGeric
+    }, pilares);
+    
+    pdfService.exportar(
+      html,
+      `Laudo_Maturidade_NRGCN_${selectedProcId}`,
+      '1.0',
+      'Geric - GCN System'
+    );
+  };
 
   const handleSave = () => {
     if (!selectedProcId) return;
@@ -401,6 +446,136 @@ export default function AvaliacaoMaturidade({ db }) {
                   A nota final pondera a auto-avaliação da área (peso 40%) contra a validação técnica da Geric (peso 60%), confrontando a percepção operacional com a eficácia comprovada.
                 </span>
               </div>
+            </div>
+
+            {/* Bloco Radar e Exportação */}
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+              <h3 className="text-xs font-bold text-slate-450 dark:text-slate-500 uppercase tracking-wider text-center">Teia de Resiliência (5 Pilares)</h3>
+              
+              {/* Gráfico de Radar SVG */}
+              {(() => {
+                const p = obterNotasPilares();
+                
+                const getRadarPoint = (angleDegrees, value1to5) => {
+                  const angleRad = (angleDegrees * Math.PI) / 180;
+                  const r = ((value1to5 - 1) / 4) * 60; // Raio máximo ajustado para 60 para caber com as labels
+                  const x = 100 + r * Math.cos(angleRad);
+                  const y = 100 - r * Math.sin(angleRad);
+                  return `${x.toFixed(1)},${y.toFixed(1)}`;
+                };
+
+                const points = [
+                  getRadarPoint(90, p.pessoas),
+                  getRadarPoint(162, p.tecnologia),
+                  getRadarPoint(234, p.alinhamento),
+                  getRadarPoint(306, p.testes),
+                  getRadarPoint(18, p.estrategia)
+                ].join(' ');
+
+                return (
+                  <div className="flex flex-col items-center">
+                    <svg className="w-48 h-48" viewBox="0 0 200 200">
+                      {/* Teia de grades concêntricas */}
+                      <circle cx="100" cy="100" r="15" className="stroke-slate-100 dark:stroke-slate-800 fill-none" strokeWidth="0.5" />
+                      <circle cx="100" cy="100" r="30" className="stroke-slate-100 dark:stroke-slate-800 fill-none" strokeWidth="0.5" />
+                      <circle cx="100" cy="100" r="45" className="stroke-slate-100 dark:stroke-slate-800 fill-none" strokeWidth="0.5" />
+                      <circle cx="100" cy="100" r="60" className="stroke-slate-200 dark:stroke-slate-750 fill-none" strokeWidth="1" />
+
+                      {/* Eixos */}
+                      {[90, 162, 234, 306, 18].map(ang => {
+                        const rad = (ang * Math.PI) / 180;
+                        return (
+                          <line 
+                            key={ang} 
+                            x1="100" y1="100" 
+                            x2={(100 + 60 * Math.cos(rad)).toFixed(1)} 
+                            y2={(100 - 60 * Math.sin(rad)).toFixed(1)} 
+                            className="stroke-slate-200 dark:stroke-slate-800" 
+                            strokeWidth="0.75" 
+                          />
+                        );
+                      })}
+
+                      {/* Polígono de Notas */}
+                      <polygon 
+                        points={points} 
+                        className="fill-indigo-500/20 stroke-indigo-600 dark:stroke-indigo-500 transition-all duration-500" 
+                        strokeWidth="1.5" 
+                      />
+
+                      {/* Pontos de Notas */}
+                      {[
+                        { a: 90, v: p.pessoas },
+                        { a: 162, v: p.tecnologia },
+                        { a: 234, v: p.alinhamento },
+                        { a: 306, v: p.testes },
+                        { a: 18, v: p.estrategia }
+                      ].map((pt, idx) => {
+                        const rad = (pt.a * Math.PI) / 180;
+                        const r = ((pt.v - 1) / 4) * 60;
+                        return (
+                          <circle 
+                            key={idx}
+                            cx={(100 + r * Math.cos(rad)).toFixed(1)}
+                            cy={(100 - r * Math.sin(rad)).toFixed(1)}
+                            r="3.5"
+                            className="fill-indigo-600 dark:fill-indigo-400 stroke-white dark:stroke-slate-900"
+                            strokeWidth="1"
+                          />
+                        );
+                      })}
+
+                      {/* Rótulos dos Pilares */}
+                      <text x="100" y="32" textAnchor="middle" className="text-[7.5px] font-extrabold fill-slate-500 dark:fill-slate-400">Pessoas</text>
+                      <text x="32" y="90" textAnchor="end" className="text-[7.5px] font-extrabold fill-slate-500 dark:fill-slate-400">Tecnologia</text>
+                      <text x="50" y="172" textAnchor="middle" className="text-[7.5px] font-extrabold fill-slate-500 dark:fill-slate-400">Alinhamento</text>
+                      <text x="150" y="172" textAnchor="middle" className="text-[7.5px] font-extrabold fill-slate-500 dark:fill-slate-400">Testes</text>
+                      <text x="168" y="90" textAnchor="start" className="text-[7.5px] font-extrabold fill-slate-500 dark:fill-slate-400">Estratégia</text>
+                    </svg>
+                  </div>
+                );
+              })()}
+
+              {/* Legendas/Tabela de Notas dos Pilares */}
+              {(() => {
+                const p = obterNotasPilares();
+                return (
+                  <div className="space-y-2 border-t border-slate-100 dark:border-slate-850 pt-4 text-[10px]">
+                    <div className="flex justify-between items-center text-[9px] font-bold text-slate-400 uppercase tracking-wider pb-1">
+                      <span>Pilar de Resiliência</span>
+                      <span>Nota</span>
+                    </div>
+                    <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-950/40 p-1.5 rounded-lg">
+                      <span className="font-semibold text-slate-650 dark:text-slate-350">👥 Pessoas & Cultura</span>
+                      <strong className="text-slate-800 dark:text-white">{p.pessoas} / 5.0</strong>
+                    </div>
+                    <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-950/40 p-1.5 rounded-lg">
+                      <span className="font-semibold text-slate-650 dark:text-slate-350">💻 Estrutura & TI</span>
+                      <strong className="text-slate-800 dark:text-white">{p.tecnologia} / 5.0</strong>
+                    </div>
+                    <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-950/40 p-1.5 rounded-lg">
+                      <span className="font-semibold text-slate-650 dark:text-slate-350">🎯 BIA & Alinhamento</span>
+                      <strong className="text-slate-800 dark:text-white">{p.alinhamento} / 5.0</strong>
+                    </div>
+                    <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-950/40 p-1.5 rounded-lg">
+                      <span className="font-semibold text-slate-650 dark:text-slate-350">🧪 Simulados & Testes</span>
+                      <strong className="text-slate-800 dark:text-white">{p.testes} / 5.0</strong>
+                    </div>
+                    <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-950/40 p-1.5 rounded-lg">
+                      <span className="font-semibold text-slate-650 dark:text-slate-350">🛡️ Estratégia & Riscos</span>
+                      <strong className="text-slate-800 dark:text-white">{p.estrategia} / 5.0</strong>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Botão de Exportação do Relatório de Maturidade */}
+              <button 
+                onClick={handleExportarPDF}
+                className="w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-850 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold py-2.5 rounded-lg text-xs flex items-center justify-center gap-2 border border-slate-200 dark:border-slate-750 transition-colors cursor-pointer shadow-2xs"
+              >
+                <Download className="w-3.5 h-3.5" /> Exportar Parecer de Maturidade (PDF)
+              </button>
             </div>
 
           </div>
