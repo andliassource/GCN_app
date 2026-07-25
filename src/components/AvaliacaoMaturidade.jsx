@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { pdfService } from '../services/pdfService';
 
 export default function AvaliacaoMaturidade({ db }) {
-  const { usuario, isAdmin } = useAuth();
+  const { usuario, isAdmin, isVisualizador } = useAuth();
   
   // Lista geral de processos
   const processosGerais = db.processosCriticos.list();
@@ -96,12 +96,12 @@ export default function AvaliacaoMaturidade({ db }) {
 
   // Handlers para clique
   const handleAreaChange = (id) => {
-    if (isAdmin()) return; // Admin não edita a auto-avaliação da área direta na visão
+    if (isAdmin() || isVisualizador()) return; // Admin e visualizador não editam a auto-avaliação da área direta na visão
     setChecklistArea(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
   const handleGericChange = (id) => {
-    if (!isAdmin()) return; // Apenas admin_geric edita checklist da segunda linha
+    if (!isAdmin() || isVisualizador()) return; // Apenas admin_geric edita checklist da segunda linha (e não visualizador)
     setChecklistGeric(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
@@ -265,7 +265,7 @@ export default function AvaliacaoMaturidade({ db }) {
                     key={item.id} 
                     onClick={() => handleAreaChange(item.id)}
                     className={`p-3 rounded-xl border flex items-center justify-between gap-4 transition-all ${
-                      !isAdmin() ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-950/40' : 'opacity-75'
+                      (!isAdmin() && !isVisualizador()) ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-950/40' : 'opacity-75'
                     } ${
                       checklistArea[item.id] 
                         ? 'border-teal-500 bg-teal-50/10 dark:bg-teal-950/10' 
@@ -290,7 +290,7 @@ export default function AvaliacaoMaturidade({ db }) {
                   </div>
                 ))}
               </div>
-              {!isAdmin() && (
+              {!isAdmin() && !isVisualizador() && (
                 <div className="flex justify-end pt-2">
                   <button
                     onClick={handleSave}
@@ -325,7 +325,7 @@ export default function AvaliacaoMaturidade({ db }) {
                     key={item.id} 
                     onClick={() => handleGericChange(item.id)}
                     className={`p-3 rounded-xl border flex items-center justify-between gap-4 transition-all ${
-                      isAdmin() ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-950/40' : 'opacity-75'
+                      (isAdmin() && !isVisualizador()) ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-950/40' : 'opacity-75'
                     } ${
                       checklistGeric[item.id] 
                         ? 'border-indigo-500 bg-indigo-50/10 dark:bg-indigo-950/10' 
@@ -364,7 +364,7 @@ export default function AvaliacaoMaturidade({ db }) {
                 />
               </div>
 
-              {isAdmin() && (
+              {isAdmin() && !isVisualizador() && (
                 <div className="flex justify-end pt-2">
                   <button
                     onClick={handleSave}

@@ -4,7 +4,7 @@ import NotificationCenter from './NotificationCenter';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Header({ activeTab, db, onNavigate }) {
-  const { usuario, logout } = useAuth();
+  const { usuario, logout, nomeGerenciaContexto } = useAuth();
 
   const avaliacoes = db.avaliacaoNRGCN?.list ? db.avaliacaoNRGCN.list() : [];
   const incidentes = db.incidentes?.list ? db.incidentes.list() : [];
@@ -79,9 +79,9 @@ export default function Header({ activeTab, db, onNavigate }) {
             </div>
             <div className="hidden lg:block text-left">
               <div className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-tight">{usuario.nome}</div>
-              <div className="flex items-center gap-1.5 mt-0.5">
+              <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
                 <span className={`text-[9px] px-1.5 py-0.2 rounded border font-semibold ${badge.cls}`}>{badge.text}</span>
-                <span className="text-[9px] text-slate-400 font-mono">{usuario.id_gerencia}</span>
+                <span className="text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-500 px-1.5 py-0.2 rounded font-bold">{nomeGerenciaContexto()}</span>
               </div>
             </div>
             <button onClick={logout} title="Sair do sistema" className="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg transition-colors">

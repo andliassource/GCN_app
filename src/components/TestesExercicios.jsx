@@ -1,12 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Activity, Plus, ShieldAlert, Award, Calendar, FileText, CheckCircle2, ChevronRight, User, Download, Paperclip, AlertTriangle } from 'lucide-react';
 import { pdfService } from '../services/pdfService';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function TestesExercicios({ db }) {
-  const [testes, setTestes] = useState(db.testesAvaliacoes.list());
-  const [processos] = useState(db.processosCriticos.list());
-  const [planosPco] = useState(db.planosContinuidade.list());
-  const [planosPrd] = useState(db.planosRecuperacaoDesastres.list());
+  const { usuario, isAdmin, filterByGerencia, canCreate } = useAuth();
+  const [testes, setTestes] = useState(filterByGerencia(db.testesAvaliacoes.list(), ['pco.processo.id_gerencia', 'prd.processo.id_gerencia']));
+  const [processos] = useState(filterByGerencia(db.processosCriticos.list()));
+  const [planosPco] = useState(filterByGerencia(db.planosContinuidade.list(), 'processo.id_gerencia'));
+  const [planosPrd] = useState(filterByGerencia(db.planosRecuperacaoDesastres.list(), 'processo.id_gerencia'));
+
+  const recarregarListas = () => {
+    setTestes(filterByGerencia(db.testesAvaliacoes.list(), ['pco.processo.id_gerencia', 'prd.processo.id_gerencia']));
+  };
+
   // Estados locais
   const [showForm, setShowForm] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState('');
@@ -101,7 +108,7 @@ export default function TestesExercicios({ db }) {
       id_plano_acao
     });
 
-    setTestes(db.testesAvaliacoes.list());
+    recarregarListas();
     setShowForm(false);
     setNotification({ type: 'success', text: `Teste registrado com sucesso! ${gerou_plano_acao ? `Plano de Ação ${id_plano_acao} criado.` : ''}` });
 
@@ -277,7 +284,7 @@ export default function TestesExercicios({ db }) {
       }
     }
 
-    setTestes(db.testesAvaliacoes.list());
+    recarregarListas();
     setShowTabletop(false);
     setTabletopStep(1);
     setTabletopScore(0);
@@ -302,18 +309,22 @@ export default function TestesExercicios({ db }) {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <button 
-            onClick={() => { setShowTabletop(true); setTabletopStep(1); setNotification(null); setSugestaoAjuste(null); }}
-            className="bg-purple-650 hover:bg-purple-700 text-white font-bold px-4 py-2.5 rounded-lg text-xs flex items-center justify-center gap-2 shadow-2xs transition-colors whitespace-nowrap cursor-pointer"
-          >
-            🎮 Iniciar Tabletop Game
-          </button>
-          <button 
-            onClick={() => { setShowForm(true); setNotification(null); setSugestaoAjuste(null); }}
-            className="bg-indigo-650 hover:bg-indigo-700 text-white font-bold px-4 py-2.5 rounded-lg text-xs flex items-center justify-center gap-2 shadow-2xs transition-colors whitespace-nowrap cursor-pointer"
-          >
-            <Plus className="w-4 h-4" /> Registrar Novo Simulado
-          </button>
+          {canCreate() && (
+            <>
+              <button 
+                onClick={() => { setShowTabletop(true); setTabletopStep(1); setNotification(null); setSugestaoAjuste(null); }}
+                className="bg-purple-650 hover:bg-purple-700 text-white font-bold px-4 py-2.5 rounded-lg text-xs flex items-center justify-center gap-2 shadow-2xs transition-colors whitespace-nowrap cursor-pointer"
+              >
+                🎮 Iniciar Tabletop Game
+              </button>
+              <button 
+                onClick={() => { setShowForm(true); setNotification(null); setSugestaoAjuste(null); }}
+                className="bg-indigo-650 hover:bg-indigo-700 text-white font-bold px-4 py-2.5 rounded-lg text-xs flex items-center justify-center gap-2 shadow-2xs transition-colors whitespace-nowrap cursor-pointer"
+              >
+                <Plus className="w-4 h-4" /> Registrar Novo Simulado
+              </button>
+            </>
+          )}
         </div>
       </div>
 

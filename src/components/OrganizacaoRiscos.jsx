@@ -1,20 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShieldAlert, Plus, Trash2, Network, Shield, AlertTriangle, Layers, Laptop, Radio, Database, RefreshCw } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function OrganizacaoRiscos({ db }) {
+  const { usuario, isAdmin, filterByGerencia, canCreate, canEdit } = useAuth();
   const [diretorias] = useState(db.diretorias.list());
-  const [gerencias, setGerencias] = useState(db.gerencias.list());
-  const [ativos, setAtivos] = useState(db.ativosSistemas.list());
-  const [riscos, setRiscos] = useState(db.riscos.list());
-  const [processos] = useState(db.processosCriticos.list());
-  const [planosAcao] = useState(db.planosAcao ? db.planosAcao.list() : []);
+  const [gerencias, setGerencias] = useState(filterByGerencia(db.gerencias.list()));
+  const [ativos, setAtivos] = useState(filterByGerencia(db.ativosSistemas.list()));
+  const [riscos, setRiscos] = useState(filterByGerencia(db.riscos.list(), 'processo.id_gerencia'));
+  const [processos] = useState(filterByGerencia(db.processosCriticos.list()));
+  const [planosAcao] = useState(filterByGerencia(db.planosAcao ? db.planosAcao.list() : []));
+
+  const recarregarListas = () => {
+    setGerencias(filterByGerencia(db.gerencias.list()));
+    setAtivos(filterByGerencia(db.ativosSistemas.list()));
+    setRiscos(filterByGerencia(db.riscos.list(), 'processo.id_gerencia'));
+  };
 
   // Estado para o Visualizador BIA Tree
-  const [selectedBiaProcId, setSelectedBiaProcId] = useState(db.processosCriticos.list()[0]?.id_processo || '');
+  const [selectedBiaProcId, setSelectedBiaProcId] = useState(processos[0]?.id_processo || '');
   const selectedBiaProc = processos.find(p => p.id_processo === selectedBiaProcId);
   const biaContrato = selectedBiaProc ? db.contratos.list().find(c => c.id_contrato === selectedBiaProc.id_contrato) : null;
   const biaAtivos = selectedBiaProc ? ativos.filter(a => a.id_gerencia === selectedBiaProc.id_gerencia) : [];
   const biaRiscos = selectedBiaProc ? riscos.filter(r => r.id_processo === selectedBiaProc.id_processo) : [];
+
 
   // Estados locais de controle de abas internas
   const [subTab, setSubTab] = useState('estrutura'); // 'estrutura', 'riscos', 'ativos'
@@ -71,7 +80,7 @@ export default function OrganizacaoRiscos({ db }) {
     if (!gerenciaForm.nome || !gerenciaForm.sigla) return;
     
     db.gerencias.create(gerenciaForm);
-    setGerencias(db.gerencias.list());
+    recarregarListas();
     setShowGerenciaForm(false);
     setGerenciaForm({ nome: '', sigla: '', tipo: 'Negócios', id_diretoria: 'DIR-001' });
     setNotification({ type: 'success', text: `Gerência ${gerenciaForm.sigla} cadastrada com sucesso!` });
@@ -94,7 +103,7 @@ export default function OrganizacaoRiscos({ db }) {
       score_residual
     });
 
-    setRiscos(db.riscos.list());
+    recarregarListas();
     setShowRiscoForm(false);
     setRiscoForm({
       nome: '',
@@ -115,7 +124,7 @@ export default function OrganizacaoRiscos({ db }) {
     if (!ativoForm.nome) return;
 
     db.ativosSistemas.create(ativoForm);
-    setAtivos(db.ativosSistemas.list());
+    recarregarListas();
     setShowAtivoForm(false);
     setAtivoForm({
       nome: '',
@@ -184,7 +193,7 @@ export default function OrganizacaoRiscos({ db }) {
           }
         });
         
-        setAtivos(db.ativosSistemas.list());
+        recarregarListas();
         setNotification({ type: 'success', text: `${count} ativos importados com sucesso em lote!` });
       } catch (err) {
         setNotification({ type: 'error', text: `Erro ao processar importação: ${err.message}` });
@@ -196,7 +205,7 @@ export default function OrganizacaoRiscos({ db }) {
   const handleDeleteRisco = (id) => {
     if (window.confirm('Excluir este risco mapeado?')) {
       db.riscos.delete(id);
-      setRiscos(db.riscos.list());
+      recarregarListas();
       setNotification({ type: 'info', text: 'Risco removido da análise.' });
     }
   };
@@ -248,12 +257,14 @@ export default function OrganizacaoRiscos({ db }) {
                 Mapeamento das 3 diretorias e suas respectivas gerências executivas. Os processos e contratos são herdados e acumulados diretamente na governança de cada gerência.
               </p>
             </div>
-            <button 
-              onClick={() => { setShowGerenciaForm(true); setNotification(null); }}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-lg text-xs flex items-center justify-center gap-2 shadow-sm transition-colors"
-            >
-              <Plus className="w-4 h-4" /> Cadastrar Gerência (GeXXX)
-            </button>
+            {isAdmin() && (
+              <button 
+                onClick={() => { setShowGerenciaForm(true); setNotification(null); }}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-lg text-xs flex items-center justify-center gap-2 shadow-sm transition-colors"
+              >
+                <Plus className="w-4 h-4" /> Cadastrar Gerência (GeXXX)
+              </button>
+            )}
           </div>
 
           {/* Form Gerência */}
@@ -381,12 +392,14 @@ export default function OrganizacaoRiscos({ db }) {
                 Identificação e registro de ameaças (DDoS, Incêndio, Indisponibilidade predial) que afetam os processos da empresa. Vincule riscos a processos para embasamento dos cenários de PCO.
               </p>
             </div>
-            <button 
-              onClick={() => { setShowRiscoForm(true); setNotification(null); }}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-lg text-xs flex items-center justify-center gap-2 shadow-sm transition-colors"
-            >
-              <Plus className="w-4 h-4" /> Cadastrar Risco Operacional
-            </button>
+            {canCreate() && (
+              <button 
+                onClick={() => { setShowRiscoForm(true); setNotification(null); }}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-lg text-xs flex items-center justify-center gap-2 shadow-sm transition-colors"
+              >
+                <Plus className="w-4 h-4" /> Cadastrar Risco Operacional
+              </button>
+            )}
           </div>
 
           {/* Form Risco */}
@@ -646,6 +659,7 @@ export default function OrganizacaoRiscos({ db }) {
                         )}
                       </td>
                       <td className="px-6 py-4 text-center">
+                      {canEdit(r.processo?.id_gerencia) && (
                         <button 
                           onClick={() => handleDeleteRisco(r.id_risco)}
                           className="text-slate-450 hover:text-rose-600 p-1 rounded hover:bg-rose-50 dark:hover:bg-rose-950/25 transition-all"
@@ -653,6 +667,7 @@ export default function OrganizacaoRiscos({ db }) {
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
+                      )}
                       </td>
                     </tr>
                   );
@@ -673,50 +688,52 @@ export default function OrganizacaoRiscos({ db }) {
                 Mapeamento de ativos críticos como Links de Telecom (Embratel), Bancos de Dados e servidores em nuvem. Os ativos devem estar associados aos processos na AIN.
               </p>
             </div>
-            <div className="flex gap-2">
-              <label className="cursor-pointer bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 font-semibold px-4 py-2 rounded-lg text-xs flex items-center justify-center gap-2 shadow-sm transition-colors border border-slate-200 dark:border-slate-700">
-                📥 Importar Lote (JSON/CSV)
-                <input 
-                  type="file" 
-                  accept=".csv,.json" 
-                  onChange={handleImportarAtivos} 
-                  className="hidden" 
-                />
-              </label>
-              <button 
-                onClick={() => {
-                  const templateJSON = JSON.stringify([{
-                    nome: "Banco de Dados Produção",
-                    tipo: "Sistema",
-                    criticidade: "Crítica",
-                    responsavel_tecnico: "admin@empresa.com",
-                    fornecedor: "Oracle Inc.",
-                    data_aquisicao: "2024-01-10",
-                    data_fim_suporte: "2027-12-31",
-                    tipo_redundancia: "geografica",
-                    rto_proprio_minutos: 30,
-                    dados_classificacao: "confidencial",
-                    status_ativo: "operacional"
-                  }], null, 2);
-                  const blob = new Blob([templateJSON], { type: "application/json" });
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement("a");
-                  a.href = url;
-                  a.download = "template_ativos.json";
-                  a.click();
-                }}
-                className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 font-semibold px-3 py-2 rounded-lg text-xs transition-colors border border-slate-200 dark:border-slate-700"
-                title="Download Template JSON"
-              >
-                📋 Template JSON
-              </button>
-              <button 
-                onClick={() => { setShowAtivoForm(true); setNotification(null); }}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-lg text-xs flex items-center justify-center gap-2 shadow-sm transition-colors"
-              >
-                <Plus className="w-4 h-4" /> Cadastrar Ativo
-              </button>
-            </div>
+            {canCreate() && (
+              <div className="flex gap-2">
+                <label className="cursor-pointer bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 font-semibold px-4 py-2 rounded-lg text-xs flex items-center justify-center gap-2 shadow-sm transition-colors border border-slate-200 dark:border-slate-700">
+                  📥 Importar Lote (JSON/CSV)
+                  <input 
+                    type="file" 
+                    accept=".csv,.json" 
+                    onChange={handleImportarAtivos} 
+                    className="hidden" 
+                  />
+                </label>
+                <button 
+                  onClick={() => {
+                    const templateJSON = JSON.stringify([{
+                      nome: "Banco de Dados Produção",
+                      tipo: "Sistema",
+                      criticidade: "Crítica",
+                      responsavel_tecnico: "admin@empresa.com",
+                      fornecedor: "Oracle Inc.",
+                      data_aquisicao: "2024-01-10",
+                      data_fim_suporte: "2027-12-31",
+                      tipo_redundancia: "geografica",
+                      rto_proprio_minutos: 30,
+                      dados_classificacao: "confidencial",
+                      status_ativo: "operacional"
+                    }], null, 2);
+                    const blob = new Blob([templateJSON], { type: "application/json" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "template_ativos.json";
+                    a.click();
+                  }}
+                  className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 font-semibold px-3 py-2 rounded-lg text-xs transition-colors border border-slate-200 dark:border-slate-700"
+                  title="Download Template JSON"
+                >
+                  📋 Template JSON
+                </button>
+                <button 
+                  onClick={() => { setShowAtivoForm(true); setNotification(null); }}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-lg text-xs flex items-center justify-center gap-2 shadow-sm transition-colors"
+                >
+                  <Plus className="w-4 h-4" /> Cadastrar Ativo
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Form Ativo */}

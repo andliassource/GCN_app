@@ -1,12 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, ShieldAlert, Award, ArrowRight, DollarSign, Calculator, Eye, HelpCircle, X, Download } from 'lucide-react';
 import { pdfService } from '../services/pdfService';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function AnaliseImpacto({ db }) {
-  const [processos, setProcessos] = useState(db.processosCriticos.list());
-  const [ains, setAins] = useState(db.analiseImpactoNegocio.list());
+  const { usuario, isAdmin, filterByGerencia, canCreate, canEdit } = useAuth();
+  const [processos, setProcessos] = useState(filterByGerencia(db.processosCriticos.list()));
+  const [ains, setAins] = useState(filterByGerencia(db.analiseImpactoNegocio.list(), 'processo.id_gerencia'));
   const [contratos] = useState(db.contratos.list());
   const [gerencias] = useState(db.gerencias?.list ? db.gerencias.list() : (JSON.parse(localStorage.getItem('gcn_database') || '{}').gerencias || []));
+
+  const recarregarListas = () => {
+    setProcessos(filterByGerencia(db.processosCriticos.list()));
+    setAins(filterByGerencia(db.analiseImpactoNegocio.list(), 'processo.id_gerencia'));
+  };
+
 
   // Estados locais
   const [showProcessForm, setShowProcessForm] = useState(false);
@@ -44,9 +52,9 @@ export default function AnaliseImpacto({ db }) {
     }
 
     const novoProc = db.processosCriticos.create(procFormData);
-    setProcessos(db.processosCriticos.list());
+    recarregarListas();
     setShowProcessForm(false);
-    setProcFormData({ nome: '', descricao: '', id_contrato: '', id_gerencia: '', tipo_plano: '', sla_interno: '', criticidade: 'Baixa' });
+    setProcFormData({ nome: '', descricao: '', id_contrato: '', id_gerencia: isAdmin() ? '' : (usuario?.id_gerencia || ''), tipo_plano: '', sla_interno: '', criticidade: 'Baixa' });
     setNotification({ type: 'success', text: `Processo Crítico ${novoProc.id_processo} mapeado com sucesso! Gerência: ${procFormData.id_gerencia}. Agora configure sua AIN.` });
   };
 
@@ -63,7 +71,7 @@ export default function AnaliseImpacto({ db }) {
       MTDCN: parseInt(ainFormData.MTDCN)
     });
 
-    setAins(db.analiseImpactoNegocio.list());
+    recarregarListas();
     setShowAinForm(false);
     setSelectedProcesso(null);
     setNotification({ type: 'success', text: `Análise de Impacto (AIN) configurada para o processo ${selectedProcesso.id_processo}.` });
@@ -95,8 +103,7 @@ export default function AnaliseImpacto({ db }) {
   const handleDeleteProcess = (id) => {
     if (window.confirm(`Deseja deletar o processo crítico ${id}? Todos os planos, AINs e avaliações associadas serão excluídos permanentemente.`)) {
       db.processosCriticos.delete(id);
-      setProcessos(db.processosCriticos.list());
-      setAins(db.analiseImpactoNegocio.list());
+      recarregarListas();
       setNotification({ type: 'info', text: 'Processo e dependências deletados.' });
     }
   };
@@ -157,12 +164,21 @@ export default function AnaliseImpacto({ db }) {
             </p>
           </div>
           <div className="flex gap-4 mt-4">
-            <button 
-              onClick={() => { setShowProcessForm(true); setShowAinForm(false); setNotification(null); }}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-lg text-xs flex items-center justify-center gap-2 shadow-sm transition-colors"
-            >
-              <Plus className="w-4 h-4" /> Cadastrar Processo Crítico
-            </button>
+            {canCreate() && (
+              <button 
+                onClick={() => { 
+                  setShowProcessForm(true); 
+                  setShowAinForm(false); 
+                  setNotification(null); 
+                  if (!isAdmin()) {
+                    setProcFormData(prev => ({ ...prev, id_gerencia: usuario?.id_gerencia || '' }));
+                  }
+                }}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-lg text-xs flex items-center justify-center gap-2 shadow-sm transition-colors"
+              >
+                <Plus className="w-4 h-4" /> Cadastrar Processo Crítico
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -216,8 +232,9 @@ export default function AnaliseImpacto({ db }) {
               <select 
                 value={procFormData.id_gerencia} 
                 onChange={(e) => setProcFormData({...procFormData, id_gerencia: e.target.value})} 
-                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg px-4 py-2.5 text-xs text-slate-850 dark:text-slate-300 focus:outline-indigo-500"
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg px-4 py-2.5 text-xs text-slate-850 dark:text-slate-300 focus:outline-indigo-500 disabled:opacity-75 disabled:cursor-not-allowed"
                 required
+                disabled={!isAdmin()}
               >
                 <option value="">Selecione a Gerência Responsável...</option>
                 {gerencias.map(g => (
@@ -499,19 +516,31 @@ export default function AnaliseImpacto({ db }) {
                         >
                           <Eye className="w-3.5 h-3.5" /> 360°
                         </button>
-                        <button
-                          onClick={() => handleOpenAinForm(proc)}
-                          className="bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950 dark:hover:bg-indigo-900 text-indigo-600 dark:text-indigo-400 font-bold px-2.5 py-1.5 rounded text-[10px] flex items-center gap-1 transition-all"
-                        >
-                          Configurar BIA
-                        </button>
-                        <button
-                          onClick={() => handleDeleteProcess(proc.id_processo)}
-                          className="text-slate-400 hover:text-rose-600 p-1.5 rounded hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors"
-                          title="Deletar processo crítico"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {canEdit(proc.id_gerencia) ? (
+                          <button
+                            onClick={() => handleOpenAinForm(proc)}
+                            className="bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950 dark:hover:bg-indigo-900 text-indigo-600 dark:text-indigo-400 font-bold px-2.5 py-1.5 rounded text-[10px] flex items-center gap-1 transition-all"
+                          >
+                            Configurar BIA
+                          </button>
+                        ) : (
+                          <button
+                            disabled
+                            className="bg-slate-100 dark:bg-slate-800 text-slate-400 font-bold px-2.5 py-1.5 rounded text-[10px] flex items-center gap-1 opacity-50 cursor-not-allowed"
+                            title="Apenas gestores desta gerência podem configurar"
+                          >
+                            Configurar BIA
+                          </button>
+                        )}
+                        {canEdit(proc.id_gerencia) && (
+                          <button
+                            onClick={() => { handleDeleteProcess(proc.id_processo); recarregarListas(); }}
+                            className="text-slate-450 hover:text-rose-600 p-1.5 rounded hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors"
+                            title="Deletar processo crítico"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

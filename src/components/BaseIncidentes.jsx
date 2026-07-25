@@ -3,12 +3,22 @@ import { Plus, Trash2, Calendar, AlertOctagon, ShieldAlert, CheckCircle2, Search
 import { useAuth } from '../contexts/AuthContext';
 
 export default function BaseIncidentes({ db }) {
-  const { usuario } = useAuth();
-  const [incidentes, setIncidentes] = useState(db.incidentes.list());
-  const [processos] = useState(db.processosCriticos.list());
+  const { usuario, isAdmin, filterByGerencia, canCreate } = useAuth();
+  const todosIncidentes = db.incidentes.list();
+  const [incidentes, setIncidentes] = useState(filterByGerencia(todosIncidentes, ['id_gerencia', 'processo.id_gerencia']));
+  const todosProcessos = db.processosCriticos.list();
+  const [processos] = useState(filterByGerencia(todosProcessos));
   const [planosPCO] = useState(db.planosContinuidade.list());
-  const [licoes, setLicoes] = useState(db.licoesAprendidas.list());
-  const [planosAcao, setPlanosAcao] = useState(db.planosAcao.list());
+  const todasLicoes = db.licoesAprendidas.list();
+  const [licoes, setLicoes] = useState(filterByGerencia(todasLicoes, ['id_gerencia', 'processo.id_gerencia']));
+  const todosPlanosAcao = db.planosAcao.list();
+  const [planosAcao, setPlanosAcao] = useState(filterByGerencia(todosPlanosAcao, ['id_gerencia', 'processo.id_gerencia']));
+
+  const recarregarListas = () => {
+    setIncidentes(filterByGerencia(db.incidentes.list(), ['id_gerencia', 'processo.id_gerencia']));
+    setLicoes(filterByGerencia(db.licoesAprendidas.list(), ['id_gerencia', 'processo.id_gerencia']));
+    setPlanosAcao(filterByGerencia(db.planosAcao.list(), ['id_gerencia', 'processo.id_gerencia']));
+  };
 
   // Estados da War Room
   const [warRoomIncidente, setWarRoomIncidente] = useState(null);
@@ -82,7 +92,7 @@ export default function BaseIncidentes({ db }) {
       setNotification({ type: 'success', text: `Incidente ${novoIncidente.id_incidente} registrado com sucesso!` });
     }
 
-    setIncidentes(db.incidentes.list());
+    recarregarListas();
     setShowForm(false);
     setFormData({
       data_hora: '', local: '', descricao: '', tipo_incidente: '', impacto: 'Baixo',
@@ -95,7 +105,7 @@ export default function BaseIncidentes({ db }) {
     if (!licaoData.id_incidente || !licaoData.descricao || !licaoData.recomendacao) return;
 
     db.licoesAprendidas.create(licaoData);
-    setLicoes(db.licoesAprendidas.list());
+    recarregarListas();
     setShowLicaoForm(false);
     setLicaoData({ id_incidente: '', descricao: '', categoria: 'Técnica', recomendacao: '', impacto_no_risco: 'elevou_probabilidade' });
     setNotification({ type: 'success', text: 'Lição aprendida vinculada ao incidente com sucesso!' });
@@ -104,7 +114,7 @@ export default function BaseIncidentes({ db }) {
   const handleDelete = (id) => {
     if (window.confirm(`Deseja realmente excluir o log de incidente ${id}?`)) {
       db.incidentes.delete(id);
-      setIncidentes(db.incidentes.list());
+      recarregarListas();
       setNotification({ type: 'info', text: 'Incidente excluído do histórico.' });
     }
   };
@@ -205,8 +215,7 @@ export default function BaseIncidentes({ db }) {
       setPlanosAcao(db.planosAcao.list());
     }
 
-    setIncidentes(db.incidentes.list());
-    setLicoes(db.licoesAprendidas.list());
+    recarregarListas();
     setWarRoomIncidente(null);
 
     setNotification({
@@ -288,12 +297,14 @@ export default function BaseIncidentes({ db }) {
               </div>
             </div>
 
-            <button
-              onClick={() => { setShowForm(true); setNotification(null); }}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-lg text-xs flex items-center justify-center gap-2 shadow-sm transition-colors"
-            >
-              <Plus className="w-4 h-4" /> Registrar Incidente
-            </button>
+            {canCreate() && (
+              <button
+                onClick={() => { setShowForm(true); setNotification(null); }}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-lg text-xs flex items-center justify-center gap-2 shadow-sm transition-colors"
+              >
+                <Plus className="w-4 h-4" /> Registrar Incidente
+              </button>
+            )}
           </div>
 
           {/* Form Incidente */}
@@ -484,9 +495,11 @@ export default function BaseIncidentes({ db }) {
                           <Play className="w-3.5 h-3.5" /> 🚨 Entrar na War Room
                         </button>
                       )}
-                      <button onClick={() => handleDelete(inc.id_incidente)} className="text-slate-400 hover:text-rose-500 p-1 cursor-pointer">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {canEdit(inc.id_gerencia || inc.processo?.id_gerencia) && (
+                        <button onClick={() => handleDelete(inc.id_incidente)} className="text-slate-400 hover:text-rose-500 p-1 cursor-pointer" title="Excluir incidente">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -532,9 +545,11 @@ export default function BaseIncidentes({ db }) {
               <h3 className="font-bold text-xs text-slate-800 dark:text-white uppercase tracking-wider">Repositório de Lições Aprendidas (Post-Mortem)</h3>
               <p className="text-xs text-slate-400 mt-0.5">ISO 22301 §10.1 — Melhoria contínua derivada da resposta a incidentes.</p>
             </div>
-            <button onClick={() => setShowLicaoForm(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-lg text-xs flex items-center gap-1.5 shadow-sm">
-              <Plus className="w-4 h-4" /> Registrar Lição Aprendida
-            </button>
+            {canCreate() && (
+              <button onClick={() => setShowLicaoForm(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-lg text-xs flex items-center gap-1.5 shadow-sm">
+                <Plus className="w-4 h-4" /> Registrar Lição Aprendida
+              </button>
+            )}
           </div>
 
           {showLicaoForm && (
@@ -725,7 +740,7 @@ export default function BaseIncidentes({ db }) {
                         <div 
                           key={t.id} 
                           onClick={() => {
-                            if (warRoomIncidente.status_incidente !== 'fechado') {
+                            if (warRoomIncidente.status_incidente !== 'fechado' && canEdit(warRoomIncidente.id_gerencia || warRoomIncidente.processo?.id_gerencia)) {
                               setWarRoomTasks(prev => ({ ...prev, [t.id]: !prev[t.id] }));
                             }
                           }}
@@ -747,64 +762,74 @@ export default function BaseIncidentes({ db }) {
                   </div>
                 </div>
 
-                {/* Formulário de Resolução (Apenas Aberto) */}
-                {warRoomIncidente.status_incidente !== 'fechado' && (
-                  <form onSubmit={handleResolveCrise} className="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-4">
-                    <h4 className="font-extrabold text-slate-800 dark:text-white uppercase text-[10px] tracking-wider">Relatório de Fechamento da Crise</h4>
-                    
-                    <div className="grid grid-cols-2 gap-4">
+                {/* Formulário de Resolução (Apenas Aberto e para quem pode editar) */}
+                {warRoomIncidente.status_incidente !== 'fechado' ? (
+                  canEdit(warRoomIncidente.id_gerencia || warRoomIncidente.processo?.id_gerencia) ? (
+                    <form onSubmit={handleResolveCrise} className="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-4">
+                      <h4 className="font-extrabold text-slate-800 dark:text-white uppercase text-[10px] tracking-wider">Relatório de Fechamento da Crise</h4>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase">RTO Real Total (Minutos) *</label>
+                          <input 
+                            type="number" 
+                            value={rtoRealInput}
+                            onChange={(e) => setRtoRealInput(e.target.value)}
+                            className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-indigo-500 font-bold"
+                            placeholder="Ex: 45"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase">Eficácia Geral do PCO *</label>
+                          <select className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-750 dark:text-slate-350 focus:outline-indigo-500">
+                            <option>Plano Excelente (Mitigação Total)</option>
+                            <option>Plano Médio (Algumas dificuldades)</option>
+                            <option>Plano Ineficaz (Rever procedimentos)</option>
+                          </select>
+                        </div>
+                      </div>
+
                       <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase">RTO Real Total (Minutos) *</label>
+                        <label className="text-[10px] font-bold text-slate-500 uppercase">Medidas de Mitigação Aplicadas *</label>
                         <input 
-                          type="number" 
-                          value={rtoRealInput}
-                          onChange={(e) => setRtoRealInput(e.target.value)}
-                          className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-indigo-500 font-bold"
-                          placeholder="Ex: 45"
+                          type="text"
+                          value={mitigacaoInput}
+                          onChange={(e) => setMitigacaoInput(e.target.value)}
+                          className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-indigo-500"
+                          placeholder="Ex: Chaveamento emergencial para o link secundário via embratel"
                           required
                         />
                       </div>
+
                       <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase">Eficácia Geral do PCO *</label>
-                        <select className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-750 dark:text-slate-350 focus:outline-indigo-500">
-                          <option>Plano Excelente (Mitigação Total)</option>
-                          <option>Plano Médio (Algumas dificuldades)</option>
-                          <option>Plano Ineficaz (Rever procedimentos)</option>
-                        </select>
+                        <label className="text-[10px] font-bold text-slate-500 uppercase">Ações para Normalização do Serviço *</label>
+                        <input 
+                          type="text"
+                          value={solucaoInput}
+                          onChange={(e) => setSolucaoInput(e.target.value)}
+                          className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-indigo-500"
+                          placeholder="Ex: Link principal restabelecido pela concessionária às 14:48h"
+                          required
+                        />
                       </div>
-                    </div>
 
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase">Medidas de Mitigação Aplicadas *</label>
-                      <input 
-                        type="text"
-                        value={mitigacaoInput}
-                        onChange={(e) => setMitigacaoInput(e.target.value)}
-                        className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-indigo-500"
-                        placeholder="Ex: Chaveamento emergencial para o link secundário via embratel"
-                        required
-                      />
+                      <button 
+                        type="submit"
+                        className="w-full bg-rose-650 hover:bg-rose-700 text-white font-bold py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+                      >
+                        <CheckCircle2 className="w-4 h-4" /> Declarar Restabelecimento Técnico (Encerrar Crise)
+                      </button>
+                    </form>
+                  ) : (
+                    <div className="pt-4 border-t border-slate-200 dark:border-slate-800 text-center text-xs text-rose-500 font-semibold bg-rose-50/50 dark:bg-rose-950/20 p-3 rounded-lg">
+                      Modo Leitura — Apenas gestores da área responsável ou administradores da Geric podem responder/fechar esta crise.
                     </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase">Ações para Normalização do Serviço *</label>
-                      <input 
-                        type="text"
-                        value={solucaoInput}
-                        onChange={(e) => setSolucaoInput(e.target.value)}
-                        className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-indigo-500"
-                        placeholder="Ex: Link principal restabelecido pela concessionária às 14:48h"
-                        required
-                      />
-                    </div>
-
-                    <button 
-                      type="submit"
-                      className="w-full bg-rose-650 hover:bg-rose-700 text-white font-bold py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm transition-colors cursor-pointer"
-                    >
-                      <CheckCircle2 className="w-4 h-4" /> Declarar Restabelecimento Técnico (Encerrar Crise)
-                    </button>
-                  </form>
+                  )
+                ) : (
+                  <div className="p-3 text-center text-slate-400 italic border-t border-slate-200 dark:border-slate-800 text-[10px] font-semibold bg-slate-100 dark:bg-slate-955 rounded-lg mt-2">
+                    🔒 Comunicações encerradas e arquivadas para esta crise.
+                  </div>
                 )}
               </div>
 
