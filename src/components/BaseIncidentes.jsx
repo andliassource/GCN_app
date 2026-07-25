@@ -32,6 +32,33 @@ export default function BaseIncidentes({ db }) {
   // Abas do Módulo
   const [tab, setTab] = useState('incidentes'); // 'incidentes', 'licoes', 'acoes'
 
+  const pcoVinculado = warRoomIncidente ? db.planosContinuidade.list().find(p => p.id_processo === warRoomIncidente.id_processo) : null;
+  
+  const getChecklistTasks = () => {
+    if (!warRoomIncidente) return [];
+    const defaultTasks = [
+      { id: 't1', label: '1. Acionar equipe de sustentação e segurança física' },
+      { id: 't2', label: '2. Desviar fluxo operacional para redes ou data centers secundários' },
+      { id: 't3', label: '3. Notificar fornecedores e intervenientes sob contrato emergencial' },
+      { id: 't4', label: '4. Emitir comunicado corporativo oficial de contingência (Gemac)' },
+    ];
+    if (pcoVinculado && warRoomIncidente.id_pco_acionado === pcoVinculado.id_pco) {
+      const cenarioStr = pcoVinculado.cenario_sistemas || '';
+      const regex = /Passo \d+:/g;
+      const splitSteps = cenarioStr.split(regex).map(s => s.trim()).filter(s => s !== '');
+      const matches = cenarioStr.match(regex) || [];
+      if (splitSteps.length > 0) {
+        return splitSteps.map((s, idx) => ({
+          id: `dyn-step-${idx}`,
+          label: `${matches[idx] || `Etapa ${idx + 1}:`} ${s}`
+        }));
+      }
+    }
+    return defaultTasks;
+  };
+
+  const checklistTasks = getChecklistTasks();
+
   // Estados locais
   const [showForm, setShowForm] = useState(false);
   const [showLicaoForm, setShowLicaoForm] = useState(false);
@@ -222,6 +249,36 @@ export default function BaseIncidentes({ db }) {
       type: 'success',
       text: `🚨 Incidente ${warRoomIncidente.id_incidente} restabelecido com sucesso! Lição aprendida e validações registradas na base GCN.`
     });
+  };
+
+  const handleAcionarPCO = (pco) => {
+    if (!warRoomIncidente || !pco) return;
+
+    // 1. Atualizar o incidente com o ID do PCO acionado
+    const updatedInc = db.incidentes.update(warRoomIncidente.id_incidente, {
+      id_pco_acionado: pco.id_pco
+    });
+
+    // 2. Registrar acionamento oficial no PCO
+    db.planosContinuidade.registrarAcionamento(pco.id_pco, warRoomIncidente.id_incidente, usuario.nome);
+
+    // 3. Atualizar estados locais
+    recarregarListas();
+    setWarRoomIncidente({
+      ...warRoomIncidente,
+      id_pco_acionado: pco.id_pco,
+      pco: pco
+    });
+
+    // 4. Enviar mensagem automática no chat da War Room simulando ativação
+    const activationMsg = {
+      id: `chat-pco-${Date.now()}`,
+      data_hora: new Date().toISOString(),
+      autor: 'SISTEMA GCN',
+      mensagem: `⚡ PLANO DE CONTINUIDADE ACIONADO OFICIALMENTE: ${pco.id_pco}. Iniciando estratégias de contingência descritas no plano da área.`,
+      role: 'geric'
+    };
+    setWarRoomChat(prev => [...prev, activationMsg]);
   };
 
   // Filtragem e busca
@@ -722,43 +779,132 @@ export default function BaseIncidentes({ db }) {
                       />
                     </div>
                   </div>
-
-                  {/* Checklist do PCO / PRD */}
-                  <div className="space-y-3">
+                  
+                  {/* Gestão do Plano de Continuidade (PCO) */}
+                  <div className="space-y-4">
                     <div className="flex items-center gap-1.5 border-b border-slate-100 dark:border-slate-800 pb-2">
                       <BookOpen className="w-4 h-4 text-indigo-500" />
-                      <h4 className="font-extrabold text-slate-800 dark:text-white uppercase text-[10px] tracking-wider">Ações de Contingência do Plano</h4>
+                      <h4 className="font-extrabold text-slate-855 dark:text-white uppercase text-[10px] tracking-wider">Ações de Contingência e PCO</h4>
                     </div>
-                    
-                    <div className="space-y-2">
-                      {[
-                        { id: 't1', label: '1. Acionar equipe de sustentação e segurança física' },
-                        { id: 't2', label: '2. Desviar fluxo operacional para redes ou data centers secundários' },
-                        { id: 't3', label: '3. Notificar fornecedores e intervenientes sob contrato emergencial' },
-                        { id: 't4', label: '4. Emitir comunicado corporativo oficial de contingência (Gemac)' },
-                      ].map(t => (
-                        <div 
-                          key={t.id} 
-                          onClick={() => {
-                            if (warRoomIncidente.status_incidente !== 'fechado' && canEdit(warRoomIncidente.id_gerencia || warRoomIncidente.processo?.id_gerencia)) {
-                              setWarRoomTasks(prev => ({ ...prev, [t.id]: !prev[t.id] }));
-                            }
-                          }}
-                          className={`p-3 rounded-lg border flex items-center gap-3 transition-all ${
-                            warRoomIncidente.status_incidente !== 'fechado' ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-850/40' : 'opacity-70'
-                          } ${warRoomTasks[t.id] ? 'border-indigo-500 bg-indigo-50/10 dark:bg-indigo-950/10' : 'border-slate-200 dark:border-slate-800'}`}
-                        >
-                          <div className={`w-4 h-4 rounded flex items-center justify-center border transition-all ${
-                            warRoomTasks[t.id] ? 'bg-indigo-650 border-indigo-650 text-white' : 'border-slate-350 dark:border-slate-700 bg-white dark:bg-slate-950'
-                          }`}>
-                            {warRoomTasks[t.id] && <Check className="w-3 h-3" />}
+
+                    {pcoVinculado ? (
+                      warRoomIncidente.id_pco_acionado === pcoVinculado.id_pco ? (
+                        <div className="space-y-4">
+                          {/* Banner de PCO Acionado */}
+                          <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-255 dark:border-emerald-900 rounded-xl space-y-2">
+                            <div className="flex justify-between items-center">
+                              <span className="font-bold text-[10px] text-emerald-800 dark:text-emerald-450 uppercase flex items-center gap-1">
+                                🟢 PCO Oficial Acionado em Contingência
+                              </span>
+                              <span className="text-[9px] bg-emerald-200/55 text-emerald-900 dark:bg-emerald-900 dark:text-emerald-200 font-mono px-1.5 py-0.2 rounded font-black">{pcoVinculado.id_pco}</span>
+                            </div>
+                            <p className="text-[11px] text-emerald-900 dark:text-emerald-350 leading-relaxed font-semibold">
+                              <strong>Estratégia de Recuperação:</strong> {pcoVinculado.estrategia_recuperacao}
+                            </p>
                           </div>
-                          <span className={`font-semibold ${warRoomTasks[t.id] ? 'text-slate-800 dark:text-slate-200' : 'text-slate-500'}`}>
-                            {t.label}
-                          </span>
+
+                          {/* Checklist Dinâmico de Sistemas */}
+                          <div className="space-y-2">
+                            <h5 className="font-bold text-[9px] uppercase text-slate-450">Checklist de Recuperação de Sistemas:</h5>
+                            <div className="space-y-2">
+                              {checklistTasks.map(t => (
+                                <div 
+                                  key={t.id} 
+                                  onClick={() => {
+                                    if (warRoomIncidente.status_incidente !== 'fechado' && canEdit(warRoomIncidente.id_gerencia || warRoomIncidente.processo?.id_gerencia)) {
+                                      setWarRoomTasks(prev => ({ ...prev, [t.id]: !prev[t.id] }));
+                                    }
+                                  }}
+                                  className={`p-3 rounded-lg border flex items-center gap-3 transition-all ${
+                                    warRoomIncidente.status_incidente !== 'fechado' ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-850/40' : 'opacity-70'
+                                  } ${warRoomTasks[t.id] ? 'border-indigo-500 bg-indigo-50/10 dark:bg-indigo-950/10' : 'border-slate-200 dark:border-slate-800'}`}
+                                >
+                                  <div className={`w-4 h-4 rounded flex items-center justify-center border transition-all ${
+                                    warRoomTasks[t.id] ? 'bg-indigo-650 border-indigo-650 text-white' : 'border-slate-350 dark:border-slate-700 bg-white dark:bg-slate-955'
+                                  }`}>
+                                    {warRoomTasks[t.id] && <Check className="w-3 h-3" />}
+                                  </div>
+                                  <span className={`font-semibold ${warRoomTasks[t.id] ? 'text-slate-800 dark:text-slate-200' : 'text-slate-500'}`}>
+                                    {t.label}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Seções Adicionais do PCO */}
+                          <div className="grid grid-cols-2 gap-3 pt-2 text-[10px]">
+                            <div className="p-3 bg-slate-50 dark:bg-slate-950/40 rounded-lg border border-slate-200 dark:border-slate-850">
+                              <strong className="text-slate-750 dark:text-slate-350 block uppercase text-[8px] mb-1">Recursos Necessários</strong>
+                              <p className="text-slate-500 leading-normal">{pcoVinculado.recursos_necessarios}</p>
+                            </div>
+                            <div className="p-3 bg-slate-50 dark:bg-slate-950/40 rounded-lg border border-slate-200 dark:border-slate-850">
+                              <strong className="text-slate-750 dark:text-slate-350 block uppercase text-[8px] mb-1">Cenário Pessoas/Escalonamento</strong>
+                              <p className="text-slate-500 leading-normal">{pcoVinculado.escalonamento_crise}</p>
+                            </div>
+                          </div>
+
                         </div>
-                      ))}
-                    </div>
+                      ) : (
+                        <div className="p-4 bg-amber-50/60 dark:bg-amber-950/10 border border-amber-250 dark:border-amber-900 rounded-xl space-y-3">
+                          <div className="flex justify-between items-center">
+                            <span className="font-bold text-[10px] text-amber-700 dark:text-amber-500 uppercase">
+                              ⚠️ Plano de Continuidade (PCO) Disponível
+                            </span>
+                            <span className="text-[9px] bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 font-mono px-1.5 py-0.2 rounded font-black">{pcoVinculado.id_pco}</span>
+                          </div>
+                          <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed font-semibold">
+                            Há um plano de continuidade homologado para o processo <strong>{warRoomIncidente.processo?.nome}</strong>. Recomenda-se acioná-lo imediatamente para guiar as ações da sala de crise.
+                          </p>
+                          {canEdit(warRoomIncidente.id_gerencia || warRoomIncidente.processo?.id_gerencia) && (
+                            <button
+                              type="button"
+                              onClick={() => handleAcionarPCO(pcoVinculado)}
+                              className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold rounded-lg text-xs transition-colors flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                            >
+                              ⚡ Acionar Plano de Continuidade Oficial
+                            </button>
+                          )}
+                        </div>
+                      )
+                    ) : (
+                      <div className="space-y-4">
+                        {/* Alerta de PCO não existente */}
+                        <div className="p-3.5 bg-slate-100 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl space-y-1">
+                          <span className="font-bold text-[10px] text-slate-500 uppercase block">⚠️ PCO Pendente/Inexistente</span>
+                          <p className="text-slate-450 leading-relaxed text-[11px]">
+                            Não há Plano de Continuidade (PCO) aprovado no banco de dados para o processo <strong>{warRoomIncidente.processo?.nome || 'N/D'}</strong>.
+                            Exibindo roteiro de contingência genérico da empresa.
+                          </p>
+                        </div>
+
+                        {/* Checklist Geral */}
+                        <div className="space-y-2">
+                          {checklistTasks.map(t => (
+                            <div 
+                              key={t.id} 
+                              onClick={() => {
+                                if (warRoomIncidente.status_incidente !== 'fechado' && canEdit(warRoomIncidente.id_gerencia || warRoomIncidente.processo?.id_gerencia)) {
+                                  setWarRoomTasks(prev => ({ ...prev, [t.id]: !prev[t.id] }));
+                                }
+                              }}
+                              className={`p-3 rounded-lg border flex items-center gap-3 transition-all ${
+                                warRoomIncidente.status_incidente !== 'fechado' ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-850/40' : 'opacity-70'
+                              } ${warRoomTasks[t.id] ? 'border-indigo-500 bg-indigo-50/10 dark:bg-indigo-950/10' : 'border-slate-200 dark:border-slate-800'}`}
+                            >
+                              <div className={`w-4 h-4 rounded flex items-center justify-center border transition-all ${
+                                warRoomTasks[t.id] ? 'bg-indigo-650 border-indigo-650 text-white' : 'border-slate-350 dark:border-slate-700 bg-white dark:bg-slate-955'
+                              }`}>
+                {warRoomTasks[t.id] && <Check className="w-3 h-3" />}
+                              </div>
+                              <span className={`font-semibold ${warRoomTasks[t.id] ? 'text-slate-800 dark:text-slate-200' : 'text-slate-500'}`}>
+                                {t.label}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
