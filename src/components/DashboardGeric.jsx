@@ -93,6 +93,10 @@ const MatrizRisco = ({ riscos }) => {
     ['#fef9c3', '#fed7aa', '#fecaca', '#fecaca', '#fee2e2'],
     ['#fed7aa', '#fecaca', '#fecaca', '#fee2e2', '#fee2e2'],
   ];
+
+  const [hoverCelula, setHoverCelula] = useState(null);
+  const [hoverPos, setHoverPos] = useState({ x: 0, y: 0 });
+
   const contarNaCelula = (probIdx, impIdx) => {
     const PROB_SCORE = { 'Rara': 0, 'Pouco Provável': 1, 'Provável': 2, 'Muito Provável': 3, 'Quase Certa': 4 };
     const IMP_SCORE = { 'Insignificante': 0, 'Menor': 1, 'Moderado': 2, 'Maior': 3, 'Catastrófico': 4 };
@@ -102,8 +106,8 @@ const MatrizRisco = ({ riscos }) => {
     );
   };
   return (
-    <div className="overflow-auto">
-      <div className="text-[9px] text-slate-400 dark:text-slate-500 mb-2 font-semibold uppercase">Clique na célula para filtrar riscos</div>
+    <div className="overflow-auto relative">
+      <div className="text-[9px] text-slate-400 dark:text-slate-500 mb-2 font-semibold uppercase">Passe o mouse sobre as células preenchidas para ver as ameaças</div>
       <div className="min-w-[320px]">
         {/* Eixo X */}
         <div className="flex mb-1 ml-14">
@@ -119,9 +123,18 @@ const MatrizRisco = ({ riscos }) => {
               {IMP.map((imp, col) => {
                 const riscosCelula = contarNaCelula(row, col);
                 return (
-                  <div key={col} className="flex-1 h-9 mx-0.5 rounded flex items-center justify-center font-black text-xs cursor-pointer hover:opacity-80 transition-opacity"
+                  <div key={col} className="flex-1 h-9 mx-0.5 rounded flex items-center justify-center font-black text-xs cursor-default hover:opacity-80 transition-opacity"
                     style={{ backgroundColor: CORES[row][col], color: '#1e293b' }}
-                    title={riscosCelula.map(r => r.nome).join(', ')}
+                    onMouseEnter={(e) => {
+                      if (riscosCelula.length > 0) {
+                        setHoverCelula(riscosCelula);
+                        setHoverPos({ x: e.clientX, y: e.clientY });
+                      }
+                    }}
+                    onMouseMove={(e) => {
+                      setHoverPos({ x: e.clientX, y: e.clientY });
+                    }}
+                    onMouseLeave={() => setHoverCelula(null)}
                   >
                     {riscosCelula.length > 0 ? (
                       <span className="flex items-center justify-center w-5 h-5 bg-white/70 rounded-full text-slate-800 text-[10px] font-black shadow-sm">{riscosCelula.length}</span>
@@ -141,6 +154,39 @@ const MatrizRisco = ({ riscos }) => {
           ))}
         </div>
       </div>
+
+      {/* TOOLTIP FLUTUANTE CUSTOMIZADO PARA A MATRIZ DE RISCO */}
+      {hoverCelula && (
+        <div 
+          className="fixed z-50 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-xl space-y-3 pointer-events-none text-left max-w-sm"
+          style={{ left: hoverPos.x + 15, top: hoverPos.y - 15 }}
+        >
+          <div className="border-b border-slate-100 dark:border-slate-800 pb-2">
+            <h5 className="font-extrabold text-[10px] text-indigo-500 uppercase tracking-wider">Ameaças nesta Célula ({hoverCelula.length})</h5>
+          </div>
+          <div className="space-y-3 max-h-60 overflow-y-auto">
+            {hoverCelula.map((r, i) => (
+              <div key={i} className="space-y-1">
+                <div className="flex justify-between items-center text-[9px] font-bold">
+                  <span className="text-slate-400 font-mono">{r.id_risco}</span>
+                  <span className={`px-1.5 py-0.2 rounded font-black uppercase text-[8px] ${
+                    r.score_risco >= 15 ? 'bg-rose-100 text-rose-600' :
+                    r.score_risco >= 9 ? 'bg-orange-100 text-orange-600' :
+                    'bg-slate-100 text-slate-600'
+                  }`}>
+                    Score: {r.score_risco}
+                  </span>
+                </div>
+                <p className="text-[11px] font-bold text-slate-800 dark:text-white leading-tight">{r.nome}</p>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-snug">{r.descricao}</p>
+                {r.processo && (
+                  <p className="text-[9px] text-indigo-500 font-semibold">⚙️ {r.processo.nome} ({r.processo.id_gerencia})</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

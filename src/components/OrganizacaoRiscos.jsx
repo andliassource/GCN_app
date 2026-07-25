@@ -225,7 +225,7 @@ export default function OrganizacaoRiscos({ db }) {
           onClick={() => setSubTab('riscos')}
           className={`pb-3 transition-all ${subTab === 'riscos' ? 'border-b-2 border-indigo-600 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`}
         >
-          Riscos Operacionais (Geric)
+          Riscos Operacionais
         </button>
         <button 
           onClick={() => setSubTab('ativos')}
