@@ -547,7 +547,15 @@ export const dbService = {
       db.contratos.push(newC); saveDB(db); return newC;
     },
     delete: (id) => {
-      const db = getDB(); db.contratos = db.contratos.filter(c => c.id_contrato !== id); saveDB(db); return true;
+      const db = getDB();
+      db.contratos = db.contratos.filter(c => c.id_contrato !== id);
+      if (db.processosCriticos) {
+        db.processosCriticos.forEach(p => {
+          if (p.id_contrato === id) p.id_contrato = null;
+        });
+      }
+      saveDB(db);
+      return true;
     }
   },
 
@@ -576,6 +584,15 @@ export const dbService = {
         p.ativosIds.forEach(ativoId => { if (!db.processosCriticosAtivos) db.processosCriticosAtivos = []; db.processosCriticosAtivos.push({ id_processo: newP.id_processo, id_ativo: ativoId }); });
       }
       saveDB(db); return newP;
+    },
+    update: (id, data) => {
+      const db = getDB();
+      const idx = (db.processosCriticos || []).findIndex(p => p.id_processo === id);
+      if (idx !== -1) {
+        db.processosCriticos[idx] = { ...db.processosCriticos[idx], ...data };
+        saveDB(db);
+      }
+      return (db.processosCriticos || [])[idx];
     },
     delete: (id) => {
       const db = getDB();

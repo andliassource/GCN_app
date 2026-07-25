@@ -1,9 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Upload, Plus, Trash2, Calendar, FileText, ChevronRight, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function ContratosDocs({ db }) {
+  const { usuario, isAdmin } = useAuth();
+  const idGerencia = isAdmin() ? null : usuario?.id_gerencia;
+
   const [contratos, setContratos] = useState(db.contratos.list());
-  const [processos] = useState(db.processosCriticos.list());
+  const [processos, setProcessos] = useState(db.processosCriticos.list());
+
+  // Contratos e Processos filtrados por RBAC
+  const contratosFiltrados = useMemo(() => {
+    return idGerencia ? contratos.filter(c => c.id_gerencia === idGerencia) : contratos;
+  }, [contratos, idGerencia]);
+
+  const processosFiltrados = useMemo(() => {
+    return idGerencia ? processos.filter(p => p.id_gerencia === idGerencia) : processos;
+  }, [processos, idGerencia]);
 
   // Estados do formulário e upload
   const [isUploading, setIsUploading] = useState(false);
@@ -17,7 +30,9 @@ export default function ContratosDocs({ db }) {
     clausulas_risco: '',
     multas: '',
     data_inicio: '',
-    data_fim: ''
+    data_fim: '',
+    id_gerencia: idGerencia || 'GER-GOV01',
+    processoId: ''
   });
 
   const [notification, setNotification] = useState(null);
@@ -35,7 +50,9 @@ export default function ContratosDocs({ db }) {
         clausulas_risco: "Garantia de atendimento (SLA) para incidentes de nível 1 em até 2 horas. Risco operacional por vazamento de dados de clientes.",
         multas: "Multa penal rescisória de 10% do valor restante do contrato. Indenização civil de até R$ 50.000 por incidente cibernético.",
         data_inicio: "2026-01-15",
-        data_fim: "2028-01-15"
+        data_fim: "2028-01-15",
+        id_gerencia: idGerencia || 'GER-GOV01',
+        processoId: processosFiltrados[0]?.id_processo || ''
       };
 
       setFormData(mockExtracted);
@@ -43,7 +60,7 @@ export default function ContratosDocs({ db }) {
       setShowForm(true);
       setNotification({
         type: 'success',
-        text: 'Documento analisado com sucesso via OCR/IA! Valide as informações extraídas abaixo.'
+        text: 'Documento analisado com sucesso via OCR/IA! Valide as informações extraídas e confirme a vinculação operacional abaixo.'
       });
     }, 2500);
   };
@@ -82,11 +99,22 @@ export default function ContratosDocs({ db }) {
     }
 
     const novoContrato = db.contratos.create({
-      ...formData,
-      valor_faturamento: parseFloat(formData.valor_faturamento)
+      nome: formData.nome,
+      valor_faturamento: parseFloat(formData.valor_faturamento),
+      clausulas_risco: formData.clausulas_risco,
+      multas: formData.multas,
+      data_inicio: formData.data_inicio,
+      data_fim: formData.data_fim,
+      id_gerencia: formData.id_gerencia
     });
 
+    // Se selecionou um processo, atualizar o processo crítico com o ID do contrato criado
+    if (formData.processoId) {
+      db.processosCriticos.update(formData.processoId, { id_contrato: novoContrato.id_contrato });
+    }
+
     setContratos(db.contratos.list());
+    setProcessos(db.processosCriticos.list());
     setShowForm(false);
     setFormData({
       nome: '',
@@ -94,7 +122,9 @@ export default function ContratosDocs({ db }) {
       clausulas_risco: '',
       multas: '',
       data_inicio: '',
-      data_fim: ''
+      data_fim: '',
+      id_gerencia: idGerencia || 'GER-GOV01',
+      processoId: ''
     });
     setNotification({ type: 'success', text: `Contrato ${novoContrato.id_contrato} cadastrado e integrado com sucesso!` });
   };
@@ -103,6 +133,7 @@ export default function ContratosDocs({ db }) {
     if (window.confirm(`Deseja realmente excluir o contrato ${id}? Os processos vinculados serão atualizados.`)) {
       db.contratos.delete(id);
       setContratos(db.contratos.list());
+      setProcessos(db.processosCriticos.list());
       setNotification({ type: 'info', text: 'Contrato removido com sucesso.' });
     }
   };
@@ -227,13 +258,43 @@ export default function ContratosDocs({ db }) {
               />
             </div>
 
+            {/* Gerência Gestora (Segregação/RBAC) */}
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-500 uppercase">Gerência Proprietária *</label>
+              <select
+                value={formData.id_gerencia}
+                onChange={(e) => setFormData({ ...formData, id_gerencia: e.target.value, processoId: '' })}
+                className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-250 dark:border-slate-800 rounded-lg px-4 py-2.5 text-xs text-slate-800 dark:text-white focus:outline-indigo-500 font-semibold"
+                disabled={!isAdmin()}
+              >
+                {db.gerencias.list().map(g => (
+                  <option key={g.id_gerencia} value={g.id_gerencia}>{g.sigla} - {g.nome}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Processo Crítico Vinculado */}
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-500 uppercase">Processo Crítico Sustentado</label>
+              <select
+                value={formData.processoId}
+                onChange={(e) => setFormData({ ...formData, processoId: e.target.value })}
+                className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-250 dark:border-slate-800 rounded-lg px-4 py-2.5 text-xs text-slate-800 dark:text-white focus:outline-indigo-500 font-semibold"
+              >
+                <option value="">Nenhum - Contrato de Apoio Geral</option>
+                {processos.filter(p => p.id_gerencia === formData.id_gerencia).map(p => (
+                  <option key={p.id_processo} value={p.id_processo}>{p.id_processo} - {p.nome}</option>
+                ))}
+              </select>
+            </div>
+
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-500 uppercase">Faturamento Mensal Estimado (R$) *</label>
               <input 
                 type="number" 
                 value={formData.valor_faturamento} 
                 onChange={(e) => setFormData({...formData, valor_faturamento: e.target.value})} 
-                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg px-4 py-2.5 text-xs text-slate-800 dark:text-white focus:outline-indigo-500" 
+                className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-250 dark:border-slate-800 rounded-lg px-4 py-2.5 text-xs text-slate-800 dark:text-white focus:outline-indigo-500 font-bold" 
                 placeholder="Ex: 150000"
                 required
               />
@@ -246,14 +307,14 @@ export default function ContratosDocs({ db }) {
                   type="date" 
                   value={formData.data_inicio} 
                   onChange={(e) => setFormData({...formData, data_inicio: e.target.value})} 
-                  className="w-1/2 bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg px-4 py-2.5 text-xs text-slate-800 dark:text-white focus:outline-indigo-500" 
+                  className="w-1/2 bg-slate-50 dark:bg-slate-955 border border-slate-250 dark:border-slate-800 rounded-lg px-4 py-2.5 text-xs text-slate-800 dark:text-white focus:outline-indigo-500" 
                   required
                 />
                 <input 
                   type="date" 
                   value={formData.data_fim} 
                   onChange={(e) => setFormData({...formData, data_fim: e.target.value})} 
-                  className="w-1/2 bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg px-4 py-2.5 text-xs text-slate-800 dark:text-white focus:outline-indigo-500" 
+                  className="w-1/2 bg-slate-50 dark:bg-slate-955 border border-slate-250 dark:border-slate-800 rounded-lg px-4 py-2.5 text-xs text-slate-800 dark:text-white focus:outline-indigo-500" 
                   required
                 />
               </div>
@@ -264,8 +325,8 @@ export default function ContratosDocs({ db }) {
               <textarea 
                 rows="3"
                 value={formData.clausulas_risco} 
-                onChange={(e) => setFormData({...formData, clauses_risco: e.target.value})} 
-                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg px-4 py-2.5 text-xs text-slate-800 dark:text-white focus:outline-indigo-500" 
+                onChange={(e) => setFormData({...formData, clausulas_risco: e.target.value})} 
+                className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-250 dark:border-slate-800 rounded-lg px-4 py-2.5 text-xs text-slate-800 dark:text-white focus:outline-indigo-500" 
                 placeholder="Insira as cláusulas de risco ou SLAs acordados"
               />
             </div>
@@ -276,7 +337,7 @@ export default function ContratosDocs({ db }) {
                 rows="3"
                 value={formData.multas} 
                 onChange={(e) => setFormData({...formData, multas: e.target.value})} 
-                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg px-4 py-2.5 text-xs text-slate-800 dark:text-white focus:outline-indigo-500" 
+                className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-250 dark:border-slate-800 rounded-lg px-4 py-2.5 text-xs text-slate-800 dark:text-white focus:outline-indigo-500" 
                 placeholder="Insira as regras de cálculo de multas de SLA"
               />
             </div>
@@ -318,7 +379,7 @@ export default function ContratosDocs({ db }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
-              {contratos.map((c) => {
+              {contratosFiltrados.map((c) => {
                 const procsRelacionados = processos.filter(p => p.id_contrato === c.id_contrato);
                 return (
                   <tr key={c.id_contrato} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors">
