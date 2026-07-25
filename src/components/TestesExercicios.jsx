@@ -7,12 +7,21 @@ export default function TestesExercicios({ db }) {
   const [processos] = useState(db.processosCriticos.list());
   const [planosPco] = useState(db.planosContinuidade.list());
   const [planosPrd] = useState(db.planosRecuperacaoDesastres.list());
-
   // Estados locais
   const [showForm, setShowForm] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState('');
   const [notification, setNotification] = useState(null);
   
+  // Estados para o Simulador de Exercício de Mesa (Tabletop)
+  const [showTabletop, setShowTabletop] = useState(false);
+  const [tabletopStep, setTabletopStep] = useState(1); // 1: Setup, 2: P1, 3: P2, 4: P3, 5: Conclusão
+  const [tabletopProcId, setTabletopProcId] = useState(db.processosCriticos.list()[0]?.id_processo || '');
+  const [tabletopCenario, setTabletopCenario] = useState('sistemas'); // 'acesso', 'sistemas'
+  const [tabletopScore, setTabletopScore] = useState(0);
+  const [tabletopAnswers, setTabletopAnswers] = useState({});
+  const [tabletopParticipantes, setTabletopParticipantes] = useState('');
+  const [planosAcao, setPlanosAcao] = useState(db.planosAcao ? db.planosAcao.list() : []);
+
   // Estado para sugestão de ajuste automático nos planos (Requisito 5)
   const [sugestaoAjuste, setSugestaoAjuste] = useState(null);
 
@@ -155,6 +164,132 @@ export default function TestesExercicios({ db }) {
     setSugestaoAjuste(null);
   };
 
+  // ── SIMULADOR TABLETOP INTERATIVO (Requisito 5) ────────────────────────────
+  const tabletopData = {
+    acesso: {
+      titulo: 'Acesso / Bloqueio Predial',
+      p1: {
+        pergunta: 'Central predial acusa princípio de incêndio no 3º andar do Edifício Sede. O PCO prevê evacuação total. Qual a ação imediata do time de continuidade?',
+        opcoes: [
+          { text: 'A) Iniciar a evacuação imediata das escadas, acionar a brigada de incêndio interna e iniciar o log do evento.', score: 35, feedback: 'Excelente! Ações imediatas de salvaguarda de vidas e registro são prioritárias.' },
+          { text: 'B) Aguardar confirmação visual ou ligação da portaria para não causar alarme falso.', score: 0, feedback: 'Risco alto! Em crises prediais, minutos salvam vidas. Nunca retarde a evacuação.' },
+          { text: 'C) Desativar a sirene para poder ligar com calma para o gerente de infraestrutura.', score: 5, feedback: 'Ineficaz! Desligar alarmes pode induzir a equipe ao erro e colocar vidas em risco.' }
+        ]
+      },
+      p2: {
+        pergunta: 'Durante a descida pelas escadas, a equipe é notificada que 3 colaboradores ficaram travados em um elevador sem ventilação. Qual a decisão técnica?',
+        opcoes: [
+          { text: 'A) Acionar imediatamente os bombeiros e manter a evacuação principal sem tentar forçar as portas.', score: 35, feedback: 'Correto! Resgate técnico deve ser feito por profissionais enquanto a evacuação prossegue.' },
+          { text: 'B) Tentar abrir as portas do elevador usando chaves de fenda do setor técnico.', score: 10, feedback: 'Risco de queda! Abrir elevadores manualmente sem treinamento técnico é perigoso.' },
+          { text: 'C) Pausar a evacuação de todos e aguardar no hall até que os colaboradores sejam resgatados.', score: 0, feedback: 'Ação crítica incorreta! Não coloque toda a equipe em perigo por uma falha pontual.' }
+        ]
+      },
+      p3: {
+        pergunta: 'A evacuação foi concluída com sucesso. No entanto, uma equipe de jornalistas locais está na portaria filmando e solicitando esclarecimentos. Como proceder?',
+        opcoes: [
+          { text: 'A) Redirecionar os jornalistas para os contatos oficiais da Gemac e isolar a área segura de evacuação.', score: 30, feedback: 'Correto! Pronunciamentos não autorizados geram pânico e danos à imagem da empresa.' },
+          { text: 'B) Dar entrevista explicando detalhadamente o curto-circuito no CPD.', score: 5, feedback: 'Inadequado! A Gemac coordena a comunicação oficial para garantir a consistência das informações.' },
+          { text: 'C) Ignorar os jornalistas e mandar toda a equipe ir embora para casa sem orientações.', score: 10, feedback: 'Evite omissão! Mandar equipes embora sem controle dificulta a contagem e verificação de segurança.' }
+        ]
+      }
+    },
+    sistemas: {
+      titulo: 'Indisponibilidade de Sistemas Críticos',
+      p1: {
+        pergunta: 'O sistema principal de liquidação financeira parou de responder e a fila de transações está acumulando. Qual a primeira providência da equipe?',
+        opcoes: [
+          { text: 'A) Validar a falha nos logs de monitoramento e acionar formalmente o failover para o banco de dados secundário.', score: 35, feedback: 'Excelente! Chaveamento para contingência de dados visa restabelecer o RTO.' },
+          { text: 'B) Reiniciar o servidor físico repetidas vezes para ver se o serviço volta.', score: 10, feedback: 'Ineficiente! Reinicializações sem diagnóstico podem corromper logs e atrasar o reparo.' },
+          { text: 'C) Abrir chamado por e-mail com prioridade baixa e aguardar resposta do fornecedor de cloud.', score: 0, feedback: 'Risco de violação! O RTO é crítico e exige acionamento imediato dos contatos de emergência.' }
+        ]
+      },
+      p2: {
+        pergunta: 'O chaveamento automático para o banco secundário falhou por erro de sincronismo de rede. O tempo de RTO limite é de 30 minutos e já se passaram 20 minutos. Decisão?',
+        opcoes: [
+          { text: 'A) Executar os scripts de failover manual com snapshots consistentes de D-1 e notificar a GERIC do desvio técnico.', score: 35, feedback: 'Excelente! O failover manual é a salvaguarda quando o automatizado falha.' },
+          { text: 'B) Insistir no chaveamento automático reiniciando os serviços de cluster.', score: 10, feedback: 'Atraso crítico! Se o cluster automático falhou repetidamente, o manual é a contingência necessária.' },
+          { text: 'C) Cancelar o processamento de transações do dia e aguardar o dia seguinte.', score: 0, feedback: 'Prejuízo! Cancelar operações quebra o SLA contratual e acarreta multas pesadas.' }
+        ]
+      },
+      p3: {
+        pergunta: 'Os serviços foram reestabelecidos no banco secundário dentro de 26 minutos (dentro do RTO). O que a equipe de continuidade de TI deve fazer agora?',
+        opcoes: [
+          { text: 'A) Declarar o incidente encerrado, registrar o RTO de 26 min e abrir o log de Lições Aprendidas.', score: 30, feedback: 'Perfeito! O encerramento formal com lições aprendidas garante a melhoria do plano.' },
+          { text: 'B) Deixar o sistema rodando na contingência sem monitorar e sem documentar o desvio.', score: 10, feedback: 'Não recomendado! Operar em contingência sem monitoramento ativo é um risco invisível.' },
+          { text: 'C) Forçar a volta para o banco principal imediatamente sem diagnosticar a causa da falha.', score: 5, feedback: 'Risco de recidiva! Voltar para a infraestrutura instável sem correção pode reativar a crise.' }
+        ]
+      }
+    }
+  };
+
+  const handleSaveTabletopResult = () => {
+    const finalScore = tabletopScore;
+    const passou = finalScore >= 70;
+    const resultado = passou ? 'Sucesso' : 'Falha';
+
+    const pco = planosPco.find(p => p.id_processo === tabletopProcId);
+    const prd = planosPrd.find(p => p.id_processo === tabletopProcId);
+    
+    let id_plano_acao = null;
+    let gerou_plano_acao = false;
+
+    if (!passou) {
+      const pa = db.planosAcao.create({
+        descricao: `Plano de Ação Corretivo — Derivado do Exercício de Mesa Tabletop (Nota: ${finalScore}/100) no processo ${tabletopProcId}. Tratar gaps identificados nas decisões operacionais.`,
+        prazo: new Date(Date.now() + 15 * 24 * 3600 * 1000).toISOString().split('T')[0],
+        responsavel: 'Geric / Gestor do Processo',
+        status: 'Pendente',
+        id_processo: tabletopProcId
+      });
+      id_plano_acao = pa.id_plano_acao;
+      gerou_plano_acao = true;
+    }
+
+    db.testesAvaliacoes.create({
+      id_pco: pco?.id_pco || null,
+      id_prd: prd?.id_prd || null,
+      id_processo: tabletopProcId,
+      tipo_teste: 'simulacao_mesa',
+      data_teste: new Date().toISOString().split('T')[0],
+      resultado: resultado,
+      areas_melhoria: `Simulação de Mesa Tabletop concluída. Pontuação de prontidão da equipe: ${finalScore}/100. Cenário testado: ${tabletopCenario.toUpperCase()}.`,
+      cenarios_testados: [
+        { cenario: tabletopCenario, resultado: passou ? 'passou' : 'falhou', observacoes: `Exercício de Mesa Tabletop. Nota obtida: ${finalScore}/100.` }
+      ],
+      participantes: tabletopParticipantes.split(',').map(p => p.trim()).filter(Boolean),
+      evidencias: [{ nome: `Tabletop_Log_${tabletopProcId}.json`, descricao: `Log de escolhas e score final do simulador interactivo (${finalScore} pts).` }],
+      gerou_plano_acao,
+      id_plano_acao
+    });
+
+    if (!passou) {
+      const processo = processos.find(p => p.id_processo === tabletopProcId);
+      const ain = db.analiseImpactoNegocio.getForProcesso(tabletopProcId);
+      if (processo && ain) {
+        setSugestaoAjuste({
+          processoId: tabletopProcId,
+          processoNome: processo.nome,
+          ainOriginal: ain,
+          rtoSugerido: ain.RTO + 15,
+          rpoSugerido: Math.max(5, Math.round(ain.RPO / 2)),
+          motivo: `Simulado de Mesa Tabletop falhou (Nota: ${finalScore}/100). Recomendada margem de segurança no RTO.`
+        });
+      }
+    }
+
+    setTestes(db.testesAvaliacoes.list());
+    setShowTabletop(false);
+    setTabletopStep(1);
+    setTabletopScore(0);
+    setTabletopAnswers({});
+    setTabletopParticipantes('');
+
+    setNotification({
+      type: 'success',
+      text: `🎮 Exercício Tabletop gravado com sucesso! Prontidão: ${finalScore}%. ${gerou_plano_acao ? `Plano de Ação ${id_plano_acao} criado.` : ''}`
+    });
+  };
+
   return (
     <div className="space-y-8 animate-fade-in">
       
@@ -166,12 +301,20 @@ export default function TestesExercicios({ db }) {
             Mantenha a resiliência operacional registrando testes de mesa e simulados práticos de failover de TI. Testes malsucedidos geram recomendações automáticas de ajuste de RTO/RPO e frequência de backups para adequação à ISO 22301.
           </p>
         </div>
-        <button 
-          onClick={() => { setShowForm(true); setNotification(null); setSugestaoAjuste(null); }}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2.5 rounded-lg text-xs flex items-center justify-center gap-2 shadow-sm transition-colors whitespace-nowrap"
-        >
-          <Plus className="w-4 h-4" /> Registrar Novo Simulado
-        </button>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => { setShowTabletop(true); setTabletopStep(1); setNotification(null); setSugestaoAjuste(null); }}
+            className="bg-purple-650 hover:bg-purple-700 text-white font-bold px-4 py-2.5 rounded-lg text-xs flex items-center justify-center gap-2 shadow-2xs transition-colors whitespace-nowrap cursor-pointer"
+          >
+            🎮 Iniciar Tabletop Game
+          </button>
+          <button 
+            onClick={() => { setShowForm(true); setNotification(null); setSugestaoAjuste(null); }}
+            className="bg-indigo-650 hover:bg-indigo-700 text-white font-bold px-4 py-2.5 rounded-lg text-xs flex items-center justify-center gap-2 shadow-2xs transition-colors whitespace-nowrap cursor-pointer"
+          >
+            <Plus className="w-4 h-4" /> Registrar Novo Simulado
+          </button>
+        </div>
       </div>
 
       {/* Feedbacks de Operações */}
@@ -631,6 +774,220 @@ export default function TestesExercicios({ db }) {
           )}
         </div>
       </div>
+      {/* MODAL: SIMULADOR TABLETOP GAME */}
+      {showTabletop && (
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-2xl border border-slate-250 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col animate-scale-up text-xs text-slate-750 dark:text-slate-350">
+            
+            {/* Header */}
+            <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🎮</span>
+                <h3 className="font-extrabold text-slate-850 dark:text-white uppercase tracking-wider text-xs">
+                  Tabletop Simulation Runner (ISO 22301 §8.5)
+                </h3>
+              </div>
+              <button 
+                onClick={() => setShowTabletop(false)}
+                className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-850 text-slate-400 hover:text-slate-655 cursor-pointer"
+              >
+                <span className="text-base">✕</span>
+              </button>
+            </div>
+
+            {/* Corpo / Conteúdo do Simulado */}
+            <div className="p-6 flex-1 overflow-y-auto space-y-6">
+              
+              {/* PASSO 1: CONFIGURAÇÃO INICIAL */}
+              {tabletopStep === 1 && (
+                <div className="space-y-4">
+                  <div className="bg-purple-50 dark:bg-purple-955 p-4 rounded-xl border border-purple-100 dark:border-purple-900/40 text-purple-855 dark:text-purple-300">
+                    <p className="font-bold">Bem-vindo ao Simulador de Exercício de Mesa Tabletop!</p>
+                    <p className="mt-1 text-[11px] leading-relaxed opacity-90">
+                      O teste de mesa (Tabletop) é uma ferramenta essencial para treinar equipes nas diretrizes de PCO/PRD. Vocês enfrentarão um cenário de desastre simulado onde suas decisões operacionais serão pontuadas de acordo com as melhores práticas de resiliência corporativa.
+                    </p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase">Processo sob Teste *</label>
+                      <select 
+                        value={tabletopProcId}
+                        onChange={(e) => setTabletopProcId(e.target.value)}
+                        className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 font-semibold text-slate-850 dark:text-slate-200 focus:outline-indigo-500"
+                      >
+                        {processos.map(p => (
+                          <option key={p.id_processo} value={p.id_processo}>{p.id_processo} - {p.nome}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase">Cenário de Crise *</label>
+                      <select 
+                        value={tabletopCenario}
+                        onChange={(e) => setTabletopCenario(e.target.value)}
+                        className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 font-semibold text-slate-855 dark:text-slate-200 focus:outline-indigo-500"
+                      >
+                        <option value="sistemas">Indisponibilidade de Sistemas (TI/PRD)</option>
+                        <option value="acesso">Bloqueio / Acesso Predial (PCO)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase">Participantes Integrantes *</label>
+                    <input 
+                      type="text"
+                      placeholder="Ex: Sandro Lima, Roberta Costa, Bruno Alves"
+                      value={tabletopParticipantes}
+                      onChange={(e) => setTabletopParticipantes(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 text-slate-850 dark:text-slate-200 focus:outline-indigo-500"
+                      required
+                    />
+                    <span className="text-[9px] text-slate-400 block mt-0.5">Separe os nomes por vírgula.</span>
+                  </div>
+
+                  <button 
+                    onClick={() => {
+                      if (!tabletopParticipantes.trim()) {
+                        alert('Por favor, informe os participantes do simulado.');
+                        return;
+                      }
+                      setTabletopStep(2);
+                      setTabletopScore(0);
+                    }}
+                    className="w-full bg-purple-650 hover:bg-purple-700 text-white font-bold py-2.5 rounded-xl transition-all cursor-pointer shadow-xs text-xs"
+                  >
+                    🚀 Iniciar Exercício
+                  </button>
+                </div>
+              )}
+
+              {/* PERGUNTA 1, 2, 3 */}
+              {[2, 3, 4].includes(tabletopStep) && (() => {
+                const questionKey = `p${tabletopStep - 1}`;
+                const dataCenario = tabletopData[tabletopCenario];
+                if (!dataCenario) return null;
+                const questionData = dataCenario[questionKey];
+                
+                return (
+                  <div className="space-y-6">
+                    {/* Barra de Progresso do Tabletop */}
+                    <div className="flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase">
+                      <span>Progresso: Passo {tabletopStep - 1} de 3</span>
+                      <span>Score Atual: {tabletopScore} pts</span>
+                    </div>
+                    <div className="w-full bg-slate-150 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                      <div className="bg-purple-600 h-full transition-all" style={{ width: `${((tabletopStep - 1) / 3) * 100}%` }} />
+                    </div>
+
+                    {/* Pergunta */}
+                    <div className="bg-slate-50 dark:bg-slate-955 p-4 rounded-xl border border-slate-150 dark:border-slate-850">
+                      <span className="text-[9px] text-purple-650 font-black uppercase tracking-wider block mb-1">Cenário: {dataCenario.titulo}</span>
+                      <p className="text-xs font-bold leading-relaxed text-slate-850 dark:text-white">
+                        {questionData.pergunta}
+                      </p>
+                    </div>
+
+                    {/* Alternativas */}
+                    <div className="space-y-3">
+                      {questionData.opcoes.map((opt, oIdx) => {
+                        const isSelected = tabletopAnswers[questionKey] === oIdx;
+                        return (
+                          <div 
+                            key={oIdx}
+                            onClick={() => {
+                              if (tabletopAnswers[questionKey] === undefined) {
+                                setTabletopAnswers(prev => ({ ...prev, [questionKey]: oIdx }));
+                                setTabletopScore(prev => prev + opt.score);
+                              }
+                            }}
+                            className={`p-4 rounded-xl border text-xs leading-relaxed transition-all ${
+                              tabletopAnswers[questionKey] === undefined 
+                                ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-850 border-slate-200 dark:border-slate-800 hover:border-purple-300' 
+                                : isSelected 
+                                ? 'border-purple-500 bg-purple-50/10 dark:bg-purple-950/20' 
+                                : 'opacity-60 border-slate-250 dark:border-slate-850'
+                            }`}
+                          >
+                            <p className="font-semibold text-slate-750 dark:text-slate-350">{opt.text}</p>
+                            {tabletopAnswers[questionKey] !== undefined && isSelected && (
+                              <div className="mt-3 p-3 bg-purple-500/10 border border-purple-500/20 text-[10px] text-purple-800 dark:text-purple-300 rounded-lg">
+                                💡 <strong>Feedback:</strong> {opt.feedback} <span className="font-bold">({opt.score} pontos obtidos)</span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Botão de Avanço */}
+                    {tabletopAnswers[questionKey] !== undefined && (
+                      <button 
+                        onClick={() => setTabletopStep(prev => prev + 1)}
+                        className="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 rounded-xl transition-all cursor-pointer text-xs"
+                      >
+                        Avançar Cenário ➔
+                      </button>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* PASSO 5: CONCLUSÃO */}
+              {tabletopStep === 5 && (
+                <div className="space-y-6 text-center animate-fade-in">
+                  <div className="bg-purple-50 dark:bg-purple-955 p-6 rounded-xl border border-purple-100 dark:border-purple-900/40 space-y-4">
+                    <span className="text-4xl">🏆</span>
+                    <div>
+                      <h4 className="font-black text-slate-850 dark:text-white text-sm uppercase">Simulação Tabletop Concluída!</h4>
+                      <p className="text-[10px] text-slate-450 mt-1">Cenário: {tabletopData[tabletopCenario]?.titulo}</p>
+                    </div>
+
+                    {/* Score Central */}
+                    <div className="inline-block bg-white dark:bg-slate-950 px-6 py-4 rounded-2xl border border-purple-200 dark:border-purple-800">
+                      <span className="text-[9px] text-slate-400 font-bold block uppercase tracking-wider">Pontuação de Prontidão</span>
+                      <strong className="text-3xl font-black text-purple-650 dark:text-purple-400">{tabletopScore} <span className="text-xs font-normal text-slate-450">/ 100</span></strong>
+                    </div>
+
+                    {/* Diagnóstico */}
+                    <p className="text-xs font-medium text-slate-700 dark:text-slate-350 leading-relaxed max-w-md mx-auto">
+                      {tabletopScore >= 90 ? 'Excelente! A equipe tomou as decisões operacionais ideais de resiliência e failover conforme as normas ISO 22301 e 27031.' :
+                       tabletopScore >= 70 ? 'Prontidão Aprovada. A equipe demonstrou boa capacidade de contingência, mas há pequenas oportunidades de melhoria documental.' :
+                       'Atenção: A equipe tomou decisões não recomendadas que causariam perda do RTO. Recomenda-se treinamento imediato e revisão do PCO.'}
+                    </p>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button 
+                      onClick={() => {
+                        setShowTabletop(false);
+                        setTabletopStep(1);
+                        setTabletopScore(0);
+                        setTabletopAnswers({});
+                        setTabletopParticipantes('');
+                      }}
+                      className="flex-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold py-2.5 rounded-xl cursor-pointer"
+                    >
+                      Descartar Exercício
+                    </button>
+                    <button 
+                      onClick={handleSaveTabletopResult}
+                      className="flex-1 bg-purple-650 hover:bg-purple-700 text-white font-bold py-2.5 rounded-xl transition-all cursor-pointer shadow-xs"
+                    >
+                      💾 Gravar como Teste Oficial
+                    </button>
+                  </div>
+                </div>
+              )}
+
+            </div>
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

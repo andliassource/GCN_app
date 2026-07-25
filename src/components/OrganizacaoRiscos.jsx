@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShieldAlert, Plus, Trash2, Network, Shield, AlertTriangle, Layers, Laptop, Radio, Database } from 'lucide-react';
+import { ShieldAlert, Plus, Trash2, Network, Shield, AlertTriangle, Layers, Laptop, Radio, Database, RefreshCw } from 'lucide-react';
 
 export default function OrganizacaoRiscos({ db }) {
   const [diretorias] = useState(db.diretorias.list());
@@ -8,6 +8,13 @@ export default function OrganizacaoRiscos({ db }) {
   const [riscos, setRiscos] = useState(db.riscos.list());
   const [processos] = useState(db.processosCriticos.list());
   const [planosAcao] = useState(db.planosAcao ? db.planosAcao.list() : []);
+
+  // Estado para o Visualizador BIA Tree
+  const [selectedBiaProcId, setSelectedBiaProcId] = useState(db.processosCriticos.list()[0]?.id_processo || '');
+  const selectedBiaProc = processos.find(p => p.id_processo === selectedBiaProcId);
+  const biaContrato = selectedBiaProc ? db.contratosDocs.list().find(c => c.id_contrato === selectedBiaProc.id_contrato) : null;
+  const biaAtivos = selectedBiaProc ? ativos.filter(a => a.id_gerencia === selectedBiaProc.id_gerencia) : [];
+  const biaRiscos = selectedBiaProc ? riscos.filter(r => r.id_processo === selectedBiaProc.id_processo) : [];
 
   // Estados locais de controle de abas internas
   const [subTab, setSubTab] = useState('estrutura'); // 'estrutura', 'riscos', 'ativos'
@@ -213,6 +220,12 @@ export default function OrganizacaoRiscos({ db }) {
           className={`pb-3 transition-all ${subTab === 'ativos' ? 'border-b-2 border-indigo-600 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`}
         >
           Ativos & Sistemas Críticos
+        </button>
+        <button 
+          onClick={() => setSubTab('dependencias')}
+          className={`pb-3 transition-all ${subTab === 'dependencias' ? 'border-b-2 border-indigo-600 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`}
+        >
+          Visualizador BIA Tree
         </button>
       </div>
 
@@ -925,6 +938,138 @@ export default function OrganizacaoRiscos({ db }) {
               );
             })}
           </div>
+        </div>
+      )}
+
+      {/* ABA 4: VISUALIZADOR BIA TREE (DEPENDÊNCIAS CRÍTICAS) */}
+      {subTab === 'dependencias' && (
+        <div className="space-y-6 animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
+            <h3 className="font-bold text-slate-850 dark:text-white">Visualizador BIA Tree — Linhagem de Dependências</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-450 mt-1 max-w-xl leading-relaxed">
+              Selecione um processo crítico para rastrear graficamente suas dependências de contratos, ativos de tecnologia, riscos e planos de resiliência.
+            </p>
+            
+            {/* Seletor de Processo */}
+            <div className="mt-4 max-w-xs">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Processo Crítico</label>
+              <select 
+                value={selectedBiaProcId} 
+                onChange={(e) => setSelectedBiaProcId(e.target.value)}
+                className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-indigo-500 font-bold"
+              >
+                <option value="">Selecione o processo...</option>
+                {processos.map(p => (
+                  <option key={p.id_processo} value={p.id_processo}>{p.id_processo} - {p.nome}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Render da Árvore de Dependências */}
+          {selectedBiaProc ? (
+            <div className="overflow-x-auto p-6 bg-slate-100/50 dark:bg-slate-950/20 rounded-2xl border border-slate-200 dark:border-slate-850 min-w-full">
+              <div className="flex flex-col lg:flex-row items-stretch justify-between gap-6 min-w-[900px] py-4">
+                
+                {/* 1. NÓ DO PROCESSO CRÍTICO */}
+                <div className="flex-1 bg-white dark:bg-slate-900 p-5 rounded-xl border border-l-4 border-l-indigo-650 border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-4 hover:shadow-md transition-shadow">
+                  <div className="space-y-3">
+                    <span className="text-[8px] bg-indigo-50 dark:bg-indigo-950 text-indigo-650 dark:text-indigo-400 px-2 py-0.5 rounded font-black uppercase">Processo</span>
+                    <h4 className="font-extrabold text-slate-850 dark:text-white text-xs mt-1">{selectedBiaProc.nome}</h4>
+                    <p className="text-[10px] text-slate-450 dark:text-slate-500 leading-relaxed line-clamp-3">{selectedBiaProc.descricao}</p>
+                  </div>
+                  <div className="border-t border-slate-100 dark:border-slate-850 pt-2.5 text-[9.5px] text-slate-500 space-y-1">
+                    <div>Criticidade: <span className={`font-bold ${selectedBiaProc.criticidade === 'Crítica' || selectedBiaProc.criticidade === 'Alta' ? 'text-rose-500' : 'text-slate-550'}`}>{selectedBiaProc.criticidade}</span></div>
+                    <div>Dono: <span className="font-bold">{selectedBiaProc.id_gerencia}</span></div>
+                  </div>
+                </div>
+
+                {/* SETA 1 */}
+                <div className="flex items-center justify-center text-slate-400 dark:text-slate-600 font-black text-lg select-none">➔</div>
+
+                {/* 2. NÓ DO CONTRATO */}
+                <div className="flex-1 bg-white dark:bg-slate-900 p-5 rounded-xl border border-l-4 border-l-teal-500 border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-4 hover:shadow-md transition-shadow">
+                  <div className="space-y-3">
+                    <span className="text-[8px] bg-teal-50 dark:bg-teal-950/40 text-teal-650 dark:text-teal-400 px-2 py-0.5 rounded font-black uppercase">Contrato Vinculado</span>
+                    {biaContrato ? (
+                      <>
+                        <h4 className="font-extrabold text-slate-850 dark:text-white text-xs mt-1">{biaContrato.nome}</h4>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed"><strong>SLA:</strong> {biaContrato.clausulas_risco}</p>
+                      </>
+                    ) : (
+                      <>
+                        <h4 className="font-bold text-slate-400 text-xs mt-1">Sem Contrato Externo</h4>
+                        <p className="text-[10px] text-slate-400 mt-1 italic">Processo de apoio interno ou contingenciado por recursos próprios.</p>
+                      </>
+                    )}
+                  </div>
+                  {biaContrato && (
+                    <div className="border-t border-slate-100 dark:border-slate-850 pt-2.5 text-[9.5px] text-slate-500 space-y-1">
+                      <div>Código: <span className="font-bold">{biaContrato.id_contrato}</span></div>
+                      <div>Valor: <span className="font-bold text-teal-600">R$ {biaContrato.valor_faturamento.toLocaleString('pt-BR')}</span></div>
+                    </div>
+                  )}
+                </div>
+
+                {/* SETA 2 */}
+                <div className="flex items-center justify-center text-slate-400 dark:text-slate-600 font-black text-lg select-none">➔</div>
+
+                {/* 3. NÓ DE ATIVOS DE TI */}
+                <div className="flex-1 bg-white dark:bg-slate-900 p-5 rounded-xl border border-l-4 border-l-purple-500 border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-4 hover:shadow-md transition-shadow">
+                  <div className="space-y-3">
+                    <span className="text-[8px] bg-purple-50 dark:bg-purple-950/40 text-purple-650 dark:text-purple-400 px-2 py-0.5 rounded font-black uppercase">Ativos & Infraestrutura</span>
+                    <div className="mt-2 space-y-1.5 max-h-[110px] overflow-y-auto pr-1">
+                      {biaAtivos.map(at => (
+                        <div key={at.id_ativo} className="flex justify-between items-center bg-slate-50 dark:bg-slate-955 px-2 py-1 rounded text-[9px] border border-slate-150 dark:border-slate-850">
+                          <span className="font-semibold text-slate-700 dark:text-slate-300 truncate w-32" title={at.nome}>{at.nome}</span>
+                          <span className={`px-1.5 rounded text-[8px] font-bold uppercase ${at.criticidade === 'Critica' ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-650'}`}>{at.criticidade}</span>
+                        </div>
+                      ))}
+                      {biaAtivos.length === 0 && (
+                        <span className="text-[10px] text-slate-400 italic">Nenhum ativo de TI mapeado no BIA.</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="border-t border-slate-100 dark:border-slate-850 pt-2.5 text-[9.5px] text-slate-500">
+                    Total de Sistemas: <span className="font-bold text-purple-600">{biaAtivos.length}</span>
+                  </div>
+                </div>
+
+                {/* SETA 3 */}
+                <div className="flex items-center justify-center text-slate-400 dark:text-slate-600 font-black text-lg select-none">➔</div>
+
+                {/* 4. NÓ DE RISCOS & CONTROLE RESIDUAL */}
+                <div className="flex-1 bg-white dark:bg-slate-900 p-5 rounded-xl border border-l-4 border-l-amber-500 border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-4 hover:shadow-md transition-shadow">
+                  <div className="space-y-3">
+                    <span className="text-[8px] bg-amber-50 dark:bg-amber-950/40 text-amber-655 dark:text-amber-450 px-2 py-0.5 rounded font-black uppercase">Riscos Associados</span>
+                    <div className="mt-2 space-y-1.5 max-h-[110px] overflow-y-auto pr-1">
+                      {biaRiscos.map(r => {
+                        const score = (r.impacto_residual * r.probabilidade_residual) || (r.impacto * r.probabilidade) || 0;
+                        const badgeColor = score >= 12 ? 'text-rose-600 bg-rose-50 border-rose-200/50' : score >= 8 ? 'text-orange-600 bg-orange-50 border-orange-200/50' : 'text-emerald-600 bg-emerald-50 border-emerald-200/50';
+                        return (
+                          <div key={r.id_risco} className="p-1 bg-slate-50 dark:bg-slate-955 rounded text-[9px] border border-slate-150 dark:border-slate-850 flex justify-between items-center">
+                            <span className="font-bold text-slate-700 dark:text-slate-350 truncate w-32" title={r.titulo}>{r.titulo}</span>
+                            <span className={`px-1.5 py-0.2 rounded text-[8px] font-black border ${badgeColor}`}>Score: {score}</span>
+                          </div>
+                        );
+                      })}
+                      {biaRiscos.length === 0 && (
+                        <span className="text-[10px] text-slate-400 italic">Sem riscos operacionais vinculados.</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="border-t border-slate-100 dark:border-slate-850 pt-2.5 text-[9.5px] text-slate-500">
+                    Riscos Mapeados: <span className="font-bold text-amber-600">{biaRiscos.length}</span>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          ) : (
+            <div className="p-6 text-center text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl italic shadow-2xs">
+              Selecione um processo crítico acima para carregar o visualizador.
+            </div>
+          )}
         </div>
       )}
 
