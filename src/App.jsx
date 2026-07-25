@@ -9,6 +9,7 @@ import PlanosRecuperacao from './components/PlanosRecuperacao';
 import TestesExercicios from './components/TestesExercicios';
 import RevisoesAtualizacoes from './components/RevisoesAtualizacoes';
 import GovernancaAprovacao from './components/GovernancaAprovacao';
+import GestaoCrises from './components/GestaoCrises';
 import AvaliacaoMaturidade from './components/AvaliacaoMaturidade';
 import OrganizacaoRiscos from './components/OrganizacaoRiscos';
 import ConfiguracaoSistema from './components/ConfiguracaoSistema';
@@ -57,6 +58,8 @@ function MainLayout() {
         return <RevisoesAtualizacoes db={dbService} />;
       case 'governanca':
         return <GovernancaAprovacao db={dbService} />;
+      case 'crises':
+        return <GestaoCrises db={dbService} />;
       case 'avaliacao':
         return <AvaliacaoMaturidade db={dbService} />;
       case 'config':

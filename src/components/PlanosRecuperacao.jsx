@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, ShieldAlert, Zap, RefreshCw, CheckCircle2, AlertTriangle, Play, HelpCircle, Layers, Users, Server, Briefcase, Download, Calendar, Trash2, Plus } from 'lucide-react';
+import { BookOpen, ShieldAlert, Zap, RefreshCw, CheckCircle2, AlertTriangle, Play, HelpCircle, Layers, Users, Server, Briefcase, Download, Calendar, Trash2, Plus, FileText } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { pdfService } from '../services/pdfService';
 

@@ -12,7 +12,8 @@ import {
   Sun, 
   LogOut,
   Network,
-  Settings
+  Settings,
+  Target
 } from 'lucide-react';
 
 export default function Sidebar({ activeTab, setActiveTab, darkMode, setDarkMode, user, onLogout }) {
@@ -25,8 +26,9 @@ export default function Sidebar({ activeTab, setActiveTab, darkMode, setDarkMode
     { id: 'planos', label: '4. Planos PCO e PRD', icon: BookOpen },
     { id: 'testes', label: '5. Testes por Cenário', icon: Activity },
     { id: 'revisoes', label: '6. Revisões & Histórico', icon: RefreshCw },
-    { id: 'governanca', label: '7. Governança & Crises', icon: ShieldCheck },
-    { id: 'avaliacao', label: '8. Avaliação NRGCN', icon: ShieldCheck },
+    { id: 'governanca', label: '7. Aprovações & Alçadas', icon: ShieldCheck },
+    { id: 'crises', label: '8. Gestão de Crises', icon: AlertOctagon },
+    { id: 'avaliacao', label: '9. Avaliação NRGCN', icon: Target },
     { id: 'config', label: 'Configurações do Sistema', icon: Settings },
   ];
 
