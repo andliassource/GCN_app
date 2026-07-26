@@ -373,9 +373,9 @@ export const pdfService = {
         <div class="section-title">0. Quadro de Homologação e Assinaturas (ISO 22301 §8.4.5)</div>
         <div class="sig-grid">
           <div class="sig-card">
-            <div class="sig-card-title">1ª Alçada — Revisão GERIC (Riscos & GCN)</div>
-            <div class="sig-card-val">${pco?.parecer_geric ? '✓ APROVADO PELA GERIC' : '⏳ Pendente'}</div>
-            <div style="color:#64748b; margin-top:2pt">${pco?.parecer_geric || 'Aguardando parecer de revisão de 2ª linha.'}</div>
+            <div class="sig-card-title">Validação GERIC (2ª Linha - Riscos & GCN)</div>
+            <div class="sig-card-val">${pco?.parecer_geric ? '✓ VALIDADO PELA GERIC' : '⏳ Pendente'}</div>
+            <div style="color:#64748b; margin-top:2pt">${pco?.parecer_geric || 'Aguardando parecer de validação inicial de 2ª linha.'}</div>
           </div>
           <div class="sig-card">
             <div class="sig-card-title">2ª Alçada — Aval TIC & Verificação ANS</div>

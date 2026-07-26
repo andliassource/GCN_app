@@ -9,10 +9,10 @@ import { notificationService } from '../services/notificationService';
 
 // ── Constantes de Workflow ───────────────────────────────────────────────────
 const ALCADAS = [
-  { key: 'geric',   label: '1ª Alçada — GERIC',         icon: ShieldCheck,   pendente: 'Pendente GERIC',        devolvido: 'Devolvido GERIC',    roles: ['admin_geric'] },
-  { key: 'tic',     label: '2ª Alçada — TIC / ANS',      icon: Cpu,           pendente: 'Pendente TIC',           devolvido: 'Devolvido TIC',      roles: ['tic', 'admin_geric'] },
-  { key: 'gerente', label: '3ª Alçada — Gerente Exec',   icon: User,          pendente: 'Pendente Gerente Exec',  devolvido: 'Devolvido Gerente',  roles: ['gerente_exec', 'admin_geric'] },
-  { key: 'comite',  label: '4ª Alçada — Comitê Conti',   icon: Award,         pendente: 'Pendente Comitê',        devolvido: 'Reprovado Comitê',   roles: ['conti', 'admin_geric'] },
+  { key: 'geric',   label: 'Validação GERIC (2ª Linha)', icon: ShieldCheck,   pendente: 'Pendente GERIC',        devolvido: 'Devolvido GERIC',    roles: ['admin_geric'] },
+  { key: 'tic',     label: 'Aval TIC / ANS',             icon: Cpu,           pendente: 'Pendente TIC',           devolvido: 'Devolvido TIC',      roles: ['tic', 'admin_geric'] },
+  { key: 'gerente', label: 'Assinatura Gerente Exec',   icon: User,          pendente: 'Pendente Gerente Exec',  devolvido: 'Devolvido Gerente',  roles: ['gerente_exec', 'admin_geric'] },
+  { key: 'comite',  label: 'Deliberação Comitê Conti',   icon: Award,         pendente: 'Pendente Comitê',        devolvido: 'Reprovado Comitê',   roles: ['conti', 'admin_geric'] },
 ];
 
 const STATUS_ORDER = {
@@ -183,13 +183,13 @@ function PlanCard({ plano, db, usuario, onRefresh }) {
         return (
           <div className="flex gap-2">
             <button
-              onClick={() => abrirModal('aprovar', 'Aprovar — 1ª Alçada (GERIC)', 'Descreva o parecer de aprovação da GERIC...', 'Pendente TIC')}
+              onClick={() => abrirModal('aprovar', 'Validação Inicial — GERIC (2ª Linha)', 'Descreva o parecer de validação técnica/metodológica da GERIC...', 'Pendente TIC')}
               className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold cursor-pointer transition-colors flex items-center gap-1"
             >
-              <CheckCircle2 className="w-3 h-3" /> Aprovar → TIC
+              <CheckCircle2 className="w-3 h-3" /> Validar e Encaminhar
             </button>
             <button
-              onClick={() => abrirModal('devolver', 'Devolver com Parecer (GERIC)', 'Descreva o motivo da devolução e o que precisa ser corrigido...', 'Devolvido GERIC')}
+              onClick={() => abrirModal('devolver', 'Devolver com Parecer (GERIC)', 'Descreva o motivo da devolução e os ajustes necessários...', 'Devolvido GERIC')}
               className="bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/40 px-3 py-1.5 rounded-lg text-[10px] font-bold cursor-pointer transition-colors flex items-center gap-1"
             >
               <XCircle className="w-3 h-3" /> Devolver
@@ -515,7 +515,7 @@ export default function GovernancaAprovacao({ db }) {
             <ShieldCheck className="w-4 h-4 text-indigo-500" /> Central de Aprovação de Planos GCN — Workflow em 4 Alçadas
           </h3>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-2xl leading-relaxed">
-            Fluxo: <strong>Área</strong> → <strong>GERIC</strong> → <strong>TIC/ANS</strong> → <strong>Gerente Executivo</strong> → <strong>Comitê Conti</strong> → <span className="text-emerald-600 font-bold">Vigente</span> (ISO 22301 §8.4.5)
+            Fluxo: <strong>Área (Elaboração)</strong> → <strong>GERIC (2ª Linha - Validação)</strong> → <strong>TIC/ANS (Aval Técnico)</strong> → <strong>Gerente Executivo (Assinatura)</strong> → <strong>Comitê Conti (Homologação)</strong> → <span className="text-emerald-600 font-bold">Vigente</span> (ISO 22301 §8.4.5)
           </p>
         </div>
         {isAdmin() && (
