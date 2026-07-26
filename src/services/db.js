@@ -4,7 +4,7 @@
 // ============================================================================
 
 const INITIAL_DATA = {
-  db_version: "6.0",
+  db_version: "7.0",
 
   // ── CONFIG DO SISTEMA ─────────────────────────────────────────────────────
   configSistema: {
@@ -404,7 +404,7 @@ const getDB = () => {
   }
   try {
     const db = JSON.parse(dbStr);
-    if (db.db_version !== "6.0") {
+    if (db.db_version !== "7.0") {
       localStorage.setItem("gcn_database", JSON.stringify(INITIAL_DATA));
       return INITIAL_DATA;
     }
@@ -764,9 +764,25 @@ export const dbService = {
   planosContinuidade: {
     list: () => {
       const db = getDB();
-      return db.planosContinuidade.map(p => ({ ...p, processo: db.processosCriticos.find(pr => pr.id_processo === p.id_processo) }));
+      return (db.planosContinuidade || []).map(p => {
+        let st = p.status_aprovacao;
+        if (st === 'Aprovado') st = 'Vigente';
+        if (st === 'Pendente' || st === 'Em Revisão' || st === 'Aprovado pela Área') st = 'Pendente GERIC';
+        return {
+          ...p,
+          status_aprovacao: st,
+          processo: db.processosCriticos.find(pr => pr.id_processo === p.id_processo)
+        };
+      });
     },
-    getForProcesso: (id) => (getDB().planosContinuidade || []).find(p => p.id_processo === id) || null,
+    getForProcesso: (id) => {
+      const p = (getDB().planosContinuidade || []).find(p => p.id_processo === id);
+      if (!p) return null;
+      let st = p.status_aprovacao;
+      if (st === 'Aprovado') st = 'Vigente';
+      if (st === 'Pendente' || st === 'Em Revisão' || st === 'Aprovado pela Área') st = 'Pendente GERIC';
+      return { ...p, status_aprovacao: st };
+    },
     save: (pco) => {
       const db = getDB();
       const idx = db.planosContinuidade.findIndex(p => p.id_processo === pco.id_processo);
