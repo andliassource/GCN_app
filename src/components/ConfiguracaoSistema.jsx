@@ -8,6 +8,18 @@ export default function ConfiguracaoSistema({ db }) {
   const [gerencias, setGerencias] = useState(db.gerencias.list());
   const [notif, setNotif] = useState(null);
 
+  if (!isAdmin()) {
+    return (
+      <div className="p-8 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 text-center space-y-3">
+        <Shield className="w-10 h-10 text-amber-500 mx-auto opacity-80" />
+        <h3 className="font-bold text-slate-800 dark:text-white text-base">Acesso Restrito — Configurações Globais</h3>
+        <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+          As configurações gerais da plataforma GCN (logotipo, parâmetros ISO, contatos das gerências) são restritas à equipe GERIC (2ª Linha).
+        </p>
+      </div>
+    );
+  }
+
   const handleLogoUpload = (e) => {
     if (!isAdmin()) return;
     const file = e.target.files[0];

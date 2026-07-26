@@ -862,5 +862,86 @@ export const pdfService = {
         </div>
       </div>
     `;
+  },
+
+  // Gera HTML da Ata de Simulado / Teste (Evidência ISO 22301 §9.2)
+  htmlAtaTeste: (teste, processo, pco, intervenientes) => {
+    const dataFormatted = teste.data_teste ? new Date(teste.data_teste).toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR');
+    const cenariosRows = (teste.cenarios_testados || []).map(c => `
+      <tr>
+        <td style="font-weight:700; text-transform:uppercase; font-size:7.5pt">Cenário ${c.cenario}</td>
+        <td><span class="badge ${c.resultado === 'passou' ? 'badge-green' : c.resultado === 'parcial' ? 'badge-orange' : 'badge-red'}">${(c.resultado || 'PASSOU').toUpperCase()}</span></td>
+        <td style="font-size:7.5pt">${c.observacoes || 'Executado conforme rito estabelecido no PCO.'}</td>
+      </tr>
+    `).join('');
+
+    const intRows = (intervenientes || []).map(i => `<tr><td>${i.nome}</td><td>${i.cargo}</td><td>${i.papel}</td><td>${i.email}</td></tr>`).join('');
+
+    return `
+      <style>
+        .cover-box { background: #1e1b4b; color: #e0e7ff; border-radius: 8pt; padding: 14pt; margin-bottom: 14pt; text-align: center; }
+        .cover-box-title { font-size: 16pt; font-weight: 900; color: #ffffff; text-transform: uppercase; }
+        .cover-box-sub { font-size: 9pt; color: #a5b4fc; margin-top: 4pt; font-weight: 600; }
+        .result-box { display: flex; justify-content: space-between; background: #f8fafc; border: 1.5pt solid #e2e8f0; border-radius: 8pt; padding: 10pt 16pt; margin-bottom: 12pt; }
+        .result-kpi { text-align: center; }
+        .result-kpi-val { font-size: 14pt; font-weight: 900; color: #1e293b; }
+        .result-kpi-lbl { font-size: 7pt; text-transform: uppercase; color: #64748b; font-weight: 700; }
+      </style>
+
+      <div class="cover-box">
+        <div class="cover-box-title">📄 ATA DE TESTE E SIMULADO DE CONTINUIDADE</div>
+        <div class="cover-box-sub">Evidência Regulatória de Exercício — ABNT NBR ISO 22301 §9.2</div>
+        <div style="font-size:8pt; margin-top: 10pt; color: #c7d2fe">Processo: <strong>${processo?.nome || teste.id_processo}</strong> (${processo?.id_processo || '-'}) • Data de Realização: <strong>${dataFormatted}</strong></div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">1. Resumo da Execução do Teste</div>
+        <table>
+          <tr><th>Campo</th><th>Valor</th></tr>
+          <tr><td>Código do Teste</td><td><strong>${teste.id_teste || 'TST-SIM'}</strong></td></tr>
+          <tr><td>Tipo de Exercício</td><td>${teste.tipo_teste === 'simulacao_mesa' ? 'Exercício de Mesa (Tabletop Simulation)' : 'Simulação de Campo / Failover Real'}</td></tr>
+          <tr><td>Resultado Geral</td><td><span class="badge ${teste.resultado === 'Sucesso' ? 'badge-green' : 'badge-orange'}">${teste.resultado || 'Sucesso'}</span></td></tr>
+          <tr><td>Unidade Responsável</td><td>${processo?.id_gerencia || '-'}</td></tr>
+          <tr><td>Plano Testado</td><td>${pco?.id_pco || 'PCO Vinculado'} (v${pco?.versao || '1.0.0'})</td></tr>
+        </table>
+      </div>
+
+      <div class="section">
+        <div class="section-title">2. Resultados por Cenário Testado</div>
+        <table>
+          <tr><th>Cenário</th><th>Status</th><th>Observações / Parecer da Simulação</th></tr>
+          ${cenariosRows || '<tr><td colspan="3">Nenhum detalhe de cenário registrado.</td></tr>'}
+        </table>
+      </div>
+
+      <div class="section">
+        <div class="section-title">3. Oportunidades de Melhoria e Lições Aprendidas</div>
+        <div class="highlight-box">
+          <p>📝 <strong>Pontos de Atenção Identificados:</strong></p>
+          <p style="white-space: pre-wrap; margin-top: 4pt">${teste.areas_melhoria || 'Simulação executada dentro das metas operacionais estabelecidas no BIA.'}</p>
+        </div>
+      </div>
+
+      ${intRows ? `
+      <div class="section">
+        <div class="section-title">4. Intervenientes e Participantes Convocados</div>
+        <table>
+          <tr><th>Nome</th><th>Cargo</th><th>Papel no PCO</th><th>E-mail</th></tr>
+          ${intRows}
+        </table>
+      </div>` : ''}
+
+      <div class="section">
+        <div class="section-title">5. Validação e Homologação GERIC</div>
+        <table style="margin-top: 6pt">
+          <tr><th>Responsável pela Simulação</th><th>Fiscal GERIC (2ª Linha)</th><th>Data da Ata</th></tr>
+          <tr>
+            <td>${teste.acionado_por || 'Líder GCN da Gerência'}</td>
+            <td>Equipe GERIC (GER-GOV01)</td>
+            <td><strong>${dataFormatted}</strong></td>
+          </tr>
+        </table>
+      </div>
+    `;
   }
 };

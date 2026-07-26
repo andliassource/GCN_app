@@ -17,20 +17,23 @@ import {
 } from 'lucide-react';
 
 export default function Sidebar({ activeTab, setActiveTab, darkMode, setDarkMode, user, onLogout }) {
-  const menuItems = [
-    { id: 'dashboard', label: 'Painel Executivo Geric', icon: LayoutDashboard },
-    { id: 'organizacao', label: 'Estrutura & Riscos', icon: Network },
-    { id: 'contratos', label: '1. Ingestão de Contratos', icon: FileText },
-    { id: 'incidentes', label: '2. Base de Incidentes & Lições', icon: AlertOctagon },
-    { id: 'ain', label: '3. Análise de Impacto (AIN)', icon: TrendingDown },
-    { id: 'planos', label: '4. Planos PCO e PRD', icon: BookOpen },
-    { id: 'testes', label: '5. Testes por Cenário', icon: Activity },
-    { id: 'revisoes', label: '6. Revisões & Histórico', icon: RefreshCw },
-    { id: 'governanca', label: '7. Aprovações & Alçadas', icon: ShieldCheck },
-    { id: 'crises', label: '8. Gestão de Crises', icon: AlertOctagon },
-    { id: 'avaliacao', label: '9. Avaliação NRGCN', icon: Target },
-    { id: 'config', label: 'Configurações do Sistema', icon: Settings },
+  const allMenuItems = [
+    { id: 'dashboard', label: 'Painel Executivo Geric', icon: LayoutDashboard, roles: ['admin_geric', 'gestor_area', 'visualizador', 'tic', 'gerente_exec', 'conti'] },
+    { id: 'organizacao', label: 'Estrutura & Riscos', icon: Network, roles: ['admin_geric', 'gestor_area', 'visualizador', 'tic', 'gerente_exec', 'conti'] },
+    { id: 'contratos', label: '1. Ingestão de Contratos', icon: FileText, roles: ['admin_geric', 'gestor_area', 'visualizador', 'tic', 'gerente_exec', 'conti'] },
+    { id: 'incidentes', label: '2. Base de Incidentes & Lições', icon: AlertOctagon, roles: ['admin_geric', 'gestor_area', 'visualizador', 'tic', 'gerente_exec', 'conti'] },
+    { id: 'ain', label: '3. Análise de Impacto (AIN)', icon: TrendingDown, roles: ['admin_geric', 'gestor_area', 'visualizador', 'tic', 'gerente_exec', 'conti'] },
+    { id: 'planos', label: '4. Planos PCO e PRD', icon: BookOpen, roles: ['admin_geric', 'gestor_area', 'visualizador', 'tic', 'gerente_exec', 'conti'] },
+    { id: 'testes', label: '5. Testes por Cenário', icon: Activity, roles: ['admin_geric', 'gestor_area', 'visualizador', 'tic', 'gerente_exec', 'conti'] },
+    { id: 'revisoes', label: '6. Revisões & Histórico', icon: RefreshCw, roles: ['admin_geric', 'gestor_area', 'visualizador', 'tic', 'gerente_exec', 'conti'] },
+    { id: 'governanca', label: '7. Aprovações & Alçadas', icon: ShieldCheck, roles: ['admin_geric', 'gestor_area', 'visualizador', 'tic', 'gerente_exec', 'conti'] },
+    { id: 'crises', label: '8. Gestão de Crises', icon: AlertOctagon, roles: ['admin_geric', 'gestor_area', 'visualizador', 'tic', 'gerente_exec', 'conti'] },
+    { id: 'avaliacao', label: '9. Avaliação NRGCN', icon: Target, roles: ['admin_geric', 'gestor_area', 'visualizador', 'tic', 'gerente_exec', 'conti'] },
+    { id: 'config', label: 'Configurações do Sistema', icon: Settings, roles: ['admin_geric'] },
   ];
+
+  const userRole = user?.role || 'visualizador';
+  const menuItems = allMenuItems.filter(item => item.roles.includes(userRole));
 
 
 

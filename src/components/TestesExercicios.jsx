@@ -762,15 +762,19 @@ export default function TestesExercicios({ db }) {
                   )}
 
                   <button
-                    onClick={() => pdfService.exportar(
-                      pdfService.htmlTeste(t, pco, proc), 
-                      `Relatório de Simulado - ${t.id_teste}`, 
-                      '1.0', 
-                      'Geric - GCN System'
-                    )}
-                    className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-850 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-350 font-bold px-3 py-2 rounded-lg text-xs flex items-center justify-center gap-2 border border-slate-200 dark:border-slate-700 transition-colors w-full md:w-auto shadow-sm"
+                    onClick={() => {
+                      const interv = db.intervenientes.listForProcesso(t.id_processo);
+                      const html = pdfService.htmlAtaTeste(t, proc, pco, interv);
+                      pdfService.exportar(`Ata de Simulado — ${t.id_teste}`, html, {
+                        nome_empresa: 'GCN System',
+                        confidencialidade: 'RESTRITO',
+                        versao: '1.0.0',
+                        autor: 'GERIC (2ª Linha)'
+                      });
+                    }}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-2 rounded-lg text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
                   >
-                    <Download className="w-3.5 h-3.5" /> Exportar PDF
+                    <Download className="w-3.5 h-3.5" /> Exportar Ata (ISO 22301)
                   </button>
                 </div>
 
