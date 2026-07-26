@@ -13,10 +13,20 @@ import {
   LogOut,
   Network,
   Settings,
-  Target
+  Target,
+  X
 } from 'lucide-react';
 
-export default function Sidebar({ activeTab, setActiveTab, darkMode, setDarkMode, user, onLogout }) {
+export default function Sidebar({ 
+  activeTab, 
+  setActiveTab, 
+  darkMode, 
+  setDarkMode, 
+  user, 
+  onLogout,
+  isOpen,
+  onClose
+}) {
   const allMenuItems = [
     { id: 'dashboard', label: 'Painel Executivo Geric', icon: LayoutDashboard, roles: ['admin_geric', 'gestor_area', 'visualizador', 'tic', 'gerente_exec', 'conti'] },
     { id: 'organizacao', label: 'Estrutura & Riscos', icon: Network, roles: ['admin_geric', 'gestor_area', 'visualizador', 'tic', 'gerente_exec', 'conti'] },
@@ -35,21 +45,35 @@ export default function Sidebar({ activeTab, setActiveTab, darkMode, setDarkMode
   const userRole = user?.role || 'visualizador';
   const menuItems = allMenuItems.filter(item => item.roles.includes(userRole));
 
+  const handleSelectTab = (tabId) => {
+    setActiveTab(tabId);
+    if (onClose) onClose();
+  };
 
-
-
-  return (
-    <aside className="w-72 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between transition-colors duration-300">
+  const sidebarContent = (
+    <div className="flex flex-col h-full justify-between overflow-y-auto">
       {/* Topo / Logo */}
       <div>
-        <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-indigo-600 dark:bg-indigo-500 flex items-center justify-center text-white font-extrabold text-xl shadow-md">
-            G
+        <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-indigo-600 dark:bg-indigo-500 flex items-center justify-center text-white font-extrabold text-xl shadow-md">
+              G
+            </div>
+            <div>
+              <h1 className="font-bold text-slate-800 dark:text-white leading-tight">GCN Master</h1>
+              <span className="text-xs text-slate-400 dark:text-slate-500">ISO 22301 & 27031</span>
+            </div>
           </div>
-          <div>
-            <h1 className="font-bold text-slate-800 dark:text-white leading-tight">GCN Master</h1>
-            <span className="text-xs text-slate-400 dark:text-slate-500">ISO 22301 & 27031</span>
-          </div>
+          {/* Botão fechar no celular */}
+          {onClose && (
+            <button 
+              onClick={onClose} 
+              className="md:hidden text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg"
+              aria-label="Fechar menu"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          )}
         </div>
 
         {/* Menu de Navegação */}
@@ -60,14 +84,14 @@ export default function Sidebar({ activeTab, setActiveTab, darkMode, setDarkMode
             return (
               <button
                 key={item.id}
-                onClick={() => setActiveTab(item.id)}
+                onClick={() => handleSelectTab(item.id)}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
                   isActive
                     ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border-l-4 border-indigo-600 dark:border-indigo-400'
                     : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-200'
                 }`}
               >
-                <Icon className={`w-5 h-5 ${isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500'}`} />
+                <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500'}`} />
                 <span className="truncate">{item.label}</span>
               </button>
             );
@@ -97,7 +121,7 @@ export default function Sidebar({ activeTab, setActiveTab, darkMode, setDarkMode
             <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">{user?.nome}</p>
             <button 
               onClick={onLogout}
-              className="text-slate-400 hover:text-rose-500 transition-colors"
+              className="text-slate-400 hover:text-rose-500 transition-colors p-1"
               title="Sair do sistema"
             >
               <LogOut className="w-4 h-4" />
@@ -107,6 +131,29 @@ export default function Sidebar({ activeTab, setActiveTab, darkMode, setDarkMode
           <p className="text-[9px] text-indigo-500 font-semibold uppercase tracking-wider mt-1">{user?.departamento}</p>
         </div>
       </div>
-    </aside>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Sidebar Desktop */}
+      <aside className="hidden md:flex w-72 h-screen sticky top-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex-col justify-between transition-colors duration-300 flex-shrink-0 z-30">
+        {sidebarContent}
+      </aside>
+
+      {/* Drawer Mobile */}
+      {isOpen && (
+        <div className="fixed inset-0 z-50 md:hidden flex">
+          <div 
+            className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm transition-opacity"
+            onClick={onClose}
+          />
+          <div className="relative w-72 max-w-[85vw] bg-white dark:bg-slate-900 h-full shadow-2xl z-50 flex flex-col">
+            {sidebarContent}
+          </div>
+        </div>
+      )}
+    </>
   );
 }
+

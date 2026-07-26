@@ -258,25 +258,25 @@ export default function DashboardGeric({ db }) {
     <div className="space-y-6 animate-fade-in">
 
       {/* HEADER */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-black text-slate-900 dark:text-white">Painel Executivo — Gestão GCN</h2>
+          <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">Painel Executivo — Gestão GCN</h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             Visão em tempo real · {new Date().toLocaleString('pt-BR')} · ISO 22301:2019 / 27031:2011
           </p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => setRefreshAt(Date.now())} className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors px-3 py-2 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900">
+          <button onClick={() => setRefreshAt(Date.now())} className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors px-3 py-2 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900">
             <RefreshCw className="w-3.5 h-3.5" /> Atualizar
           </button>
-          <button onClick={exportarDashboard} className="flex items-center gap-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors px-3 py-2 rounded-lg shadow-sm">
+          <button onClick={exportarDashboard} className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors px-3 py-2 rounded-lg shadow-sm">
             <Download className="w-3.5 h-3.5" /> Exportar PDF
           </button>
         </div>
       </div>
 
       {/* LINHA 1: GAUGES + KPIs PRINCIPAIS */}
-      <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3">
         <KPICard label="Processos Críticos" value={kpis.totalProcessos} sub={`${kpis.processosSemPCO} sem PCO`} icon={Activity} color="indigo" alert={kpis.processosSemPCO > 0} />
         <KPICard label="PCOs Aprovados" value={kpis.pcosAprovados} sub={`${kpis.coberturaPCO}% cobertura`} icon={CheckCircle} color="emerald" />
         <KPICard label="PCOs Pendentes" value={kpis.pcosPendentes} sub="aguardando aprovação" icon={Clock} color="amber" alert={kpis.pcosPendentes > 0} />
@@ -535,7 +535,7 @@ export default function DashboardGeric({ db }) {
           <Users className="w-4 h-4 text-indigo-500" />
           <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Cobertura e NRGCN por Gerência</span>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-3">
           {nrgcnPorGerencia.map((n, i) => {
             const cor = n.nrgcn >= 4 ? '#10b981' : n.nrgcn >= 3 ? '#f59e0b' : '#ef4444';
             return (

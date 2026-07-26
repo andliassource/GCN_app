@@ -21,6 +21,8 @@ import { dbService } from './services/db';
 function MainLayout() {
   const { usuario } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   // Bug 1 Fix: ler preferência salva no localStorage; padrão = dark
   const [darkMode, setDarkMode] = useState(() => {
     try {
@@ -78,7 +80,7 @@ function MainLayout() {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-300 text-slate-900 dark:text-slate-100">
+    <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-300 text-slate-900 dark:text-slate-100 overflow-x-hidden">
       <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -86,10 +88,17 @@ function MainLayout() {
         setDarkMode={setDarkMode}
         user={usuario}
         onLogout={() => { /* handled by AuthContext via useAuth */ }}
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
       />
-      <div className="flex-1 flex flex-col min-w-0">
-        <Header activeTab={activeTab} db={dbService} onNavigate={setActiveTab} />
-        <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
+      <div className="flex-1 flex flex-col min-w-0 w-full overflow-x-hidden">
+        <Header 
+          activeTab={activeTab} 
+          db={dbService} 
+          onNavigate={setActiveTab}
+          onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
+        />
+        <main className="flex-1 p-3 sm:p-6 lg:p-8 overflow-y-auto max-w-full">
           {renderContent()}
         </main>
       </div>
@@ -104,3 +113,4 @@ export default function App() {
     </AuthProvider>
   );
 }
+

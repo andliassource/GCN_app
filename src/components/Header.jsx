@@ -1,9 +1,9 @@
 import React from 'react';
-import { Shield, AlertTriangle, User, LogOut } from 'lucide-react';
+import { Shield, AlertTriangle, User, LogOut, Menu } from 'lucide-react';
 import NotificationCenter from './NotificationCenter';
 import { useAuth } from '../contexts/AuthContext';
 
-export default function Header({ activeTab, db, onNavigate }) {
+export default function Header({ activeTab, db, onNavigate, onToggleMobileMenu }) {
   const { usuario, logout, nomeGerenciaContexto } = useAuth();
 
   const avaliacoes = db.avaliacaoNRGCN?.list ? db.avaliacaoNRGCN.list() : [];
@@ -41,17 +41,30 @@ export default function Header({ activeTab, db, onNavigate }) {
   const badge = getRoleBadge(usuario?.role);
 
   return (
-    <header className="h-20 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-6 relative transition-colors duration-300">
-      <div>
-        <h2 className="text-lg font-bold text-slate-800 dark:text-white leading-tight">{getTitle()}</h2>
-        <p className="text-xs text-slate-400 dark:text-slate-500">
-          Status: <span className="text-emerald-500 font-semibold">Resiliência Operacional Ativa</span> · ISO 22301 / 27031
-        </p>
+    <header className="min-h-16 py-3 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 sm:px-6 relative transition-colors duration-300">
+      <div className="flex items-center gap-3">
+        {/* Botão de Menu para Mobile */}
+        <button
+          onClick={onToggleMobileMenu}
+          className="md:hidden p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none"
+          aria-label="Abrir menu de navegação"
+        >
+          <Menu className="w-6 h-6" />
+        </button>
+
+        <div>
+          <h2 className="text-base sm:text-lg font-bold text-slate-800 dark:text-white leading-tight truncate max-w-[200px] sm:max-w-none">
+            {getTitle()}
+          </h2>
+          <p className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-500">
+            Status: <span className="text-emerald-500 font-semibold">Resiliência Operacional Ativa</span>
+          </p>
+        </div>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 sm:gap-4">
         {/* KPI: Maturidade NRGCN */}
-        <div className="hidden md:flex items-center gap-2 bg-indigo-50 dark:bg-indigo-950/30 px-3 py-1.5 rounded-lg border border-indigo-100 dark:border-indigo-900/50">
+        <div className="hidden lg:flex items-center gap-2 bg-indigo-50 dark:bg-indigo-950/30 px-3 py-1.5 rounded-lg border border-indigo-100 dark:border-indigo-900/50">
           <Shield className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
           <div>
             <p className="text-[9px] text-indigo-500 dark:text-indigo-400 font-bold uppercase tracking-wider leading-none">Maturidade NRGCN</p>
@@ -60,7 +73,7 @@ export default function Header({ activeTab, db, onNavigate }) {
         </div>
 
         {/* KPI: Incidentes */}
-        <div className="hidden md:flex items-center gap-2 bg-rose-50 dark:bg-rose-950/20 px-3 py-1.5 rounded-lg border border-rose-100 dark:border-rose-900/30">
+        <div className="hidden lg:flex items-center gap-2 bg-rose-50 dark:bg-rose-950/20 px-3 py-1.5 rounded-lg border border-rose-100 dark:border-rose-900/30">
           <AlertTriangle className="w-4 h-4 text-rose-500" />
           <div>
             <p className="text-[9px] text-rose-500 font-bold uppercase tracking-wider leading-none">Incidentes</p>
@@ -73,11 +86,11 @@ export default function Header({ activeTab, db, onNavigate }) {
 
         {/* Usuário Logado + Perfil */}
         {usuario && (
-          <div className="flex items-center gap-3 pl-3 border-l border-slate-200 dark:border-slate-800">
-            <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-sm">
+          <div className="flex items-center gap-2 sm:gap-3 pl-2 sm:pl-3 border-l border-slate-200 dark:border-slate-800">
+            <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-sm flex-shrink-0">
               {usuario.nome.charAt(0)}
             </div>
-            <div className="hidden lg:block text-left">
+            <div className="hidden xl:block text-left">
               <div className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-tight">{usuario.nome}</div>
               <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
                 <span className={`text-[9px] px-1.5 py-0.2 rounded border font-semibold ${badge.cls}`}>{badge.text}</span>
@@ -93,4 +106,5 @@ export default function Header({ activeTab, db, onNavigate }) {
     </header>
   );
 }
+
 
