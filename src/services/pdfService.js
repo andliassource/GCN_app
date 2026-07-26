@@ -292,10 +292,11 @@ export const pdfService = {
     else { alert('Permita pop-ups para exportar o PDF.'); }
   },
 
-  // Gera HTML do PCO — Versão Robusta ISO 22301/27031 com Cenários Estruturados
+  // Gera HTML do PCO — Versão Corporativa Robusta ISO 22301/27031 com 4 Alçadas de Aprovação
   htmlPCO: (pco, processo, ain, intervenientes, config, ativosContingencia, scenarioC, scenarioD) => {
     const cinc = ain ? `RTO: ${ain.RTO} min | RPO: ${ain.RPO} min | MTDCN: ${ain.MTDCN} min` : 'AIN não configurada';
     const dataHoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+    const isVigente = pco?.status_aprovacao === 'Vigente';
 
     // Tabela de ativos por sistema (Cenário B)
     const ativosRows = (ativosContingencia || []).map(a => `
@@ -328,6 +329,12 @@ export const pdfService = {
 
     return `
       <style>
+        .cover-page { page-break-after: always; text-align: center; padding: 40pt 20pt; border-bottom: 3pt solid #4f46e5; margin-bottom: 20pt; }
+        .cover-title { font-size: 22pt; font-weight: 900; color: #1e1b4b; text-transform: uppercase; letter-spacing: -0.5pt; margin-top: 15pt; }
+        .cover-sub { font-size: 11pt; color: #475569; margin-top: 8pt; font-weight: 600; }
+        .cover-badge { display: inline-block; padding: 6pt 16pt; border-radius: 20pt; font-size: 10pt; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 20pt; }
+        .badge-vigente { background: #dcfce7; color: #15803d; border: 1.5pt solid #86efac; }
+        .badge-rascunho { background: #fef3c7; color: #b45309; border: 1.5pt solid #fcd34d; }
         .exec-box { background: #1e1b4b; color: #e0e7ff; border-radius: 8pt; padding: 12pt; margin-bottom: 14pt; }
         .exec-box-title { font-size: 8pt; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: #a5b4fc; margin-bottom: 8pt; }
         .exec-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10pt; }
@@ -340,9 +347,55 @@ export const pdfService = {
         .th-amber { background: #fef3c7; color: #92400e; border: 1pt solid #fcd34d; }
         .th-red { background: #fef2f2; color: #b91c1c; border: 1pt solid #fecaca; }
         .th-blue { background: #eff6ff; color: #1d4ed8; border: 1pt solid #bfdbfe; }
+        .sig-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8pt; margin-top: 10pt; }
+        .sig-card { background: #f8fafc; border: 1pt solid #e2e8f0; border-radius: 6pt; padding: 8pt; font-size: 7.5pt; }
+        .sig-card-title { font-weight: 800; color: #1e293b; uppercase; text-transform: uppercase; font-size: 7pt; letter-spacing: 0.05em; }
+        .sig-card-val { color: #15803d; font-weight: 700; margin-top: 3pt; }
       </style>
 
-      <!-- 0. RESUMO EXECUTIVO -->
+      <!-- CAPA CORPORATIVA -->
+      <div class="cover-page">
+        <div style="font-size:10pt; font-weight:800; color:#4f46e5; letter-spacing:0.15em; uppercase">SISTEMA CORPORATIVO DE GESTÃO DE CONTINUIDADE DE NEGÓCIOS</div>
+        <div class="cover-title">Plano de Continuidade Operacional</div>
+        <div class="cover-sub">Processo: <strong>${processo?.nome || pco?.id_processo}</strong> (${processo?.id_processo || '-'})</div>
+        <div class="cover-sub">Gerência Responsável: <strong>${processo?.id_gerencia || '-'}</strong> • Versão ${pco?.versao || '1.0.0'}</div>
+        <div class="cover-badge ${isVigente ? 'badge-vigente' : 'badge-rascunho'}">
+          ${isVigente ? '✅ VIGENTE — HOMOLOGADO EM COMITÊ CONTI' : '⏳ EM FLUXO DE APROVAÇÃO (RASCUNHO / PENDENTE)'}
+        </div>
+        <div style="margin-top: 30pt; font-size:8pt; color:#64748b">
+          Emitido em ${dataHoje} • Conforme ABNT NBR ISO 22301:2020 e ISO 27031:2011<br/>
+          Confidencialidade: <strong>${(pco?.nivel_confidencialidade || 'RESTRITO').toUpperCase()}</strong>
+        </div>
+      </div>
+
+      <!-- 0. HOMOLOGAÇÃO E QUADRO DE ASSINATURAS DAS 4 ALÇADAS -->
+      <div class="section">
+        <div class="section-title">0. Quadro de Homologação e Assinaturas (ISO 22301 §8.4.5)</div>
+        <div class="sig-grid">
+          <div class="sig-card">
+            <div class="sig-card-title">1ª Alçada — Revisão GERIC (Riscos & GCN)</div>
+            <div class="sig-card-val">${pco?.parecer_geric ? '✓ APROVADO PELA GERIC' : '⏳ Pendente'}</div>
+            <div style="color:#64748b; margin-top:2pt">${pco?.parecer_geric || 'Aguardando parecer de revisão de 2ª linha.'}</div>
+          </div>
+          <div class="sig-card">
+            <div class="sig-card-title">2ª Alçada — Aval TIC & Verificação ANS</div>
+            <div class="sig-card-val">${pco?.parecer_tic ? '✓ AVAL TÉCNICO CONCEDIDO' : '⏳ Pendente'}</div>
+            <div style="color:#64748b; margin-top:2pt">${pco?.parecer_tic || 'Aguardando verificação de redundância e ANS de TIC.'}</div>
+          </div>
+          <div class="sig-card">
+            <div class="sig-card-title">3ª Alçada — Gerente Executivo da Área</div>
+            <div class="sig-card-val">${pco?.parecer_gerente ? '✓ ASSINADO PELO GERENTE EXEC' : '⏳ Pendente'}</div>
+            <div style="color:#64748b; margin-top:2pt">${pco?.parecer_gerente || 'Aguardando assinatura do responsável da unidade.'}</div>
+          </div>
+          <div class="sig-card">
+            <div class="sig-card-title">4ª Alçada — Comitê Conti (Deliberação Final)</div>
+            <div class="sig-card-val">${isVigente ? '✓ DELIBERAÇÃO FAVORÁVEL (VIGENTE)' : '⏳ Pendente'}</div>
+            <div style="color:#64748b; margin-top:2pt">${pco?.parecer_comite || 'Aguardando deliberação e registro de ata no Conti.'}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RESUMO EXECUTIVO -->
       <div class="exec-box">
         <div class="exec-box-title">🛡️ Resumo Executivo — Plano de Continuidade Operacional</div>
         <div class="exec-grid">
@@ -353,12 +406,13 @@ export const pdfService = {
         </div>
         <div style="margin-top: 10pt; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8pt; font-size: 8pt;">
           <div><span style="color:#a5b4fc; font-weight:700">Gerência:</span><br/>${processo?.id_gerencia || '-'}</div>
-          <div><span style="color:#a5b4fc; font-weight:700">Status:</span><br/><span style="color:${pco?.status_aprovacao === 'Aprovado' ? '#6ee7b7' : '#fcd34d'}">${pco?.status_aprovacao || 'Pendente'}</span></div>
+          <div><span style="color:#a5b4fc; font-weight:700">Status:</span><br/><span style="color:${isVigente ? '#6ee7b7' : '#fcd34d'}">${pco?.status_aprovacao || 'Pendente'}</span></div>
           <div><span style="color:#a5b4fc; font-weight:700">Válido até:</span><br/>${pco?.vigente_ate ? new Date(pco.vigente_ate).toLocaleDateString('pt-BR') : '-'}</div>
         </div>
       </div>
 
       <!-- 1. IDENTIFICAÇÃO -->
+
       <div class="section">
         <div class="section-title">1. Identificação do Processo Crítico</div>
         <table>

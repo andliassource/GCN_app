@@ -275,6 +275,12 @@ export default function PlanosRecuperacao({ db }) {
   };
 
   const exportarPDF = () => {
+    if (pcoData?.status_aprovacao !== 'Vigente') {
+      const confirmaDraft = window.confirm(
+        `⚠️ ATENÇÃO — ESTE PLANO AINDA NÃO É VIGENTE\n\nStatus Atual: "${pcoData?.status_aprovacao || 'Pendente'}"\n\nO PDF oficial com valor regulatório (ISO 22301) exige aprovação em 4 alçadas (GERIC → TIC/ANS → Gerente Executivo → Comitê Conti).\n\nDeseja exportar uma cópia de RASCUNHO para conferência?`
+      );
+      if (!confirmaDraft) return;
+    }
     const serialized = serializeScenarios();
     const pcoParaPDF = { ...pcoData, ...serialized };
     const interv = db.intervenientes.listForProcesso(selectedProcId);

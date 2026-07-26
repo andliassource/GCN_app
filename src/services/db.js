@@ -22,12 +22,14 @@ const INITIAL_DATA = {
   usuariosSimulados: [
     { id_usuario: "USR-001", nome: "Roberto Carlos", email: "geric@empresa.com.br", id_gerencia: "GER-GOV01", role: "admin_geric", senha: "geric2026" },
     { id_usuario: "USR-002", nome: "Arthur Mendes", email: "geemp@empresa.com.br", id_gerencia: "GER-GOV02", role: "admin_geric", senha: "geemp2026" },
-    { id_usuario: "USR-003", nome: "Patrícia Lima", email: "getic@empresa.com.br", id_gerencia: "GER-TIC01", role: "gestor_area", senha: "getic2026" },
+    { id_usuario: "USR-003", nome: "Patrícia Lima", email: "getic@empresa.com.br", id_gerencia: "GER-TIC01", role: "tic", senha: "getic2026" },
     { id_usuario: "USR-004", nome: "Vanessa Lopes", email: "gemac@empresa.com.br", id_gerencia: "GER-GOV03", role: "gestor_area", senha: "gemac2026" },
     { id_usuario: "USR-005", nome: "Marcos Costa", email: "gecob@empresa.com.br", id_gerencia: "GER-NEG01", role: "gestor_area", senha: "gecob2026" },
     { id_usuario: "USR-006", nome: "Sandro Lima", email: "gesap@empresa.com.br", id_gerencia: "GER-APO04", role: "gestor_area", senha: "gesap2026" },
     { id_usuario: "USR-007", nome: "Carla Souza", email: "gered@empresa.com.br", id_gerencia: "GER-NEG02", role: "gestor_area", senha: "gered2026" },
-    { id_usuario: "USR-008", nome: "Visitante", email: "visitante@empresa.com.br", id_gerencia: "GER-GOV01", role: "visualizador", senha: "visitante2026" }
+    { id_usuario: "USR-008", nome: "Visitante", email: "visitante@empresa.com.br", id_gerencia: "GER-GOV01", role: "visualizador", senha: "visitante2026" },
+    { id_usuario: "USR-009", nome: "Diretora Fernanda Rocha", email: "gerexec@empresa.com.br", id_gerencia: "GER-NEG01", role: "gerente_exec", senha: "gerexec2026" },
+    { id_usuario: "USR-010", nome: "Comitê Conti (Secretária)", email: "conti@empresa.com.br", id_gerencia: "GER-GOV02", role: "conti", senha: "conti2026" }
   ],
 
   // ── DIRETORIAS ────────────────────────────────────────────────────────────
@@ -246,7 +248,7 @@ const INITIAL_DATA = {
   // ── PLANOS DE CONTINUIDADE (PCO) ──────────────────────────────────────────
   planosContinuidade: [
     {
-      id_pco: "PCO-COB-001", id_processo: "PROC-COB-001", id_gerencia: "GER-COB01",
+      id_pco: "PCO-COB-001", id_processo: "PROC-COB-001", id_gerencia: "GER-NEG01",
       estrategia_recuperacao: "Failover automático para gateway adquirente reserva. Transações pendentes enfileiradas em Redis para reprocessamento.",
       responsabilidades: "SRE da Gecob e equipe de TI (Getic) executam o failover.",
       recursos_necessarios: "Gateway reserva, instâncias EC2 de contingência, Redis.",
@@ -255,14 +257,27 @@ const INITIAL_DATA = {
       cenario_fornecedores: "Em caso de falha total do canal de recebimentos, ativar processamento manual com equipe de backoffice até normalização.",
       cenario_pessoas: "Em caso de falta de 30%+ da equipe, acionar BPO parceiro para reforço de analistas de canais.",
       escalonamento_crise: "Se indisponibilidade exceder 15 min (RTO), o Gerente da Gecob escala para Comitê de Crise e Geric. Ata obrigatória.",
-      status_aprovacao: "Aprovado", versao: "2.1.0",
+      status_aprovacao: "Vigente", versao: "2.1.0",
       data_proxima_revisao: "2027-01-01", data_ultima_revisao: "2026-01-01", ultima_revisao: "2026-01-01",
       vigente_ate: "2027-01-01", nivel_confidencialidade: "restrito",
       intervenientes: ["INT-001", "INT-002", "INT-003"],
-      acionamentos: [{ data: "2026-05-20T16:45:00", id_incidente: "INC-103", acionado_por: "Marcos Costa (Gecob)" }]
+      acionamentos: [{ data: "2026-05-20T16:45:00", id_incidente: "INC-103", acionado_por: "Marcos Costa (Gecob)" }],
+      workflow_log: [
+        { status: "Pendente GERIC", aprovador: "Marcos Costa", data: "2026-01-01T09:00:00", parecer: "Plano enviado para revisão." },
+        { status: "Pendente TIC", aprovador: "Roberto Carlos (GERIC)", data: "2026-01-03T10:00:00", parecer: "Revisão concluída. ANS vigente confirmado (CTR-001)." },
+        { status: "Pendente Gerente Exec", aprovador: "Patrícia Lima (TIC)", data: "2026-01-05T14:00:00", parecer: "Aval técnico concedido. PRD vinculado e validado." },
+        { status: "Pendente Comitê", aprovador: "Diretora Fernanda Rocha", data: "2026-01-08T11:00:00", parecer: "Plano assinado pelo Gerente Executivo da área." },
+        { status: "Vigente", aprovador: "Comitê Conti", data: "2026-01-12T16:00:00", parecer: "Deliberação Conti Ata 01/2026 — PCO aprovado por unanimidade. Vigência de 12 meses." }
+      ],
+      ans_vigente: "CTR-001", dispensa_ans: null,
+      parecer_geric: "Revisão concluída. ANS vigente confirmado.",
+      parecer_tic: "Aval técnico concedido. PRD vinculado e validado.",
+      parecer_gerente: "Plano assinado pelo Gerente Executivo da área.",
+      parecer_comite: "Ata 01/2026 — aprovado por unanimidade.",
+      id_gerente_exec_aprovador: "USR-009"
     },
     {
-      id_pco: "PCO-COB-002", id_processo: "PROC-COB-002", id_gerencia: "GER-COB01",
+      id_pco: "PCO-COB-002", id_processo: "PROC-COB-002", id_gerencia: "GER-NEG01",
       estrategia_recuperacao: "Suspensão temporária de novos protestos. Processamento manual das carteiras prioritárias.",
       responsabilidades: "Analistas sêniores de cobrança da Gecob gerenciam a fila manual.",
       recursos_necessarios: "Planilhas de contingência, acesso off-line às carteiras.",
@@ -271,14 +286,16 @@ const INITIAL_DATA = {
       cenario_fornecedores: "Não há dependência de fornecedor externo crítico. Contingência interna.",
       cenario_pessoas: "Redistribuição da fila entre analistas disponíveis.",
       escalonamento_crise: "Se indisponibilidade exceder 2h, escalar para Gerente da Gecob e Geric.",
-      status_aprovacao: "Pendente", versao: "1.0.0",
+      status_aprovacao: "Pendente GERIC", versao: "1.0.0",
       data_proxima_revisao: "2027-01-01", data_ultima_revisao: null, ultima_revisao: null,
       vigente_ate: "2027-01-01", nivel_confidencialidade: "restrito",
       intervenientes: ["INT-001", "INT-002"],
-      acionamentos: []
+      acionamentos: [],
+      workflow_log: [{ status: "Pendente GERIC", aprovador: "Marcos Costa", data: new Date().toISOString(), parecer: "Plano enviado para revisão GERIC." }],
+      ans_vigente: null, dispensa_ans: null, parecer_geric: null, parecer_tic: null, parecer_gerente: null, parecer_comite: null, id_gerente_exec_aprovador: null
     },
     {
-      id_pco: "PCO-APO-004", id_processo: "PROC-APO-004", id_gerencia: "GER-SAP01",
+      id_pco: "PCO-APO-004", id_processo: "PROC-APO-004", id_gerencia: "GER-APO04",
       estrategia_recuperacao: "Evacuação imediata do edifício e ativação da brigada de incêndio. Transferência para escritório secundário ou home office.",
       responsabilidades: "Brigadista líder coordena evacuação. Gerente Gesap aciona CBMERJ e comunica Geric.",
       recursos_necessarios: "Extintores, mangueiras, rotas de fuga sinalizadas, lista de brigadistas ativos.",
@@ -287,11 +304,16 @@ const INITIAL_DATA = {
       cenario_fornecedores: "Acionar fornecedor de manutenção predial (SLA 2h) para inspeção e liberação do edifício.",
       cenario_pessoas: "Verificar lista de presença nos muster points. Comunicar Gepes sobre afastamentos médicos de emergência.",
       escalonamento_crise: "Qualquer incidente com vítimas ou dano estrutural = acionamento imediato do Comitê de Crise.",
-      status_aprovacao: "Aprovado", versao: "1.3.0",
+      status_aprovacao: "Pendente TIC", versao: "1.3.0",
       data_proxima_revisao: "2027-01-01", data_ultima_revisao: "2026-02-09", ultima_revisao: "2026-02-09",
       vigente_ate: "2027-01-01", nivel_confidencialidade: "restrito",
       intervenientes: ["INT-001", "INT-006"],
-      acionamentos: [{ data: "2026-02-08T09:15:00", id_incidente: "INC-102", acionado_por: "Sandro Lima (Gesap)" }]
+      acionamentos: [{ data: "2026-02-08T09:15:00", id_incidente: "INC-102", acionado_por: "Sandro Lima (Gesap)" }],
+      workflow_log: [
+        { status: "Pendente GERIC", aprovador: "Sandro Lima", data: "2026-02-01T09:00:00", parecer: "Plano enviado para revisão." },
+        { status: "Pendente TIC", aprovador: "Roberto Carlos (GERIC)", data: "2026-02-05T10:00:00", parecer: "Revisado. Encaminhado para aval técnico TIC." }
+      ],
+      ans_vigente: null, dispensa_ans: null, parecer_geric: "Revisado. Encaminhado para aval técnico TIC.", parecer_tic: null, parecer_gerente: null, parecer_comite: null, id_gerente_exec_aprovador: null
     }
   ],
 
@@ -750,8 +772,33 @@ export const dbService = {
       const idx = db.planosContinuidade.findIndex(p => p.id_processo === pco.id_processo);
       let updatedPco;
       if (idx !== -1) { updatedPco = { ...db.planosContinuidade[idx], ...pco, atualizado_em: new Date().toISOString() }; db.planosContinuidade[idx] = updatedPco; }
-      else { updatedPco = { ...pco, id_pco: `PCO-${Date.now().toString().slice(-4)}`, status_aprovacao: 'Pendente', versao: '1.0.0', criado_em: new Date().toISOString(), intervenientes: [], acionamentos: [] }; db.planosContinuidade.push(updatedPco); }
+      else {
+        updatedPco = { ...pco, id_pco: `PCO-${Date.now().toString().slice(-4)}`, status_aprovacao: 'Rascunho', versao: '1.0.0', criado_em: new Date().toISOString(), intervenientes: [], acionamentos: [], workflow_log: [], ans_vigente: null, dispensa_ans: null, parecer_geric: null, parecer_tic: null, parecer_gerente: null, parecer_comite: null, id_gerente_exec_aprovador: null };
+        db.planosContinuidade.push(updatedPco);
+      }
       saveDB(db); return updatedPco;
+    },
+    // Registra uma transição no workflow de aprovação do PCO
+    transitarWorkflow: (id_pco, novoStatus, aprovador, parecer, camposExtras) => {
+      const db = getDB();
+      const idx = db.planosContinuidade.findIndex(p => p.id_pco === id_pco);
+      if (idx === -1) return null;
+      const entrada = { status: novoStatus, aprovador, data: new Date().toISOString(), parecer: parecer || '' };
+      if (!db.planosContinuidade[idx].workflow_log) db.planosContinuidade[idx].workflow_log = [];
+      db.planosContinuidade[idx].workflow_log.push(entrada);
+      db.planosContinuidade[idx].status_aprovacao = novoStatus;
+      db.planosContinuidade[idx].atualizado_em = new Date().toISOString();
+      if (camposExtras) Object.assign(db.planosContinuidade[idx], camposExtras);
+      // Se tornando vigente, registrar data
+      if (novoStatus === 'Vigente') {
+        const hoje = new Date();
+        const anoProximo = new Date(hoje); anoProximo.setFullYear(anoProximo.getFullYear() + 1);
+        db.planosContinuidade[idx].data_ultima_revisao = hoje.toISOString().split('T')[0];
+        db.planosContinuidade[idx].data_proxima_revisao = anoProximo.toISOString().split('T')[0];
+        db.planosContinuidade[idx].vigente_ate = anoProximo.toISOString().split('T')[0];
+      }
+      saveDB(db);
+      return db.planosContinuidade[idx];
     },
     acionar: (id_pco, id_incidente, acionado_por) => {
       const db = getDB();

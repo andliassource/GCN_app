@@ -302,5 +302,87 @@ Equipe de Gestão de Riscos e Continuidade (Geric)
 
     db.planosContinuidade.acionar(id_pco, id_incidente, acionado_por);
     return geradas;
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Notifica a transição de workflow de aprovação de PCO
+  // Chamado a cada mudança de alçada em GovernancaAprovacao.jsx
+  // ─────────────────────────────────────────────────────────────────────────
+  notificarTransicaoWorkflow: (db, plano, novoStatus, parecerTexto, aprovador) => {
+    const geradas = [];
+    const proc = plano.processo || {};
+    const idGerDona = proc.id_gerencia || plano.id_gerencia;
+    const pcoLabel = `PCO ${plano.id_pco} — ${proc.nome || plano.id_processo}`;
+    const parecerResumido = parecerTexto ? ` Parecer: "${parecerTexto}"` : '';
+
+    const criarNotif = (tipo, titulo, mensagem, id_destino, prioridade) => {
+      db.notificacoes.create({ tipo, titulo, mensagem, id_destino, prioridade, prazo_acao: new Date(Date.now() + 86400000).toISOString(), link_acao: 'governanca' });
+      geradas.push(`${tipo} → ${id_destino}`);
+    };
+
+    if (novoStatus === 'Pendente GERIC') {
+      // Área enviou para GERIC
+      criarNotif('workflow_pco', `📋 PCO aguardando revisão GERIC — ${plano.id_pco}`, `${pcoLabel} foi enviado pela área para revisão da 1ª alçada (GERIC). Por favor, analise e aprove ou devolva com parecer.`, 'GER-GOV01', 'alta');
+    }
+
+    else if (novoStatus === 'Devolvido GERIC') {
+      // GERIC devolveu para área
+      criarNotif('workflow_pco', `↩️ PCO devolvido pela GERIC — ${plano.id_pco}`, `${pcoLabel} foi devolvido pela GERIC para correções.${parecerResumido}`, idGerDona, 'alta');
+    }
+
+    else if (novoStatus === 'Pendente TIC') {
+      // GERIC aprovou → notifica TIC (GER-TIC01)
+      criarNotif('workflow_pco', `🔧 PCO aguardando aval TIC — ${plano.id_pco}`, `${pcoLabel} foi aprovado pela GERIC e aguarda verificação técnica e confirmação de ANS vigente pela TIC (Getic).`, 'GER-TIC01', 'alta');
+      // Cópia para área
+      criarNotif('workflow_pco', `[INFO] ${pcoLabel} aprovado pela GERIC`, `Seu plano foi aprovado pela GERIC (1ª alçada) e segue para aval técnico da TIC.${parecerResumido}`, idGerDona, 'media');
+    }
+
+    else if (novoStatus === 'Devolvido TIC') {
+      // TIC devolveu — notifica GERIC e área
+      criarNotif('workflow_pco', `↩️ PCO devolvido pela TIC — ${plano.id_pco}`, `${pcoLabel} foi devolvido pela TIC para ajustes.${parecerResumido}`, 'GER-GOV01', 'alta');
+      criarNotif('workflow_pco', `↩️ PCO devolvido pela TIC — ${plano.id_pco}`, `${pcoLabel} retornou da TIC.${parecerResumido}`, idGerDona, 'alta');
+    }
+
+    else if (novoStatus === 'Pendente Gerente Exec') {
+      // TIC aprovou → notifica gerente exec vinculado ao plano
+      const gerentes = db.usuariosSimulados
+        ? db.usuariosSimulados.list
+          ? db.usuariosSimulados.list().filter(u => u.role === 'gerente_exec' && u.id_gerencia === idGerDona)
+          : []
+        : [];
+      const destGerente = plano.id_gerente_exec_aprovador ? idGerDona : idGerDona;
+      criarNotif('workflow_pco', `✍️ PCO aguardando sua assinatura — ${plano.id_pco}`, `${pcoLabel} está aguardando assinatura do Gerente Executivo da área para seguir ao Comitê Conti.${parecerResumido}`, destGerente, 'alta');
+      criarNotif('workflow_pco', `[INFO] ${pcoLabel} aprovado pela TIC`, `Aval técnico concedido. O plano segue para assinatura do Gerente Executivo.${parecerResumido}`, idGerDona, 'media');
+    }
+
+    else if (novoStatus === 'Devolvido Gerente') {
+      criarNotif('workflow_pco', `↩️ PCO devolvido pelo Gerente Executivo — ${plano.id_pco}`, `${pcoLabel} foi devolvido pelo Gerente Executivo da área.${parecerResumido}`, 'GER-TIC01', 'alta');
+      criarNotif('workflow_pco', `↩️ PCO devolvido — ${plano.id_pco}`, `${pcoLabel} retornou com parecer do Gerente Executivo.${parecerResumido}`, 'GER-GOV01', 'alta');
+    }
+
+    else if (novoStatus === 'Pendente Comitê') {
+      // Gerente assinou → notifica GER-GOV02 (Geemp = preside Comitê Conti)
+      criarNotif('workflow_pco', `🏛️ PCO aguardando deliberação do Comitê Conti — ${plano.id_pco}`, `${pcoLabel} foi assinado pelo Gerente Executivo e aguarda deliberação do Comitê Conti para ser declarado VIGENTE.`, 'GER-GOV02', 'critica');
+      criarNotif('workflow_pco', `[INFO] ${pcoLabel} aprovado pelo Gerente Executivo`, `O plano seguiu para aprovação final do Comitê Conti.`, 'GER-GOV01', 'media');
+      criarNotif('workflow_pco', `[INFO] ${pcoLabel} aprovado pelo Gerente Executivo`, `O plano seguiu para o Comitê Conti. Acompanhe o resultado.`, idGerDona, 'media');
+    }
+
+    else if (novoStatus === 'Reprovado Comitê') {
+      criarNotif('workflow_pco', `🚫 PCO reprovado pelo Comitê Conti — ${plano.id_pco}`, `${pcoLabel} foi REPROVADO pelo Comitê Conti.${parecerResumido} O plano deve ser revisado e submetido novamente.`, idGerDona, 'critica');
+      criarNotif('workflow_pco', `🚫 [GERIC] PCO reprovado — ${plano.id_pco}`, `${pcoLabel} reprovado pelo Comitê.${parecerResumido}`, 'GER-GOV01', 'alta');
+    }
+
+    else if (novoStatus === 'Vigente') {
+      // 🎉 Plano vigente — notifica todos os envolvidos
+      const titulo = `✅ PCO VIGENTE — ${plano.id_pco}`;
+      const mensagem = `${pcoLabel} foi APROVADO pelo Comitê Conti e agora é VIGENTE. Vigência: 12 meses a partir de hoje.${parecerResumido}`;
+      criarNotif('workflow_pco', titulo, mensagem, idGerDona, 'alta');
+      criarNotif('workflow_pco', titulo, mensagem, 'GER-GOV01', 'alta');
+      criarNotif('workflow_pco', titulo, mensagem, 'GER-TIC01', 'media');
+      criarNotif('workflow_pco', titulo, mensagem, 'GER-GOV02', 'media');
+    }
+
+    return geradas;
   }
 };
+
