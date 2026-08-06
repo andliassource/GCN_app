@@ -14,6 +14,7 @@ import AvaliacaoMaturidade from './components/AvaliacaoMaturidade';
 import OrganizacaoRiscos from './components/OrganizacaoRiscos';
 import ConfiguracaoSistema from './components/ConfiguracaoSistema';
 import LoginPage from './components/LoginPage';
+import PainelApoio from './components/PainelApoio';
 
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { dbService } from './services/db';
@@ -70,6 +71,8 @@ function MainLayout() {
         return <GovernancaAprovacao db={dbService} />;
       case 'crises':
         return <GestaoCrises db={dbService} />;
+      case 'painel_apoio':
+        return <PainelApoio db={dbService} />;
       case 'avaliacao':
         return <AvaliacaoMaturidade db={dbService} />;
       case 'config':

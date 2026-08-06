@@ -82,6 +82,39 @@ const KPICard = ({ label, value, sub, icon: Icon, color, trend, onClick, alert }
   );
 };
 
+// ─── CÁLCULO DE SCORE DE PRIORIDADE GCN (0-100 pts) ───────────────────────────
+const calcularPriorityScore = (proc, ativo) => {
+  let score = 0;
+  
+  // 1. Criticidade do Processo (Max 40 pts)
+  if (proc.criticidade === 'Crítica') score += 40;
+  else if (proc.criticidade === 'Alta') score += 25;
+  else if (proc.criticidade === 'Média') score += 10;
+  
+  // 2. RTO Contratual do Cliente (Max 30 pts)
+  if (proc.requer_drp && proc.sla_contrato_cliente > 0) {
+    const rto = Number(proc.sla_contrato_cliente);
+    if (rto <= 30) score += 30;
+    else if (rto <= 240) score += 20;
+    else if (rto <= 1440) score += 10;
+    else score += 5;
+  } else {
+    score += 5; // Valor mínimo de suporte
+  }
+  
+  // 3. Gargalo de SLA de TIC (Max 20 pts)
+  const gargalo = proc.requer_drp && Number(proc.sla_tic) > Number(proc.sla_contrato_cliente);
+  if (gargalo) score += 20;
+  
+  // 4. Criticidade do Ativo Vinculado (Max 10 pts)
+  if (ativo) {
+    if (ativo.criticidade_contrato === 'C0') score += 10;
+    else if (ativo.criticidade_contrato === 'C1') score += 5;
+  }
+  
+  return score;
+};
+
 // ─── MATRIZ DE RISCO ─────────────────────────────────────────────────────────
 const MatrizRisco = ({ riscos }) => {
   const PROB = ['Rara', 'Pouco Provável', 'Provável', 'Muito Provável', 'Quase Certa'];
@@ -206,7 +239,7 @@ export default function DashboardGeric({ db }) {
   // --- ESTADOS E CÁLCULOS DO DASHBOARD DE IMPACTOS ---
   const [buscaImpacto, setBuscaImpacto] = useState('');
   const [gerenciaFiltroImpacto, setGerenciaFiltroImpacto] = useState('todas');
-  const [ordenacaoImpacto, setOrdenacaoImpacto] = useState('perda_hora_desc');
+  const [ordenacaoImpacto, setOrdenacaoImpacto] = useState('priority_desc');
 
   const todosProcessos = useMemo(() => db.processosCriticos.list(), [refreshAt]);
   const processos = useMemo(() => {
@@ -269,7 +302,14 @@ export default function DashboardGeric({ db }) {
     lista.sort((a, b) => {
       const perdasA = calcularPerdasProcesso(a);
       const perdasB = calcularPerdasProcesso(b);
+      const ativoA = todosAtivos.find(at => at.id_ativo === a.ativo_cmdb_id);
+      const ativoB = todosAtivos.find(at => at.id_ativo === b.ativo_cmdb_id);
       
+      if (ordenacaoImpacto === 'priority_desc') {
+        const scoreA = calcularPriorityScore(a, ativoA);
+        const scoreB = calcularPriorityScore(b, ativoB);
+        return scoreB - scoreA;
+      }
       if (ordenacaoImpacto === 'perda_hora_desc') {
         return perdasB.hora - perdasA.hora;
       }
@@ -617,6 +657,7 @@ export default function DashboardGeric({ db }) {
               onChange={e => setOrdenacaoImpacto(e.target.value)}
               className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-slate-200 focus:outline-indigo-500"
             >
+              <option value="priority_desc">Maior Score de Prioridade GCN (Fila Crítica)</option>
               <option value="perda_hora_desc">Maior Perda Financeira / Hora</option>
               <option value="faturamento_desc">Maior Faturamento Contrato</option>
               <option value="sla_cliente_asc">Menor SLA Contrato Cliente (Crítico)</option>
@@ -645,15 +686,18 @@ export default function DashboardGeric({ db }) {
                 const ativo = todosAtivos.find(a => a.id_ativo === p.ativo_cmdb_id);
                 const gargalo = p.requer_drp && Number(p.sla_tic) > Number(p.sla_contrato_cliente);
                 
+                // Calcular score numérico
+                const scorePrioridade = calcularPriorityScore(p, ativo);
+                
                 // Determina Prioridade Sugerida
                 let prioridade = 'Média';
-                let prioridadeClass = 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-450';
+                let prioridadeClass = 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800';
                 
-                if (p.criticidade === 'Crítica' && (gargalo || ativo?.criticidade_contrato === 'C0' || ativo?.criticidade_contrato === 'C1')) {
-                  prioridade = 'CRÍTICA';
+                if (scorePrioridade >= 80) {
+                  prioridade = 'URGÊNCIA MÁXIMA';
                   prioridadeClass = 'bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/30 font-black animate-pulse';
-                } else if (p.criticidade === 'Alta' || gargalo || ativo?.criticidade_contrato === 'C1') {
-                  prioridade = 'ALTA';
+                } else if (scorePrioridade >= 50) {
+                  prioridade = 'URGÊNCIA ALTA';
                   prioridadeClass = 'bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-900/30 font-bold';
                 }
 
@@ -720,7 +764,8 @@ export default function DashboardGeric({ db }) {
                       )}
                     </td>
                     <td className="px-5 py-3.5 text-center">
-                      <span className={`inline-block px-2 py-0.5 rounded text-[9px] uppercase ${prioridadeClass}`}>
+                      <div className="font-extrabold text-sm text-slate-900 dark:text-white leading-none">{scorePrioridade} <span className="text-[8px] text-slate-400 font-normal">pts</span></div>
+                      <span className={`inline-block px-1.5 py-0.2 rounded text-[7px] font-black uppercase mt-1 ${prioridadeClass}`}>
                         {prioridade}
                       </span>
                     </td>

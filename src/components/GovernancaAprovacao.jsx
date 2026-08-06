@@ -12,7 +12,7 @@ const ALCADAS = [
   { key: 'geric',   label: 'Validação GERIC (2ª Linha)', icon: ShieldCheck,   pendente: 'Pendente GERIC',        devolvido: 'Devolvido GERIC',    roles: ['admin_geric', 'tic_governanca'] },
   { key: 'tic',     label: 'Aval TIC / ANS',             icon: Cpu,           pendente: 'Pendente TIC',           devolvido: 'Devolvido TIC',      roles: ['tic', 'tic_governanca', 'tic_executor', 'admin_geric'] },
   { key: 'gerente', label: 'Assinatura Gerente Exec',   icon: User,          pendente: 'Pendente Gerente Exec',  devolvido: 'Devolvido Gerente',  roles: ['gerente_exec', 'tic_governanca', 'admin_geric'] },
-  { key: 'comite',  label: 'Deliberação Comitê Conti',   icon: Award,         pendente: 'Pendente Comitê',        devolvido: 'Reprovado Comitê',   roles: ['conti', 'tic_governanca', 'admin_geric'] },
+  { key: 'comite',  label: 'Deliberação Comitê Conti',   icon: Award,         pendente: 'Pendente Comitê',        devolvido: 'Reprovado Comitê',   roles: ['conti', 'tic_governanca', 'admin_geric', 'gov_corporativa'] },
 ];
 
 const STATUS_ORDER = {
@@ -198,7 +198,7 @@ function PlanCard({ plano, db, usuario, onRefresh }) {
         );
       }
 
-      if (status === 'Pendente Comitê' && role === 'admin_geric') {
+      if (status === 'Pendente Comitê' && (role === 'admin_geric' || role === 'gov_corporativa' || role === 'conti')) {
         return (
           <div className="flex gap-2">
             <button

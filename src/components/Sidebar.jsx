@@ -14,7 +14,8 @@ import {
   Network,
   Settings,
   Target,
-  X
+  X,
+  HeartHandshake
 } from 'lucide-react';
 
 export default function Sidebar({ 
@@ -27,7 +28,11 @@ export default function Sidebar({
   isOpen,
   onClose
 }) {
-  const ALL_ROLES = ['admin_geric', 'gestor_area', 'visualizador', 'tic', 'tic_governanca', 'tic_executor', 'gerente_exec', 'conti'];
+  const ALL_ROLES = [
+    'admin_geric', 'gestor_area', 'visualizador', 'tic', 'tic_governanca', 'tic_executor', 
+    'gerente_exec', 'conti', 'gov_corporativa', 'comunicacao_crise', 
+    'apoio_predial', 'apoio_pessoas', 'apoio_financeiro', 'apoio_suprimentos'
+  ];
 
   const allMenuItems = [
     { id: 'dashboard', label: 'Painel Executivo Geric', icon: LayoutDashboard, roles: ALL_ROLES },
@@ -40,8 +45,9 @@ export default function Sidebar({
     { id: 'revisoes', label: '6. Revisões & Histórico', icon: RefreshCw, roles: ALL_ROLES },
     { id: 'governanca', label: '7. Aprovações & Alçadas', icon: ShieldCheck, roles: ALL_ROLES },
     { id: 'crises', label: '8. Gestão de Crises', icon: AlertOctagon, roles: ALL_ROLES },
-    { id: 'avaliacao', label: '9. Avaliação NRGCN', icon: Target, roles: ALL_ROLES },
-    { id: 'config', label: 'Configurações do Sistema', icon: Settings, roles: ['admin_geric', 'tic_governanca'] },
+    { id: 'painel_apoio', label: '9. Apoio & Contingências', icon: HeartHandshake, roles: ALL_ROLES },
+    { id: 'avaliacao', label: '10. Avaliação NRGCN', icon: Target, roles: ALL_ROLES },
+    { id: 'config', label: 'Configurações do Sistema', icon: Settings, roles: ['admin_geric', 'tic_governanca', 'gov_corporativa'] },
   ];
 
   const userRole = user?.role || 'visualizador';

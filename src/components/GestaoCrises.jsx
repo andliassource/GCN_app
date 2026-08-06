@@ -108,7 +108,7 @@ export default function GestaoCrises({ db }) {
                 As reuniões deliberativas em caso de acionamento do Plano de Gestão de Crise (PGC) geram atas obrigatórias para formalizar as decisões e salvaguardas contratuais.
               </p>
             </div>
-            {isAdmin() && (
+            {(isAdmin() || usuario?.role === 'conti') && (
               <button 
                 onClick={() => { setShowAtaForm(true); setNotification(null); }}
                 className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2.5 rounded-lg text-xs flex items-center justify-center gap-2 shadow-sm transition-colors whitespace-nowrap cursor-pointer"
@@ -292,7 +292,7 @@ export default function GestaoCrises({ db }) {
                 </div>
               </div>
 
-              {isAdmin() ? (
+              {(isAdmin() || usuario?.role === 'comunicacao_crise') ? (
                 <form onSubmit={handleDispararAlerta} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1">
@@ -368,7 +368,7 @@ export default function GestaoCrises({ db }) {
                 </form>
               ) : (
                 <div className="p-8 text-center bg-slate-50 dark:bg-slate-955 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 text-slate-450 font-semibold">
-                  Modo Leitura — Apenas membros do Comitê de Crise (Geric/Geemp) possuem permissão para realizar disparos em massa.
+                  Modo Leitura — Apenas a equipe de Comunicação (Gemac) ou Governança (Geric/Geemp) possuem permissão para realizar disparos em massa.
                 </div>
               )}
             </div>

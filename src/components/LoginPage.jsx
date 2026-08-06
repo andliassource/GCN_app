@@ -3,13 +3,16 @@ import { Shield, Eye, EyeOff, LogIn, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const DEMO_PERFIS = [
-  { label: 'Administrador Geric (acesso total)', email: 'geric@empresa.com.br', senha: 'geric2026', role: 'admin_geric', cor: 'indigo' },
+  { label: 'Administrador Geric (Riscos/GCN)', email: 'geric@empresa.com.br', senha: 'geric2026', role: 'admin_geric', cor: 'indigo' },
+  { label: 'Arthur Mendes (Geemp Gov Corp)', email: 'geemp@empresa.com.br', senha: 'geemp2026', role: 'gov_corporativa', cor: 'amber' },
   { label: 'Eduardo Santos (Geati Gov TIC)', email: 'geati@empresa.com.br', senha: 'geati2026', role: 'tic_governanca', cor: 'sky' },
-  { label: 'Gestora Getic (TI/PRD)', email: 'getic@empresa.com.br', senha: 'getic2026', role: 'tic_executor', cor: 'purple' },
-  { label: 'Bruno Mendes (Gesit TI+Negócio)', email: 'gesit@empresa.com.br', senha: 'gesit2026', role: 'tic_executor', cor: 'rose' },
-  { label: 'Diego Ferreira (Gesec Ciberseg)', email: 'gesec@empresa.com.br', senha: 'gesec2026', role: 'tic_executor', cor: 'rose' },
-  { label: 'Gilberto Ramos (Gepin Negócio c/ DR)', email: 'gepin@empresa.com.br', senha: 'gepin2026', role: 'gestor_area', cor: 'emerald' },
-  { label: 'Priscila Silva (PSIM Negócio c/ DR)', email: 'psim@empresa.com.br', senha: 'psim2026', role: 'gestor_area', cor: 'emerald' },
+  { label: 'Vanessa Lopes (Gemac Comms)', email: 'gemac@empresa.com.br', senha: 'gemac2026', role: 'comunicacao_crise', cor: 'rose' },
+  { label: 'Sandro Lima (Gesap Predial)', email: 'gesap@empresa.com.br', senha: 'gesap2026', role: 'apoio_predial', cor: 'purple' },
+  { label: 'Ana Ribeiro (Gepes RH)', email: 'gepes@empresa.com.br', senha: 'gepes2026', role: 'apoio_pessoas', cor: 'purple' },
+  { label: 'Carla Mendes (Gefic Financeiro)', email: 'gefic@empresa.com.br', senha: 'gefic2026', role: 'apoio_financeiro', cor: 'purple' },
+  { label: 'Luis Fernandes (Gesuc Suprimentos)', email: 'gesuc@empresa.com.br', senha: 'gesuc2026', role: 'apoio_suprimentos', cor: 'purple' },
+  { label: 'Gestora Getic (TI/PRD)', email: 'getic@empresa.com.br', senha: 'getic2026', role: 'tic_executor', cor: 'slate' },
+  { label: 'Gilberto Ramos (Gepin Negócio)', email: 'gepin@empresa.com.br', senha: 'gepin2026', role: 'gestor_area', cor: 'emerald' },
   { label: 'Visitante (somente leitura)', email: 'visitante@empresa.com.br', senha: 'visitante2026', role: 'visualizador', cor: 'slate' },
 ];
 
@@ -25,9 +28,15 @@ const COR_MAP = {
 
 const BADGE_MAP = {
   admin_geric: 'bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300',
+  gov_corporativa: 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300',
   tic_governanca: 'bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300',
-  tic_executor: 'bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300',
+  tic_executor: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400',
   gestor_area: 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300',
+  comunicacao_crise: 'bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300',
+  apoio_predial: 'bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300',
+  apoio_pessoas: 'bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300',
+  apoio_financeiro: 'bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300',
+  apoio_suprimentos: 'bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300',
   visualizador: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400',
 };
 
@@ -204,7 +213,14 @@ export default function LoginPage({ configSistema }) {
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-slate-200 font-semibold">{p.label}</span>
                     <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase ${BADGE_MAP[p.role] || BADGE_MAP.visualizador}`}>
-                      {p.role === 'admin_geric' ? 'Geric' : p.role === 'tic_governanca' ? 'Geati' : p.role === 'tic_executor' ? 'TI Executor' : p.role === 'gestor_area' ? 'Gestor' : 'Viewer'}
+                      {p.role === 'admin_geric' ? 'Geric' : 
+                       p.role === 'gov_corporativa' ? 'Geemp' :
+                       p.role === 'tic_governanca' ? 'Geati' :
+                       p.role === 'comunicacao_crise' ? 'Gemac' :
+                       p.role === 'apoio_predial' ? 'Gesap' :
+                       p.role.startsWith('apoio_') ? 'Apoio' :
+                       p.role === 'tic_executor' ? 'TI Exec' : 
+                       p.role === 'gestor_area' ? 'Gestor' : 'Viewer'}
                     </span>
                   </div>
                   <p className="text-[10px] text-slate-500 mt-0.5">{p.email}</p>

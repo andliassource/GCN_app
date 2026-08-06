@@ -4,7 +4,7 @@
 // ============================================================================
 
 const INITIAL_DATA = {
-  db_version: "9.0",
+  db_version: "10.0",
 
   // ── CONFIG DO SISTEMA ─────────────────────────────────────────────────────
   configSistema: {
@@ -21,11 +21,11 @@ const INITIAL_DATA = {
   // ── USUÁRIOS SIMULADOS (ROLES) ────────────────────────────────────────────
   usuariosSimulados: [
     { id_usuario: "USR-001", nome: "Roberto Carlos", email: "geric@empresa.com.br", id_gerencia: "GER-GOV01", role: "admin_geric", senha: "geric2026" },
-    { id_usuario: "USR-002", nome: "Arthur Mendes", email: "geemp@empresa.com.br", id_gerencia: "GER-GOV02", role: "admin_geric", senha: "geemp2026" },
+    { id_usuario: "USR-002", nome: "Arthur Mendes (Geemp)", email: "geemp@empresa.com.br", id_gerencia: "GER-GOV02", role: "gov_corporativa", senha: "geemp2026" },
     { id_usuario: "USR-003", nome: "Patrícia Lima", email: "getic@empresa.com.br", id_gerencia: "GER-TIC01", role: "tic_executor", senha: "getic2026" },
-    { id_usuario: "USR-004", nome: "Vanessa Lopes", email: "gemac@empresa.com.br", id_gerencia: "GER-GOV03", role: "gestor_area", senha: "gemac2026" },
+    { id_usuario: "USR-004", nome: "Vanessa Lopes (Gemac)", email: "gemac@empresa.com.br", id_gerencia: "GER-GOV03", role: "comunicacao_crise", senha: "gemac2026" },
     { id_usuario: "USR-005", nome: "Marcos Costa", email: "gecob@empresa.com.br", id_gerencia: "GER-NEG01", role: "gestor_area", senha: "gecob2026" },
-    { id_usuario: "USR-006", nome: "Sandro Lima", email: "gesap@empresa.com.br", id_gerencia: "GER-APO04", role: "gestor_area", senha: "gesap2026" },
+    { id_usuario: "USR-006", nome: "Sandro Lima (Gesap)", email: "gesap@empresa.com.br", id_gerencia: "GER-APO04", role: "apoio_predial", senha: "gesap2026" },
     { id_usuario: "USR-007", nome: "Carla Souza", email: "gered@empresa.com.br", id_gerencia: "GER-NEG02", role: "gestor_area", senha: "gered2026" },
     { id_usuario: "USR-008", nome: "Visitante", email: "visitante@empresa.com.br", id_gerencia: "GER-GOV01", role: "visualizador", senha: "visitante2026" },
     { id_usuario: "USR-009", nome: "Diretora Fernanda Rocha", email: "gerexec@empresa.com.br", id_gerencia: "GER-NEG01", role: "gerente_exec", senha: "gerexec2026" },
@@ -34,7 +34,10 @@ const INITIAL_DATA = {
     { id_usuario: "USR-012", nome: "Bruno Mendes", email: "gesit@empresa.com.br", id_gerencia: "GER-TIC05", role: "tic_executor", senha: "gesit2026" },
     { id_usuario: "USR-013", nome: "Diego Ferreira (Gesec)", email: "gesec@empresa.com.br", id_gerencia: "GER-TIC04", role: "tic_executor", senha: "gesec2026" },
     { id_usuario: "USR-014", nome: "Gilberto Ramos", email: "gepin@empresa.com.br", id_gerencia: "GER-NEG07", role: "gestor_area", senha: "gepin2026" },
-    { id_usuario: "USR-015", nome: "Priscila Silva", email: "psim@empresa.com.br", id_gerencia: "GER-NEG08", role: "gestor_area", senha: "psim2026" }
+    { id_usuario: "USR-015", nome: "Priscila Silva", email: "psim@empresa.com.br", id_gerencia: "GER-NEG08", role: "gestor_area", senha: "psim2026" },
+    { id_usuario: "USR-016", nome: "Ana Ribeiro (Gepes/RH)", email: "gepes@empresa.com.br", id_gerencia: "GER-APO01", role: "apoio_pessoas", senha: "gepes2026" },
+    { id_usuario: "USR-017", nome: "Carla Mendes (Gefic/Fin)", email: "gefic@empresa.com.br", id_gerencia: "GER-APO02", role: "apoio_financeiro", senha: "gefic2026" },
+    { id_usuario: "USR-018", nome: "Luis Fernandes (Gesuc/Supr)", email: "gesuc@empresa.com.br", id_gerencia: "GER-APO03", role: "apoio_suprimentos", senha: "gesuc2026" }
   ],
 
   // ── DIRETORIAS ────────────────────────────────────────────────────────────
@@ -415,7 +418,7 @@ const getDB = () => {
   }
   try {
     const db = JSON.parse(dbStr);
-    if (db.db_version !== "9.0") {
+    if (db.db_version !== "10.0") {
       localStorage.setItem("gcn_database", JSON.stringify(INITIAL_DATA));
       return INITIAL_DATA;
     }

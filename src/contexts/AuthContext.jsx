@@ -36,11 +36,37 @@ export function AuthProvider({ children, db }) {
   /** Geati — visão total de governança de TIC */
   const isGeati = () => usuario?.role === 'tic_governanca';
 
+  /** Geemp — governança corporativa de crises */
+  const isGovCorp = () => usuario?.role === 'gov_corporativa';
+
+  /** Gemac — comunicação de crises */
+  const isComunicacao = () => usuario?.role === 'comunicacao_crise';
+
+  /** Gesap — apoio predial */
+  const isApoioPredial = () => usuario?.role === 'apoio_predial';
+
+  /** Gepes — apoio pessoas/RH */
+  const isApoioPessoas = () => usuario?.role === 'apoio_pessoas';
+
+  /** Gefic — apoio financeiro */
+  const isApoioFinanceiro = () => usuario?.role === 'apoio_financeiro';
+
+  /** Gesuc — apoio suprimentos */
+  const isApoioSuprimentos = () => usuario?.role === 'apoio_suprimentos';
+
   /** Admin Geric/Geemp OU Geati (Governança de TIC) — visão total consolidada */
-  const isAdmin = () => isGeric() || isGeati();
+  const isAdmin = () => isGeric() || isGeati() || isGovCorp();
 
   /** Gestor de área, executores de TIC ou administradores */
-  const isGestor = () => usuario?.role === 'gestor_area' || usuario?.role === 'tic_executor' || isAdmin();
+  const isGestor = () => 
+    usuario?.role === 'gestor_area' || 
+    usuario?.role === 'tic_executor' || 
+    isApoioPredial() || 
+    isApoioPessoas() || 
+    isApoioFinanceiro() || 
+    isApoioSuprimentos() || 
+    isComunicacao() || 
+    isAdmin();
 
   /** Executores técnicos de DRP de TIC */
   const isTicExecutor = () => usuario?.role === 'tic_executor';
@@ -60,7 +86,7 @@ export function AuthProvider({ children, db }) {
 
   /**
    * Filtra lista pela gerência do usuário.
-   * Admin/Geati vê tudo; Gestores de TIC veem seus processos + os processos que exigem DRP técnico; Gestores de Negócio veem apenas os seus.
+   * Admin/Geati/Geemp vê tudo; Gestores de TIC veem seus processos + os processos que exigem DRP técnico; Gestores de Negócio veem apenas os seus.
    */
   const filterByGerencia = (items, keys = 'id_gerencia') => {
     if (!usuario || isAdmin()) return items;
@@ -88,6 +114,12 @@ export function AuthProvider({ children, db }) {
   const nomeGerenciaContexto = () => {
     if (isGeric()) return 'Geric / Riscos';
     if (isGeati()) return 'Geati / Gov. TIC';
+    if (isGovCorp()) return 'Geemp / Gov. Corp';
+    if (isComunicacao()) return 'Gemac / Comms';
+    if (isApoioPredial()) return 'Gesap / Predial';
+    if (isApoioPessoas()) return 'Gepes / RH';
+    if (isApoioFinanceiro()) return 'Gefic / Fin';
+    if (isApoioSuprimentos()) return 'Gesuc / Supr';
     if (isVisualizador()) return 'Visitante';
     try {
       const gerencias = db.gerencias?.list ? db.gerencias.list() : [];
@@ -101,6 +133,8 @@ export function AuthProvider({ children, db }) {
       usuario, login, logout, loading,
       isAdmin, isGestor, isVisualizador,
       isGeric, isGeati, isTicExecutor,
+      isGovCorp, isComunicacao,
+      isApoioPredial, isApoioPessoas, isApoioFinanceiro, isApoioSuprimentos,
       canEdit, canCreate,
       filterByGerencia, gerenciaFiltro,
       nomeGerenciaContexto,

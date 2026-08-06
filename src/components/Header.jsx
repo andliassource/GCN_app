@@ -26,6 +26,7 @@ export default function Header({ activeTab, db, onNavigate, onToggleMobileMenu }
       case 'testes': return 'Execução de Testes e Exercícios por Cenário';
       case 'revisoes': return 'Histórico de Revisões e Versionamento';
       case 'governanca': return 'Aprovações, Governança & Comitê de Crises';
+      case 'painel_apoio': return 'Apoio, Contingências & Evacuação Predial';
       case 'avaliacao': return 'Avaliação de Maturidade NRGCN';
       case 'config': return 'Configurações do Sistema GCN';
       default: return 'Sistema de GCN';
@@ -34,8 +35,14 @@ export default function Header({ activeTab, db, onNavigate, onToggleMobileMenu }
 
   const getRoleBadge = (role) => {
     if (role === 'admin_geric') return { text: 'Admin Geric', cls: 'bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800' };
+    if (role === 'gov_corporativa') return { text: 'Geemp / Gov. Corp', cls: 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-850' };
     if (role === 'tic_governanca') return { text: 'Geati / Gov. TIC', cls: 'bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-800' };
-    if (role === 'tic_executor') return { text: 'TI Executor', cls: 'bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800' };
+    if (role === 'comunicacao_crise') return { text: 'Gemac / Comms', cls: 'bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border-rose-250 dark:border-rose-800' };
+    if (role === 'apoio_predial') return { text: 'Gesap / Predial', cls: 'bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800' };
+    if (role === 'apoio_pessoas') return { text: 'Gepes / RH', cls: 'bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800' };
+    if (role === 'apoio_financeiro') return { text: 'Gefic / Fin', cls: 'bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800' };
+    if (role === 'apoio_suprimentos') return { text: 'Gesuc / Supr', cls: 'bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800' };
+    if (role === 'tic_executor') return { text: 'TI Executor', cls: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800' };
     if (role === 'gestor_area') return { text: 'Gestor da Área', cls: 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800' };
     if (role === 'gerente_exec') return { text: 'Gerente Executivo', cls: 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800' };
     if (role === 'conti') return { text: 'Comitê Conti', cls: 'bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800' };
