@@ -30,11 +30,20 @@ export function AuthProvider({ children, db }) {
   };
 
   // ─── HELPERS DE ROLE ────────────────────────────────────────────────────────
-  /** Admin Geric/Geemp — visão total, sem restrição de gerência */
-  const isAdmin = () => usuario?.role === 'admin_geric';
+  /** Admin Geric — visão total de governança corporativa */
+  const isGeric = () => usuario?.role === 'admin_geric';
 
-  /** Gestor de área OU admin */
-  const isGestor = () => usuario?.role === 'gestor_area' || isAdmin();
+  /** Geati — visão total de governança de TIC */
+  const isGeati = () => usuario?.role === 'tic_governanca';
+
+  /** Admin Geric/Geemp OU Geati (Governança de TIC) — visão total consolidada */
+  const isAdmin = () => isGeric() || isGeati();
+
+  /** Gestor de área, executores de TIC ou administradores */
+  const isGestor = () => usuario?.role === 'gestor_area' || usuario?.role === 'tic_executor' || isAdmin();
+
+  /** Executores técnicos de DRP de TIC */
+  const isTicExecutor = () => usuario?.role === 'tic_executor';
 
   /** Visitante somente leitura */
   const isVisualizador = () => usuario?.role === 'visualizador';
@@ -51,8 +60,7 @@ export function AuthProvider({ children, db }) {
 
   /**
    * Filtra lista pela gerência do usuário.
-   * Admin vê tudo; Gestor vê apenas os seus.
-   * Suporta múltiplas chaves e paths aninhados (ex: 'processo.id_gerencia').
+   * Admin/Geati vê tudo; Gestores de TIC veem seus processos + os processos que exigem DRP técnico; Gestores de Negócio veem apenas os seus.
    */
   const filterByGerencia = (items, keys = 'id_gerencia') => {
     if (!usuario || isAdmin()) return items;
@@ -60,7 +68,15 @@ export function AuthProvider({ children, db }) {
     return items.filter(item =>
       keyList.some(key => {
         const val = key.split('.').reduce((obj, k) => obj?.[k], item);
-        return val === usuario.id_gerencia || val == null;
+        if (val === usuario.id_gerencia || val == null) return true;
+        
+        // Se for executor de TIC, ele enxerga processos que exigem DRP (pois ele executa a infra de DR)
+        if (isTicExecutor()) {
+          if (item.requer_drp) return true;
+          // Se for uma AIN de um processo que requer DRP
+          if (item.processo?.requer_drp) return true;
+        }
+        return false;
       })
     );
   };
@@ -70,7 +86,8 @@ export function AuthProvider({ children, db }) {
 
   /** Nome curto da gerência para badge de contexto no header */
   const nomeGerenciaContexto = () => {
-    if (isAdmin()) return 'Visão Consolidada';
+    if (isGeric()) return 'Geric / Riscos';
+    if (isGeati()) return 'Geati / Gov. TIC';
     if (isVisualizador()) return 'Visitante';
     try {
       const gerencias = db.gerencias?.list ? db.gerencias.list() : [];
@@ -83,6 +100,7 @@ export function AuthProvider({ children, db }) {
     <AuthContext.Provider value={{
       usuario, login, logout, loading,
       isAdmin, isGestor, isVisualizador,
+      isGeric, isGeati, isTicExecutor,
       canEdit, canCreate,
       filterByGerencia, gerenciaFiltro,
       nomeGerenciaContexto,

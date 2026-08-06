@@ -202,6 +202,95 @@ export default function DashboardGeric({ db }) {
   const kpis = useMemo(() => db.analytics.getKPIs(idGerencia), [refreshAt, idGerencia]);
   const nrgcnPorGerencia = useMemo(() => db.analytics.getNRGCNporGerencia(idGerencia), [refreshAt, idGerencia]);
   const evolucaoIncidentes = useMemo(() => db.analytics.getEvolucaoIncidentes(idGerencia), [refreshAt, idGerencia]);
+
+  // --- ESTADOS E CÁLCULOS DO DASHBOARD DE IMPACTOS ---
+  const [buscaImpacto, setBuscaImpacto] = useState('');
+  const [gerenciaFiltroImpacto, setGerenciaFiltroImpacto] = useState('todas');
+  const [ordenacaoImpacto, setOrdenacaoImpacto] = useState('perda_hora_desc');
+
+  const todosProcessos = useMemo(() => db.processosCriticos.list(), [refreshAt]);
+  const processos = useMemo(() => {
+    return idGerencia ? todosProcessos.filter(p => p.id_gerencia === idGerencia) : todosProcessos;
+  }, [todosProcessos, idGerencia]);
+
+  const todosAtivos = useMemo(() => db.ativosSistemas.list(), [refreshAt]);
+
+  const calcularPerdasProcesso = (proc) => {
+    if (!proc.id_contrato) return { hora: 0, dia: 0, hasContrato: false, faturamento: 0 };
+    const contr = db.contratos.list().find(c => c.id_contrato === proc.id_contrato);
+    if (!contr) return { hora: 0, dia: 0, hasContrato: false, faturamento: 0 };
+    
+    // Perda estimada com base no faturamento e criticidade do processo
+    const faturamento = contr.valor_faturamento || 0;
+    const perdasPorHora = proc.criticidade === 'Crítica' ? 0.05 : proc.criticidade === 'Alta' ? 0.02 : 0.005;
+    const hora = faturamento * perdasPorHora;
+    const dia = hora * 24;
+    return { hora, dia, hasContrato: true, faturamento };
+  };
+
+  const processosComGargaloSLA = useMemo(() => {
+    return processos.filter(p => p.requer_drp && Number(p.sla_tic) > Number(p.sla_contrato_cliente));
+  }, [processos]);
+
+  const totalPerdaHora = useMemo(() => {
+    return processos.reduce((sum, p) => sum + calcularPerdasProcesso(p).hora, 0);
+  }, [processos]);
+
+  const processosAtivosC0C1 = useMemo(() => {
+    return processos.filter(p => {
+      if (!p.requer_drp || !p.ativo_cmdb_id) return false;
+      const at = todosAtivos.find(a => a.id_ativo === p.ativo_cmdb_id);
+      return at?.criticidade_contrato === 'C0' || at?.criticidade_contrato === 'C1';
+    });
+  }, [processos, todosAtivos]);
+
+  const gerenciasUnicas = useMemo(() => {
+    const gerSet = new Set(todosProcessos.map(p => p.id_gerencia));
+    return Array.from(gerSet).filter(Boolean);
+  }, [todosProcessos]);
+
+  const processosOrdenados = useMemo(() => {
+    let lista = [...processos];
+    
+    // Filtro de gerência
+    if (gerenciaFiltroImpacto !== 'todas') {
+      lista = lista.filter(p => p.id_gerencia === gerenciaFiltroImpacto);
+    }
+    
+    // Busca textual
+    if (buscaImpacto) {
+      lista = lista.filter(p => 
+        p.nome.toLowerCase().includes(buscaImpacto.toLowerCase()) ||
+        p.id_processo.toLowerCase().includes(buscaImpacto.toLowerCase())
+      );
+    }
+    
+    // Ordenação
+    lista.sort((a, b) => {
+      const perdasA = calcularPerdasProcesso(a);
+      const perdasB = calcularPerdasProcesso(b);
+      
+      if (ordenacaoImpacto === 'perda_hora_desc') {
+        return perdasB.hora - perdasA.hora;
+      }
+      if (ordenacaoImpacto === 'faturamento_desc') {
+        return perdasB.faturamento - perdasA.faturamento;
+      }
+      if (ordenacaoImpacto === 'sla_cliente_asc') {
+        const slaA = a.requer_drp ? (a.sla_contrato_cliente || 999999) : 999999;
+        const slaB = b.requer_drp ? (b.sla_contrato_cliente || 999999) : 999999;
+        return slaA - slaB;
+      }
+      if (ordenacaoImpacto === 'gargalo_first') {
+        const gargaloA = a.requer_drp && Number(a.sla_tic) > Number(a.sla_contrato_cliente) ? 1 : 0;
+        const gargaloB = b.requer_drp && Number(b.sla_tic) > Number(b.sla_contrato_cliente) ? 1 : 0;
+        return gargaloB - gargaloA;
+      }
+      return 0;
+    });
+    
+    return lista;
+  }, [processos, buscaImpacto, gerenciaFiltroImpacto, ordenacaoImpacto, todosAtivos]);
   
   // Listas locais filtradas por papel
   const todosRiscos = useMemo(() => db.riscos.list(), [refreshAt]);
@@ -254,6 +343,22 @@ export default function DashboardGeric({ db }) {
     });
   };
 
+  const exportarRelatorioTIC = () => {
+    const processosAll = db.processosCriticos.list();
+    const ativosAll = db.ativosSistemas.list();
+    const contratosAll = db.contratos.list();
+    const planosAll = db.planosContinuidade.list();
+
+    const html = pdfService.htmlRelatorioResilienciaTIC(processosAll, ativosAll, contratosAll, planosAll, config);
+    pdfService.exportar('Relatório Executivo de Resiliência de TIC — Geati / Geric', html, {
+      nome_empresa: config.nome_empresa,
+      logo_base64: config.logo_base64,
+      confidencialidade: 'RESTRITO',
+      versao: '2026.1',
+      autor: 'Geati & Geric — Governança de TIC e Riscos'
+    });
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
 
@@ -262,12 +367,15 @@ export default function DashboardGeric({ db }) {
         <div>
           <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">Painel Executivo — Gestão GCN</h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Visão em tempo real · {new Date().toLocaleString('pt-BR')} · ISO 22301:2019 / 27031:2011
+            Visão em tempo real · {new Date().toLocaleString('pt-BR')} · ISO 22301:2019 / ISO 27031:2023 / NIST CSF
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap sm:flex-nowrap">
           <button onClick={() => setRefreshAt(Date.now())} className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors px-3 py-2 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900">
             <RefreshCw className="w-3.5 h-3.5" /> Atualizar
+          </button>
+          <button onClick={exportarRelatorioTIC} className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 text-xs font-bold text-white bg-sky-600 hover:bg-sky-700 transition-colors px-3 py-2 rounded-lg shadow-sm">
+            <FileText className="w-3.5 h-3.5" /> Relatório TIC (PDF)
           </button>
           <button onClick={exportarDashboard} className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors px-3 py-2 rounded-lg shadow-sm">
             <Download className="w-3.5 h-3.5" /> Exportar PDF
@@ -450,6 +558,184 @@ export default function DashboardGeric({ db }) {
               </div>
             )) : <p className="text-xs text-slate-400 text-center py-6">✅ Nenhum incidente aberto.</p>)}
           </div>
+        </div>
+      </div>
+
+      {/* SEÇÃO ESPECIAL: DASHBOARD DE IMPACTOS E PRIORIZAÇÃO DE PROCESSOS CRÍTICOS */}
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 space-y-6">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center border-b border-slate-100 dark:border-slate-800 pb-4 gap-4">
+          <div>
+            <h3 className="font-black text-slate-900 dark:text-white flex items-center gap-2 text-sm sm:text-base">
+              <Zap className="w-5 h-5 text-indigo-500" /> Matriz de Priorização & Dashboard de Impacto Técnico-Financeiro
+            </h3>
+            <p className="text-[11px] text-slate-400 mt-1 max-w-3xl">
+              Análise em tempo real de impactos financeiros e técnicos. Priorização baseada em criticidade de ativos do CMDB, gargalo de SLAs corporativos e perda financeira estimada por disrupção (BIA).
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3 text-[10px]">
+            <div className="bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/30 px-3 py-2 rounded-lg font-bold">
+              Total Risco/Hora: R$ {totalPerdaHora.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}
+            </div>
+            <div className="bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900/30 px-3 py-2 rounded-lg font-bold">
+              Gargalos de SLA: {processosComGargaloSLA.length} processos
+            </div>
+            <div className="bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/30 px-3 py-2 rounded-lg font-bold">
+              Ativos C0/C1: {processosAtivosC0C1.length} mapeados
+            </div>
+          </div>
+        </div>
+
+        {/* Filtros e Buscas */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 dark:bg-slate-950/40 p-4 rounded-xl border border-slate-200 dark:border-slate-850">
+          <div className="space-y-1">
+            <label className="text-[9px] font-bold text-slate-400 uppercase">Pesquisar Processo</label>
+            <input 
+              type="text"
+              value={buscaImpacto}
+              onChange={e => setBuscaImpacto(e.target.value)}
+              placeholder="Digite o nome ou ID..."
+              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-slate-200 focus:outline-indigo-500"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-[9px] font-bold text-slate-400 uppercase">Gerência Responsável</label>
+            <select
+              value={gerenciaFiltroImpacto}
+              onChange={e => setGerenciaFiltroImpacto(e.target.value)}
+              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-slate-200 focus:outline-indigo-500"
+            >
+              <option value="todas">Todas as Gerências</option>
+              {gerenciasUnicas.map(g => (
+                <option key={g} value={g}>{g}</option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-1">
+            <label className="text-[9px] font-bold text-slate-400 uppercase">Ordenar Lista por</label>
+            <select
+              value={ordenacaoImpacto}
+              onChange={e => setOrdenacaoImpacto(e.target.value)}
+              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-slate-200 focus:outline-indigo-500"
+            >
+              <option value="perda_hora_desc">Maior Perda Financeira / Hora</option>
+              <option value="faturamento_desc">Maior Faturamento Contrato</option>
+              <option value="sla_cliente_asc">Menor SLA Contrato Cliente (Crítico)</option>
+              <option value="gargalo_first">Processos em Gargalo Primeiro</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Tabela de Priorização */}
+        <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl">
+          <table className="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr className="bg-slate-50 dark:bg-slate-950/40 text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider border-b border-slate-200 dark:border-slate-800">
+                <th className="px-5 py-3">Código / Processo</th>
+                <th className="px-5 py-3">Contrato / Faturamento</th>
+                <th className="px-5 py-3">Ativo CMDB / Criticidade</th>
+                <th className="px-5 py-3 text-center">Métricas de SLA</th>
+                <th className="px-5 py-3 text-right">Perda / Hora</th>
+                <th className="px-5 py-3 text-right">Perda / Dia</th>
+                <th className="px-5 py-3 text-center">Prioridade</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              {processosOrdenados.map(p => {
+                const perdas = calcularPerdasProcesso(p);
+                const ativo = todosAtivos.find(a => a.id_ativo === p.ativo_cmdb_id);
+                const gargalo = p.requer_drp && Number(p.sla_tic) > Number(p.sla_contrato_cliente);
+                
+                // Determina Prioridade Sugerida
+                let prioridade = 'Média';
+                let prioridadeClass = 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-450';
+                
+                if (p.criticidade === 'Crítica' && (gargalo || ativo?.criticidade_contrato === 'C0' || ativo?.criticidade_contrato === 'C1')) {
+                  prioridade = 'CRÍTICA';
+                  prioridadeClass = 'bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/30 font-black animate-pulse';
+                } else if (p.criticidade === 'Alta' || gargalo || ativo?.criticidade_contrato === 'C1') {
+                  prioridade = 'ALTA';
+                  prioridadeClass = 'bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-900/30 font-bold';
+                }
+
+                return (
+                  <tr key={p.id_processo} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors">
+                    <td className="px-5 py-3.5">
+                      <div className="font-bold text-indigo-650 dark:text-indigo-400">{p.id_processo}</div>
+                      <div className="font-bold text-slate-800 dark:text-slate-200 truncate max-w-[200px]" title={p.nome}>{p.nome}</div>
+                      <span className="text-[9px] text-emerald-500 font-semibold uppercase">{p.id_gerencia}</span>
+                    </td>
+                    <td className="px-5 py-3.5">
+                      {p.id_contrato ? (
+                        <div>
+                          <div className="font-semibold text-slate-700 dark:text-slate-350">{p.id_contrato}</div>
+                          <div className="text-[10px] text-slate-400">R$ {perdas.faturamento.toLocaleString('pt-BR')}</div>
+                        </div>
+                      ) : (
+                        <span className="text-slate-400 italic text-[10px]">Apoio Interno</span>
+                      )}
+                    </td>
+                    <td className="px-5 py-3.5">
+                      {p.requer_drp && p.ativo_cmdb_id ? (
+                        <div>
+                          <div className="font-semibold text-slate-750 dark:text-slate-350 truncate max-w-[150px]" title={ativo?.nome}>{ativo?.nome || p.ativo_cmdb_id}</div>
+                          <span className={`text-[8px] font-black px-1.5 py-0.2 rounded uppercase ${
+                            ativo?.criticidade_contrato === 'C0' ? 'bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-450 border border-rose-200 dark:border-rose-900/30' :
+                            ativo?.criticidade_contrato === 'C1' ? 'bg-orange-100 dark:bg-orange-950 text-orange-600 dark:text-orange-450 border border-orange-250 dark:border-orange-900/30' :
+                            'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200'
+                          }`}>
+                            {ativo?.criticidade_contrato || 'C3'}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-slate-400 italic text-[10px]">Sem DRP Técnico</span>
+                      )}
+                    </td>
+                    <td className="px-5 py-3.5 text-center whitespace-nowrap">
+                      {p.requer_drp ? (
+                        <div className="inline-flex flex-col gap-0.5">
+                          <span className="text-[10px] text-slate-500">Contrato: <strong className="text-slate-700 dark:text-slate-300">{p.sla_contrato_cliente}m</strong></span>
+                          <span className="text-[10px] text-slate-500">TIC: <strong className={gargalo ? 'text-rose-500 font-bold' : 'text-emerald-500'}>{p.sla_tic}m</strong></span>
+                          {gargalo && (
+                            <span className="text-[8px] bg-rose-50 dark:bg-rose-950 text-rose-500 px-1 py-0.2 rounded border border-rose-200 dark:border-rose-900/40 uppercase font-black tracking-wide animate-pulse">
+                              ⚠️ Gargalo
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-slate-400 italic text-[10px]">-</span>
+                      )}
+                    </td>
+                    <td className="px-5 py-3.5 text-right font-bold">
+                      {perdas.hasContrato ? (
+                        <span className="text-rose-600 dark:text-rose-400">R$ {perdas.hora.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}</span>
+                      ) : (
+                        <span className="text-slate-450 text-[10px]">-</span>
+                      )}
+                    </td>
+                    <td className="px-5 py-3.5 text-right font-bold">
+                      {perdas.hasContrato ? (
+                        <span className="text-rose-600 dark:text-rose-400">R$ {perdas.dia.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}</span>
+                      ) : (
+                        <span className="text-slate-450 text-[10px]">-</span>
+                      )}
+                    </td>
+                    <td className="px-5 py-3.5 text-center">
+                      <span className={`inline-block px-2 py-0.5 rounded text-[9px] uppercase ${prioridadeClass}`}>
+                        {prioridade}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+              {processosOrdenados.length === 0 && (
+                <tr>
+                  <td colSpan="7" className="text-center text-slate-400 py-8 italic">
+                    Nenhum processo correspondente aos filtros.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 

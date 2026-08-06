@@ -245,7 +245,7 @@ ${notificacao.prazo_acao ? `Prazo de Ação: ${new Date(notificacao.prazo_acao).
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Este é um e-mail automático gerado pelo Sistema GCN/NRGCN.
-Alinhado com ISO 22301:2019 | ISO 27031:2011
+Alinhado com ISO 22301:2019 | ISO 27031:2023 | NIST CSF
 
 Equipe de Gestão de Riscos e Continuidade (Geric)
 `.trim(),
@@ -345,10 +345,8 @@ Equipe de Gestão de Riscos e Continuidade (Geric)
 
     else if (novoStatus === 'Pendente Gerente Exec') {
       // TIC aprovou → notifica gerente exec vinculado ao plano
-      const gerentes = db.usuariosSimulados
-        ? db.usuariosSimulados.list
-          ? db.usuariosSimulados.list().filter(u => u.role === 'gerente_exec' && u.id_gerencia === idGerDona)
-          : []
+      const gerentes = db.usuarios?.list
+        ? db.usuarios.list().filter(u => u.role === 'gerente_exec' && u.id_gerencia === idGerDona)
         : [];
       const destGerente = plano.id_gerente_exec_aprovador ? idGerDona : idGerDona;
       criarNotif('workflow_pco', `✍️ PCO aguardando sua assinatura — ${plano.id_pco}`, `${pcoLabel} está aguardando assinatura do Gerente Executivo da área para seguir ao Comitê Conti.${parecerResumido}`, destGerente, 'alta');

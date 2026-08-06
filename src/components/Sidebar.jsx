@@ -27,19 +27,21 @@ export default function Sidebar({
   isOpen,
   onClose
 }) {
+  const ALL_ROLES = ['admin_geric', 'gestor_area', 'visualizador', 'tic', 'tic_governanca', 'tic_executor', 'gerente_exec', 'conti'];
+
   const allMenuItems = [
-    { id: 'dashboard', label: 'Painel Executivo Geric', icon: LayoutDashboard, roles: ['admin_geric', 'gestor_area', 'visualizador', 'tic', 'gerente_exec', 'conti'] },
-    { id: 'organizacao', label: 'Estrutura & Riscos', icon: Network, roles: ['admin_geric', 'gestor_area', 'visualizador', 'tic', 'gerente_exec', 'conti'] },
-    { id: 'contratos', label: '1. Ingestão de Contratos', icon: FileText, roles: ['admin_geric', 'gestor_area', 'visualizador', 'tic', 'gerente_exec', 'conti'] },
-    { id: 'incidentes', label: '2. Base de Incidentes & Lições', icon: AlertOctagon, roles: ['admin_geric', 'gestor_area', 'visualizador', 'tic', 'gerente_exec', 'conti'] },
-    { id: 'ain', label: '3. Análise de Impacto (AIN)', icon: TrendingDown, roles: ['admin_geric', 'gestor_area', 'visualizador', 'tic', 'gerente_exec', 'conti'] },
-    { id: 'planos', label: '4. Planos PCO e PRD', icon: BookOpen, roles: ['admin_geric', 'gestor_area', 'visualizador', 'tic', 'gerente_exec', 'conti'] },
-    { id: 'testes', label: '5. Testes por Cenário', icon: Activity, roles: ['admin_geric', 'gestor_area', 'visualizador', 'tic', 'gerente_exec', 'conti'] },
-    { id: 'revisoes', label: '6. Revisões & Histórico', icon: RefreshCw, roles: ['admin_geric', 'gestor_area', 'visualizador', 'tic', 'gerente_exec', 'conti'] },
-    { id: 'governanca', label: '7. Aprovações & Alçadas', icon: ShieldCheck, roles: ['admin_geric', 'gestor_area', 'visualizador', 'tic', 'gerente_exec', 'conti'] },
-    { id: 'crises', label: '8. Gestão de Crises', icon: AlertOctagon, roles: ['admin_geric', 'gestor_area', 'visualizador', 'tic', 'gerente_exec', 'conti'] },
-    { id: 'avaliacao', label: '9. Avaliação NRGCN', icon: Target, roles: ['admin_geric', 'gestor_area', 'visualizador', 'tic', 'gerente_exec', 'conti'] },
-    { id: 'config', label: 'Configurações do Sistema', icon: Settings, roles: ['admin_geric'] },
+    { id: 'dashboard', label: 'Painel Executivo Geric', icon: LayoutDashboard, roles: ALL_ROLES },
+    { id: 'organizacao', label: 'Estrutura & Riscos', icon: Network, roles: ALL_ROLES },
+    { id: 'contratos', label: '1. Ingestão de Contratos', icon: FileText, roles: ALL_ROLES },
+    { id: 'incidentes', label: '2. Base de Incidentes & Lições', icon: AlertOctagon, roles: ALL_ROLES },
+    { id: 'ain', label: '3. Análise de Impacto (AIN)', icon: TrendingDown, roles: ALL_ROLES },
+    { id: 'planos', label: '4. Planos PCO e PRD', icon: BookOpen, roles: ALL_ROLES },
+    { id: 'testes', label: '5. Testes por Cenário', icon: Activity, roles: ALL_ROLES },
+    { id: 'revisoes', label: '6. Revisões & Histórico', icon: RefreshCw, roles: ALL_ROLES },
+    { id: 'governanca', label: '7. Aprovações & Alçadas', icon: ShieldCheck, roles: ALL_ROLES },
+    { id: 'crises', label: '8. Gestão de Crises', icon: AlertOctagon, roles: ALL_ROLES },
+    { id: 'avaliacao', label: '9. Avaliação NRGCN', icon: Target, roles: ALL_ROLES },
+    { id: 'config', label: 'Configurações do Sistema', icon: Settings, roles: ['admin_geric', 'tic_governanca'] },
   ];
 
   const userRole = user?.role || 'visualizador';
@@ -61,7 +63,7 @@ export default function Sidebar({
             </div>
             <div>
               <h1 className="font-bold text-slate-800 dark:text-white leading-tight">GCN Master</h1>
-              <span className="text-xs text-slate-400 dark:text-slate-500">ISO 22301 & 27031</span>
+              <span className="text-xs text-slate-400 dark:text-slate-500">ISO 22301 · 27031 · NIST</span>
             </div>
           </div>
           {/* Botão fechar no celular */}

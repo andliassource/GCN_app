@@ -227,7 +227,7 @@ export const pdfService = {
       </div>
       <div class="meta-item">
         <div class="meta-label">Norma de referência</div>
-        <div class="meta-value">ISO 22301:2019 / 27031:2011</div>
+        <div class="meta-value">ISO 22301:2019 / ISO 27031:2023 / NIST CSF</div>
       </div>
       <div class="meta-item">
         <div class="meta-label">Gerado em</div>
@@ -363,7 +363,7 @@ export const pdfService = {
           ${isVigente ? '✅ VIGENTE — HOMOLOGADO EM COMITÊ CONTI' : '⏳ EM FLUXO DE APROVAÇÃO (RASCUNHO / PENDENTE)'}
         </div>
         <div style="margin-top: 30pt; font-size:8pt; color:#64748b">
-          Emitido em ${dataHoje} • Conforme ABNT NBR ISO 22301:2020 e ISO 27031:2011<br/>
+          Emitido em ${dataHoje} • Conforme ABNT NBR ISO 22301:2020, ISO 27031:2023 e NIST CSF<br/>
           Confidencialidade: <strong>${(pco?.nivel_confidencialidade || 'RESTRITO').toUpperCase()}</strong>
         </div>
       </div>
@@ -941,6 +941,175 @@ export const pdfService = {
             <td><strong>${dataFormatted}</strong></td>
           </tr>
         </table>
+      </div>
+    `;
+  },
+
+  // Gera HTML do Relatório Executivo de Resiliência de TIC e Gargalos de SLA (Geati / Geric)
+  htmlRelatorioResilienciaTIC: (processos = [], ativos = [], contratos = [], planos = [], config = {}) => {
+    const dataHoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+    
+    // Filtrar gargalos de SLA
+    const gargalos = processos.filter(p => p.requer_drp && Number(p.sla_tic) > Number(p.sla_contrato_cliente));
+    
+    // Processos com DRP
+    const processosDRP = processos.filter(p => p.requer_drp);
+
+    // Ativos C0/C1
+    const ativosCriticos = ativos.filter(a => a.criticidade_contrato === 'C0' || a.criticidade_contrato === 'C1');
+
+    // Cálculo total de perdas/hora
+    const calcularPerda = (proc) => {
+      if (!proc.id_contrato) return 0;
+      const c = contratos.find(ct => ct.id_contrato === proc.id_contrato);
+      if (!c || !c.valor_faturamento) return 0;
+      const rate = proc.criticidade === 'Crítica' ? 0.05 : proc.criticidade === 'Alta' ? 0.02 : 0.005;
+      return c.valor_faturamento * rate;
+    };
+
+    const totalPerdaHora = processos.reduce((acc, p) => acc + calcularPerda(p), 0);
+
+    const gargalosRows = gargalos.map(p => {
+      const c = contratos.find(ct => ct.id_contrato === p.id_contrato);
+      const ativo = ativos.find(a => a.id_ativo === p.ativo_cmdb_id);
+      const perdaHora = calcularPerda(p);
+      const deficMinutos = Number(p.sla_tic) - Number(p.sla_contrato_cliente);
+      const pco = planos.find(pl => pl.id_processo === p.id_processo || pl.processo?.id_processo === p.id_processo);
+
+      return `
+        <tr>
+          <td><strong>${p.id_processo}</strong><br/><span style="font-size:7pt; color:#64748b">${p.nome}</span></td>
+          <td>${p.id_gerencia}</td>
+          <td><strong>${ativo?.nome || p.ativo_cmdb_id || 'N/A'}</strong><br/><span class="badge ${ativo?.criticidade_contrato === 'C0' ? 'badge-red' : 'badge-orange'}">${ativo?.criticidade_contrato || 'C3'}</span></td>
+          <td style="text-align:center"><span style="color:#2563eb; font-weight:700">${p.sla_contrato_cliente} min</span></td>
+          <td style="text-align:center"><span style="color:#dc2626; font-weight:800">${p.sla_tic} min</span></td>
+          <td style="text-align:center"><strong style="color:#b91c1c">+${deficMinutos} min</strong></td>
+          <td style="text-align:right"><strong style="color:#b91c1c">R$ ${perdaHora.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}</strong></td>
+          <td style="font-size:7pt; color:#475569">${pco?.parecer_tic ? `<span style="color:#4338ca; font-weight:700">[PARECER TIC]</span> ${pco.parecer_tic.substring(0, 50)}...` : '<em style="color:#94a3b8">Sem parecer formal</em>'}</td>
+        </tr>
+      `;
+    }).join('');
+
+    const ativosRows = ativosCriticos.map(a => {
+      const procVinculados = processos.filter(p => p.ativo_cmdb_id === a.id_ativo);
+      const procsNomes = procVinculados.map(p => `${p.id_processo} (${p.id_gerencia})`).join(', ');
+
+      return `
+        <tr>
+          <td><strong>${a.id_ativo}</strong></td>
+          <td><strong>${a.nome}</strong><br/><span style="font-size:7pt; color:#64748b">${a.tipo}</span></td>
+          <td><span class="badge ${a.criticidade_contrato === 'C0' ? 'badge-red' : 'badge-orange'}">${a.criticidade_contrato || 'C1'}</span></td>
+          <td>${a.tipo_redundancia || 'Sem redundância'}</td>
+          <td>${a.status_ativo}</td>
+          <td style="font-size:7.5pt">${procsNomes || 'Sem processos vinculados'}</td>
+        </tr>
+      `;
+    }).join('');
+
+    return `
+      <style>
+        .exec-banner { background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); color: #ffffff; padding: 16pt; border-radius: 8pt; margin-bottom: 16pt; }
+        .exec-banner h2 { font-size: 15pt; font-weight: 900; text-transform: uppercase; letter-spacing: -0.5pt; margin-bottom: 4pt; }
+        .exec-banner p { font-size: 8.5pt; color: #c7d2fe; margin: 0; }
+        .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8pt; margin-bottom: 14pt; }
+        .kpi-box { background: #f8fafc; border: 1pt solid #e2e8f0; border-radius: 6pt; padding: 8pt; text-align: center; }
+        .kpi-box-val { font-size: 15pt; font-weight: 900; }
+        .kpi-box-lbl { font-size: 6.5pt; text-transform: uppercase; color: #64748b; font-weight: 700; margin-top: 2pt; }
+      </style>
+
+      <div class="exec-banner">
+        <h2>🛡️ RELATÓRIO EXECUTIVO DE RESILIÊNCIA DE TIC & GARGALOS DE DRP</h2>
+        <p>Parecer Técnico Consolidado para o Comitê de TIC (Geati) e Segunda Linha de Defesa (Geric)</p>
+        <div style="font-size: 7.5pt; color: #a5b4fc; margin-top: 8pt;">
+          Alinhado às normas <strong>ISO 22301:2019</strong>, <strong>ISO 27031:2023</strong>, <strong>NIST CSF</strong> e <strong>ABNT NBR 15999</strong>
+        </div>
+      </div>
+
+      <div class="kpi-row">
+        <div class="kpi-box">
+          <div class="kpi-box-val" style="color: #b91c1c">R$ ${totalPerdaHora.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</div>
+          <div class="kpi-box-lbl">Risco Financeiro / Hora</div>
+        </div>
+        <div class="kpi-box">
+          <div class="kpi-box-val" style="color: #c2410c">${gargalos.length}</div>
+          <div class="kpi-box-lbl">Gargalos de SLA TIC</div>
+        </div>
+        <div class="kpi-box">
+          <div class="kpi-box-val" style="color: #4338ca">${processosDRP.length}</div>
+          <div class="kpi-box-lbl">Processos com DRP</div>
+        </div>
+        <div class="kpi-box">
+          <div class="kpi-box-val" style="color: #0f766e">${ativosCriticos.length}</div>
+          <div class="kpi-box-lbl">Ativos CMDB (C0/C1)</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">1. Matriz de Incompatibilidade de SLAs & Defasagem Técnica de TIC</div>
+        <p style="font-size: 8pt; color: #475569; margin-bottom: 6pt;">
+          Processos em que a meta técnica de recuperação de TIC (SLA TIC) excede o tempo acordado em contrato com os clientes finais (SLA Contrato), representando risco imediato de quebra de contrato e sanções financeiras.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Processo Crítico</th>
+              <th>Gerência</th>
+              <th>Ativo CMDB / Crit.</th>
+              <th style="text-align:center">SLA Contrato</th>
+              <th style="text-align:center">SLA TIC</th>
+              <th style="text-align:center">Déficit</th>
+              <th style="text-align:right">Perda / Hora</th>
+              <th>Parecer & Termo de Risco</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${gargalosRows || '<tr><td colspan="8" style="text-align:center; color:#94a3b8">Nenhum gargalo de SLA identificado na matriz.</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section">
+        <div class="section-title">2. Ativos de TI Críticos (CMDB C0 / C1) & Resiliência Tecnológica</div>
+        <table>
+          <thead>
+            <tr>
+              <th>ID Ativo</th>
+              <th>Nome / Sistema</th>
+              <th>Criticidade CMDB</th>
+              <th>Redundância</th>
+              <th>Status Operacional</th>
+              <th>Processos Vinculados</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${ativosRows || '<tr><td colspan="6" style="text-align:center; color:#94a3b8">Nenhum ativo C0/C1 cadastrado.</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section">
+        <div class="section-title">3. Recomendações Estratégicas para o Comitê de TIC (GEATI) & GERIC</div>
+        <div class="highlight-box" style="background:#f8fafc; border-color:#cbd5e1; color:#334155">
+          <p style="color:#1e293b; font-weight:700">📌 Ações Prioritárias Recomendadas:</p>
+          <ul style="font-size:8pt; margin-left:14pt; margin-top:4pt; line-height:1.5">
+            <li><strong>Adequação de Infraestrutura:</strong> Priorizar investimentos de redundância e ampliação de capacidade nos ativos CMDB C0 com SLA TIC excedido.</li>
+            <li><strong>Repactuação de Termos de Risco:</strong> Para os processos com gargalo aprovados em caráter emergencial, exigir assinatura formal do Termo de Risco Operacional com anuência da Diretoria responsável.</li>
+            <li><strong>Simulados de Failover Obrigatórios:</strong> Executar testes formais de comutação (ISO 27031 §9.2) a cada 6 meses nos sistemas com estratégia Hot Standby / Warm Standby.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="signatures" style="margin-top:20pt; display:grid; grid-template-columns: repeat(2, 1fr); gap:20pt;">
+        <div class="assinatura-box">
+          <div style="height:20pt"></div>
+          <div class="assinatura-label">Parecer Emitido por</div>
+          <div class="assinatura-nome">Geati — Governança de TIC</div>
+        </div>
+        <div class="assinatura-box">
+          <div style="height:20pt"></div>
+          <div class="assinatura-label">Homologado por</div>
+          <div class="assinatura-nome">Geric — Riscos e GCN (2ª Linha)</div>
+        </div>
       </div>
     `;
   }

@@ -4,22 +4,29 @@ import { useAuth } from '../contexts/AuthContext';
 
 const DEMO_PERFIS = [
   { label: 'Administrador Geric (acesso total)', email: 'geric@empresa.com.br', senha: 'geric2026', role: 'admin_geric', cor: 'indigo' },
-  { label: 'Gestor Gecob (negócios)', email: 'gecob@empresa.com.br', senha: 'gecob2026', role: 'gestor_area', cor: 'emerald' },
-  { label: 'Gestora Getic (TI/PRD)', email: 'getic@empresa.com.br', senha: 'getic2026', role: 'gestor_area', cor: 'purple' },
-  { label: 'Gestor Gesap (predial)', email: 'gesap@empresa.com.br', senha: 'gesap2026', role: 'gestor_area', cor: 'amber' },
+  { label: 'Eduardo Santos (Geati Gov TIC)', email: 'geati@empresa.com.br', senha: 'geati2026', role: 'tic_governanca', cor: 'sky' },
+  { label: 'Gestora Getic (TI/PRD)', email: 'getic@empresa.com.br', senha: 'getic2026', role: 'tic_executor', cor: 'purple' },
+  { label: 'Bruno Mendes (Gesit TI+Negócio)', email: 'gesit@empresa.com.br', senha: 'gesit2026', role: 'tic_executor', cor: 'rose' },
+  { label: 'Diego Ferreira (Gesec Ciberseg)', email: 'gesec@empresa.com.br', senha: 'gesec2026', role: 'tic_executor', cor: 'rose' },
+  { label: 'Gilberto Ramos (Gepin Negócio c/ DR)', email: 'gepin@empresa.com.br', senha: 'gepin2026', role: 'gestor_area', cor: 'emerald' },
+  { label: 'Priscila Silva (PSIM Negócio c/ DR)', email: 'psim@empresa.com.br', senha: 'psim2026', role: 'gestor_area', cor: 'emerald' },
   { label: 'Visitante (somente leitura)', email: 'visitante@empresa.com.br', senha: 'visitante2026', role: 'visualizador', cor: 'slate' },
 ];
 
 const COR_MAP = {
   indigo: 'bg-indigo-600 hover:bg-indigo-700 border-indigo-600',
+  sky: 'bg-sky-600 hover:bg-sky-700 border-sky-600',
   emerald: 'bg-emerald-600 hover:bg-emerald-700 border-emerald-600',
   purple: 'bg-purple-600 hover:bg-purple-700 border-purple-600',
+  rose: 'bg-rose-600 hover:bg-rose-700 border-rose-600',
   amber: 'bg-amber-500 hover:bg-amber-600 border-amber-500',
   slate: 'bg-slate-600 hover:bg-slate-700 border-slate-600',
 };
 
 const BADGE_MAP = {
   admin_geric: 'bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300',
+  tic_governanca: 'bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300',
+  tic_executor: 'bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300',
   gestor_area: 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300',
   visualizador: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400',
 };
@@ -76,16 +83,50 @@ export default function LoginPage({ configSistema }) {
             {configSistema?.nome_empresa || 'Gestão de Continuidade de Negócios'}
           </p>
           <p className="text-slate-400 text-sm mt-4 leading-relaxed max-w-sm lg:max-w-none">
-            Plataforma de Gestão de Continuidade de Negócios e Resiliência Cibernética.
-            Alinhado às normas <strong className="text-slate-300">ISO 22301:2019</strong> e{' '}
-            <strong className="text-slate-300">ISO 27031:2011</strong>.
+            Plataforma integrada de Gestão de Continuidade de Negócios, Resiliência Cibernética e Disaster Recovery.
           </p>
-          <div className="flex flex-wrap gap-2 mt-6 justify-center lg:justify-start">
-            {['PCO', 'PRD', 'BIA/AIN', 'Riscos', 'Dashboard Geric', 'NRGCN'].map(t => (
-              <span key={t} className="text-[10px] px-2 py-1 rounded-full bg-indigo-900/50 text-indigo-300 border border-indigo-800/60 font-semibold uppercase tracking-wide">
-                {t}
-              </span>
-            ))}
+
+          {/* Normas e Frameworks */}
+          <div className="mt-4 space-y-2">
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Normas & Frameworks Aderentes</p>
+            <div className="flex flex-wrap gap-1.5 justify-center lg:justify-start">
+              {[
+                { sigla: 'ISO 22301:2019', tip: 'Gestão de Continuidade de Negócios' },
+                { sigla: 'ISO 22313', tip: 'Orientações para GCN' },
+                { sigla: 'ISO 27001', tip: 'Sistema de Gestão de Segurança da Informação' },
+                { sigla: 'ISO 27002', tip: 'Controles de Segurança' },
+                { sigla: 'ISO 27031:2023', tip: 'Resiliência de TIC' },
+                { sigla: 'ABNT NBR 15999', tip: 'GCN Versão Nacional' },
+              ].map(n => (
+                <span key={n.sigla} title={n.tip} className="text-[9px] px-2 py-0.5 rounded-full bg-indigo-900/50 text-indigo-300 border border-indigo-800/60 font-semibold cursor-default hover:bg-indigo-800/60 transition-colors">
+                  {n.sigla}
+                </span>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-1.5 justify-center lg:justify-start">
+              {[
+                { sigla: 'NIST CSF', tip: 'Cybersecurity Framework' },
+                { sigla: 'COBIT', tip: 'Governança de TI Corporativa' },
+                { sigla: 'ITIL', tip: 'Gerenciamento de Serviços de TI' },
+                { sigla: 'LGPD', tip: 'Lei Geral de Proteção de Dados' },
+              ].map(n => (
+                <span key={n.sigla} title={n.tip} className="text-[9px] px-2 py-0.5 rounded-full bg-purple-900/40 text-purple-300 border border-purple-800/50 font-semibold cursor-default hover:bg-purple-800/50 transition-colors">
+                  {n.sigla}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Tags de Módulos */}
+          <div className="mt-5">
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1.5">Módulos da Plataforma</p>
+            <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
+              {['PCO', 'PRD / DRP', 'BIA / AIN', 'Riscos', 'Estratégias DR', 'SLAs TIC', 'Dashboard Geric', 'NRGCN', 'Governança'].map(t => (
+                <span key={t} className="text-[10px] px-2.5 py-1 rounded-full bg-emerald-900/40 text-emerald-300 border border-emerald-800/50 font-semibold uppercase tracking-wide">
+                  {t}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -163,7 +204,7 @@ export default function LoginPage({ configSistema }) {
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-slate-200 font-semibold">{p.label}</span>
                     <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase ${BADGE_MAP[p.role] || BADGE_MAP.visualizador}`}>
-                      {p.role === 'admin_geric' ? 'Admin' : p.role === 'gestor_area' ? 'Gestor' : 'Viewer'}
+                      {p.role === 'admin_geric' ? 'Geric' : p.role === 'tic_governanca' ? 'Geati' : p.role === 'tic_executor' ? 'TI Executor' : p.role === 'gestor_area' ? 'Gestor' : 'Viewer'}
                     </span>
                   </div>
                   <p className="text-[10px] text-slate-500 mt-0.5">{p.email}</p>

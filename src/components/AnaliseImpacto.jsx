@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, ShieldAlert, Award, ArrowRight, DollarSign, Calculator, Eye, HelpCircle, X, Download } from 'lucide-react';
+import { Plus, Trash2, ShieldAlert, Award, ArrowRight, DollarSign, Calculator, Eye, HelpCircle, X, Download, CheckCircle2 } from 'lucide-react';
 import { pdfService } from '../services/pdfService';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -9,6 +9,7 @@ export default function AnaliseImpacto({ db }) {
   const [ains, setAins] = useState(filterByGerencia(db.analiseImpactoNegocio.list(), 'processo.id_gerencia'));
   const [contratos] = useState(db.contratos.list());
   const [gerencias] = useState(db.gerencias?.list ? db.gerencias.list() : (JSON.parse(localStorage.getItem('gcn_database') || '{}').gerencias || []));
+  const [ativos] = useState(db.ativosSistemas.list());
 
   const recarregarListas = () => {
     setProcessos(filterByGerencia(db.processosCriticos.list()));
@@ -31,7 +32,13 @@ export default function AnaliseImpacto({ db }) {
     id_gerencia: '',
     tipo_plano: '',
     sla_interno: '',
-    criticidade: 'Baixa'
+    criticidade: 'Baixa',
+    requer_drp: false,
+    ativo_cmdb_id: '',
+    estrategia_drp: 'Backup & Restore',
+    sla_contrato_cliente: '',
+    sla_tic: '',
+    status_aprovacao_tic: 'Pendente'
   });
 
   // Form Fields - AIN
@@ -51,10 +58,28 @@ export default function AnaliseImpacto({ db }) {
       return;
     }
 
-    const novoProc = db.processosCriticos.create(procFormData);
+    const novoProc = db.processosCriticos.create({
+      ...procFormData,
+      sla_contrato_cliente: procFormData.sla_contrato_cliente ? parseInt(procFormData.sla_contrato_cliente) : 0,
+      sla_tic: procFormData.sla_tic ? parseInt(procFormData.sla_tic) : 0
+    });
     recarregarListas();
     setShowProcessForm(false);
-    setProcFormData({ nome: '', descricao: '', id_contrato: '', id_gerencia: isAdmin() ? '' : (usuario?.id_gerencia || ''), tipo_plano: '', sla_interno: '', criticidade: 'Baixa' });
+    setProcFormData({ 
+      nome: '', 
+      descricao: '', 
+      id_contrato: '', 
+      id_gerencia: isAdmin() ? '' : (usuario?.id_gerencia || ''), 
+      tipo_plano: '', 
+      sla_interno: '', 
+      criticidade: 'Baixa',
+      requer_drp: false,
+      ativo_cmdb_id: '',
+      estrategia_drp: 'Backup & Restore',
+      sla_contrato_cliente: '',
+      sla_tic: '',
+      status_aprovacao_tic: 'Pendente'
+    });
     setNotification({ type: 'success', text: `Processo Crítico ${novoProc.id_processo} mapeado com sucesso! Gerência: ${procFormData.id_gerencia}. Agora configure sua AIN.` });
   };
 
@@ -283,6 +308,129 @@ export default function AnaliseImpacto({ db }) {
                 />
               </div>
             )}
+
+            {/* Parâmetros de Recuperação de Desastres (DRP) */}
+            <div className="md:col-span-2 border-t border-slate-200 dark:border-slate-800 pt-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-700 dark:text-slate-350 uppercase">Recuperação de Desastres (DRP / PRD de TI)</h4>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500">Defina se este processo requer plano de recuperação de desastres e mapeamento de infraestrutura.</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    checked={procFormData.requer_drp} 
+                    onChange={(e) => setProcFormData({ ...procFormData, requer_drp: e.target.checked })}
+                    className="sr-only peer" 
+                  />
+                  <div className="w-9 h-5 bg-slate-250 dark:bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                  <span className="ml-2 text-xs font-semibold text-slate-600 dark:text-slate-450">{procFormData.requer_drp ? 'Requer DRP' : 'Apenas PCO'}</span>
+                </label>
+              </div>
+
+              {procFormData.requer_drp && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-slate-50 dark:bg-slate-950/40 rounded-lg border border-slate-200 dark:border-slate-850/60 animate-fade-in">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
+                      Ativo CMDB Vinculado *
+                    </label>
+                    <select
+                      value={procFormData.ativo_cmdb_id}
+                      onChange={(e) => setProcFormData({ ...procFormData, ativo_cmdb_id: e.target.value })}
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-850 dark:text-slate-300 focus:outline-indigo-500"
+                      required
+                    >
+                      <option value="">Selecione o Ativo...</option>
+                      {ativos.map(a => (
+                        <option key={a.id_ativo} value={a.id_ativo}>
+                          {a.nome} ({a.tipo} - {a.criticidade_contrato || 'Sem Criticidade'})
+                        </option>
+                      ))}
+                    </select>
+                    {procFormData.ativo_cmdb_id && (
+                      <div className="mt-1 flex items-center justify-between">
+                        <span className="text-[9px] text-slate-400">Classificação:</span>
+                        <span className={`text-[8px] font-black px-1.5 py-0.2 rounded uppercase ${
+                          ativos.find(a => a.id_ativo === procFormData.ativo_cmdb_id)?.criticidade_contrato === 'C0' ? 'bg-rose-100 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/30' :
+                          ativos.find(a => a.id_ativo === procFormData.ativo_cmdb_id)?.criticidade_contrato === 'C1' ? 'bg-orange-100 dark:bg-orange-950/50 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-900/30' :
+                          'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800'
+                        }`}>
+                          {ativos.find(a => a.id_ativo === procFormData.ativo_cmdb_id)?.criticidade_contrato || 'Sem Classificação'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase">Estratégia de DR *</label>
+                    <select
+                      value={procFormData.estrategia_drp}
+                      onChange={(e) => setProcFormData({ ...procFormData, estrategia_drp: e.target.value })}
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-850 dark:text-slate-300 focus:outline-indigo-500"
+                    >
+                      <option value="Backup & Restore">Backup & Restore</option>
+                      <option value="Pilot Light">Pilot Light</option>
+                      <option value="Warm Standby">Warm Standby</option>
+                      <option value="Hot Standby / Ativo-Ativo">Hot Standby / Ativo-Ativo</option>
+                      <option value="Site Alternativo">Site Alternativo</option>
+                      <option value="DR em Nuvem">DR em Nuvem</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase">SLA Cliente (minutos) *</label>
+                    <input
+                      type="number"
+                      value={procFormData.sla_contrato_cliente}
+                      onChange={(e) => setProcFormData({ ...procFormData, sla_contrato_cliente: e.target.value })}
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-indigo-500"
+                      placeholder="Ex: 60"
+                      min="1"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase">SLA TIC (minutos) *</label>
+                    <input
+                      type="number"
+                      value={procFormData.sla_tic}
+                      onChange={(e) => setProcFormData({ ...procFormData, sla_tic: e.target.value })}
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-indigo-500"
+                      placeholder="Ex: 30"
+                      min="1"
+                      required
+                    />
+                  </div>
+
+                  {/* Alerta de Incompatibilidade de SLAs */}
+                  {procFormData.sla_tic && procFormData.sla_contrato_cliente && Number(procFormData.sla_tic) > Number(procFormData.sla_contrato_cliente) && (
+                    <div className="md:col-span-4 p-3 bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/30 rounded-lg flex items-start gap-2.5 animate-pulse">
+                      <ShieldAlert className="w-4 h-4 text-rose-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400 block uppercase">Incompatibilidade de SLA (Gargalo de TIC)</span>
+                        <p className="text-[9px] text-rose-500 leading-snug">
+                          Atenção: A infraestrutura de TIC leva mais tempo para recuperar ({procFormData.sla_tic} min) do que o acordado em contrato com o cliente final ({procFormData.sla_contrato_cliente} min). Risco regulatório e financeiro!
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {procFormData.sla_tic && procFormData.sla_contrato_cliente && Number(procFormData.sla_tic) <= Number(procFormData.sla_contrato_cliente) && (
+                    <div className="md:col-span-4 p-3 bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 rounded-lg flex items-start gap-2.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 block uppercase">SLA Compatível</span>
+                        <p className="text-[9px] text-emerald-500 leading-snug">
+                          Alinhamento perfeito: A TIC consegue recuperar o ativo ({procFormData.sla_tic} min) antes do limite acordado com o cliente ({procFormData.sla_contrato_cliente} min).
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             <div className="space-y-1 md:col-span-2">
               <label className="text-xs font-bold text-slate-500 uppercase">Descrição das Atividades do Processo</label>
               <textarea 
@@ -461,6 +609,32 @@ export default function AnaliseImpacto({ db }) {
                       {proc.id_gerencia && (
                         <div className="text-[9px] text-emerald-500 font-semibold mt-0.5 uppercase">
                           Gerência: {proc.id_gerencia}
+                        </div>
+                      )}
+                      {proc.requer_drp ? (
+                        <div className="mt-1.5 p-1.5 rounded bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 text-[9px] space-y-0.5 max-w-xs">
+                          <div className="font-bold text-slate-500 dark:text-slate-400 flex justify-between">
+                            <span>🛡️ DRP Ativo CMDB:</span>
+                            <span className="text-slate-700 dark:text-slate-350">{proc.ativo_cmdb_id || 'Não Definido'}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">Estratégia:</span>
+                            <span className="font-semibold text-slate-750 dark:text-slate-300">{proc.estrategia_drp}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">SLA Contrato:</span>
+                            <span className="font-semibold text-slate-750 dark:text-slate-300">{proc.sla_contrato_cliente}m</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-slate-400">SLA TIC:</span>
+                            <span className={`font-bold ${proc.sla_tic > proc.sla_contrato_cliente ? 'text-rose-500 animate-pulse' : 'text-emerald-500'}`}>
+                              {proc.sla_tic}m {proc.sla_tic > proc.sla_contrato_cliente ? '⚠️ Gargalo' : '✓ OK'}
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-[9px] text-slate-450 dark:text-slate-550 mt-1.5 italic">
+                          📋 Apenas PCO (Sem DR de TIC)
                         </div>
                       )}
                     </td>

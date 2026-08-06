@@ -14,6 +14,7 @@ export default function PlanosRecuperacao({ db }) {
   const [ains] = useState(db.analiseImpactoNegocio.list());
   const [riscos] = useState(db.riscos.list());
   const [todosContratos] = useState(db.contratos.list());
+  const [ativosCMDB] = useState(db.ativosSistemas.list());
   const configSistema = db.configSistema.get();
 
   const processos = isAdmin()
@@ -641,10 +642,49 @@ export default function PlanosRecuperacao({ db }) {
             {/* PRD */}
             {editorTab === 'prd' && (
               <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-5 text-xs">
-                <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
-                  <h4 className="font-bold text-indigo-600 dark:text-indigo-400 text-[11px] uppercase tracking-wider">PRD — Plano de Recuperação de Desastres de TI (ISO 27031)</h4>
-                  <p className="text-slate-400 mt-0.5 text-[10px]">Procedimentos técnicos de backup, failover e War Room para o ambiente de TI.</p>
+                <div className="border-b border-slate-100 dark:border-slate-800 pb-3 flex justify-between items-start">
+                  <div>
+                    <h4 className="font-bold text-indigo-600 dark:text-indigo-400 text-[11px] uppercase tracking-wider">PRD — Plano de Recuperação de Desastres de TI (ISO 27031)</h4>
+                    <p className="text-slate-400 mt-0.5 text-[10px]">Procedimentos técnicos de backup, failover e War Room para o ambiente de TI.</p>
+                  </div>
+                  {currentProcess?.requer_drp && (
+                    <span className="bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-900/30 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">
+                      DRP Obrigatório
+                    </span>
+                  )}
                 </div>
+
+                {currentProcess?.requer_drp && (
+                  <div className="p-4 bg-slate-50 dark:bg-slate-950/40 rounded-xl border border-slate-200 dark:border-slate-800/60 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="space-y-1">
+                      <span className="text-[9px] font-bold text-slate-400 uppercase">Ativo CMDB / Criticidade</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-700 dark:text-slate-200">{currentProcess.ativo_cmdb_id || 'Não Vinculado'}</span>
+                        {currentProcess.ativo_cmdb_id && (
+                          <span className={`text-[8px] font-black px-1.5 py-0.2 rounded uppercase ${
+                            ativosCMDB.find(a => a.id_ativo === currentProcess.ativo_cmdb_id)?.criticidade_contrato === 'C0' ? 'bg-rose-100 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 border border-rose-250 dark:border-rose-900/30' :
+                            ativosCMDB.find(a => a.id_ativo === currentProcess.ativo_cmdb_id)?.criticidade_contrato === 'C1' ? 'bg-orange-100 dark:bg-orange-950/50 text-orange-600 dark:text-orange-400 border border-orange-250 dark:border-orange-900/30' :
+                            'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200'
+                          }`}>
+                            {ativosCMDB.find(a => a.id_ativo === currentProcess.ativo_cmdb_id)?.criticidade_contrato || 'Sem Criticidade'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-[9px] font-bold text-slate-400 uppercase">Estratégia de DR</span>
+                      <p className="font-bold text-slate-700 dark:text-slate-200">{currentProcess.estrategia_drp || 'Backup & Restore'}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-[9px] font-bold text-slate-400 uppercase">Status SLA de Contingência</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-[10px] text-slate-500">Contrato: <strong className="text-slate-700 dark:text-slate-250">{currentProcess.sla_contrato_cliente}m</strong></span>
+                        <span className="text-[10px] text-slate-500">TIC: <strong className={Number(currentProcess.sla_tic) > Number(currentProcess.sla_contrato_cliente) ? 'text-rose-500 font-black animate-pulse' : 'text-emerald-500 font-bold'}>{currentProcess.sla_tic}m</strong></span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <label className={lc}>Local de Backup / Snapshots</label>
@@ -658,9 +698,36 @@ export default function PlanosRecuperacao({ db }) {
                 <div className="space-y-1">
                   <div className="flex justify-between items-center">
                     <label className={lc + " mb-0"}>Procedimentos de Restauração de Backups</label>
-                    <SuggestBtn onClick={() => setPrdData({ ...prdData, procedimentos_restauracao: ativosContingencia.length > 0 ? ativosContingencia.map((a, i) => `${i + 1}. Restaurar ${a.nome} (${a.tipo}):\n   - Validar integridade dos logs.\n   - Restaurar snapshot mais recente (RPO: ${a.rpoAtivo} min).\n   - Confirmar acesso via: ${a.linkDR || '[LINK DR]'}.\n   - Tempo máximo de RTO: ${a.rtoAtivo} min.`).join('\n\n') : `1. Validar logs de integridade dos sistemas.\n2. Restaurar snapshots automatizados mais recentes (RPO de ${currentAin?.RPO || 15} min).\n3. Redirecionar tráfego DNS para região de contingência ativa.\n4. Validar conectividade fim a fim.\n5. Emitir confirmação de restauração para o Gerente da Área.` })} />
+                    <SuggestBtn onClick={() => {
+                      if (currentProcess?.requer_drp) {
+                        const est = currentProcess.estrategia_drp;
+                        const sla = currentProcess.sla_tic || 30;
+                        let rec = '';
+                        if (est === 'Backup & Restore') {
+                          rec = `1. Localizar o último backup de banco de dados nos buckets de Cloud Storage geo-redundante (RPO: ${currentAin?.RPO || 15} min).\n2. Provisionar novas instâncias de computação e banco usando scripts automatizados de infraestrutura como código (Terraform).\n3. Restaurar o dump do banco de dados e aplicar os logs transacionais.\n4. Validar a integridade das tabelas e liberar conexões de rede.\n5. Alterar apontamento de DNS externo.\n6. Tempo de restauração técnica de TIC estimado: ${sla} minutos.`;
+                        } else if (est === 'Pilot Light') {
+                          rec = `1. Promover o banco de dados réplica em nuvem secundária para gravação primária.\n2. Iniciar e escalar os servidores de aplicação Web/API a partir do pool inativo de contingência.\n3. Atualizar regras do Gateway de API para encaminhar tráfego técnico para a região secundária.\n4. Sincronizar as mensagens da fila de mensageria pendente.\n5. Validar serviços e emitir termo de liberação.\n6. RTO Meta de TIC: ${sla} minutos.`;
+                        } else if (est === 'Warm Standby') {
+                          rec = `1. Escalar horizontalmente as instâncias de aplicação Warm Standby (atualmente operando em tamanho reduzido) para capacidade produtiva.\n2. Chavear banco de dados redundante de réplica para principal.\n3. Redirecionar balanceador de carga global (GSLB) para encaminhar 100% das conexões para a região backup.\n4. Inspecionar logs de latência e integridade operacional.\n5. Tempo RTO Meta de TIC: ${sla} minutos.`;
+                        } else if (est === 'Hot Standby / Ativo-Ativo') {
+                          rec = `1. O sistema já opera de forma distribuída regionalmente ativo-ativo.\n2. Confirmar que o balanceador de carga global isolou o nó inoperante automaticamente em menos de 15 segundos.\n3. A equipe de TIC executa o isolamento lógico do nó afetado para depuração técnica.\n4. Validar a persistência contínua de dados no nó sobressalente.\n5. Liberação transparente para o cliente. Tempo estimado: <5 minutos.`;
+                        } else if (est === 'DR em Nuvem') {
+                          rec = `1. Iniciar ativação de infraestrutura emergencial na nuvem pública secundária configurada.\n2. Restaurar snapshots das instâncias a partir do repositório geo-redundante.\n3. Atualizar regras de rede (MFA, VPN e firewalls) para o novo endpoint.\n4. Testar conectividade de canais integrados.\n5. Tempo RTO Meta de TIC: ${sla} minutos.`;
+                        } else {
+                          rec = `1. Validar logs de integridade operacional.\n2. Ativar procedimentos de failover técnico conforme plano de contingência.\n3. Tempo de RTO Meta de TIC: ${sla} minutos.`;
+                        }
+                        setPrdData({ ...prdData, procedimentos_restauracao: rec });
+                      } else {
+                        setPrdData({ 
+                          ...prdData, 
+                          procedimentos_restauracao: ativosContingencia.length > 0 
+                            ? ativosContingencia.map((a, i) => `${i + 1}. Restaurar ${a.nome} (${a.tipo}):\n   - Validar integridade dos logs.\n   - Restaurar snapshot mais recente (RPO: ${a.rpoAtivo} min).\n   - Confirmar acesso via: ${a.linkDR || '[LINK DR]'}.\n   - Tempo máximo de RTO: ${a.rtoAtivo} min.`).join('\n\n') 
+                            : `1. Validar logs de integridade dos sistemas.\n2. Restaurar snapshots automatizados mais recentes (RPO de ${currentAin?.RPO || 15} min).\n3. Redirecionar tráfego DNS para região de contingência ativa.\n4. Validar conectividade fim a fim.\n5. Emitir confirmação de restauração para o Gerente da Área.` 
+                        });
+                      }
+                    }} />
                   </div>
-                  <textarea rows="6" value={prdData.procedimentos_restauracao || ''} onChange={(e) => setPrdData({ ...prdData, procedimentos_restauracao: e.target.value })} className={tc} />
+                  <textarea rows="8" value={prdData.procedimentos_restauracao || ''} onChange={(e) => setPrdData({ ...prdData, procedimentos_restauracao: e.target.value })} className={tc} />
                 </div>
                 <div className="space-y-1">
                   <label className={lc}>Acionamento de Emergência / Canal de Plantão TI</label>

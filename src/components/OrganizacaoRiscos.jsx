@@ -17,16 +17,112 @@ export default function OrganizacaoRiscos({ db }) {
     setRiscos(filterByGerencia(db.riscos.list(), 'processo.id_gerencia'));
   };
 
-  // Estado para o Visualizador BIA Tree
+  // Estados locais de controle de abas internas
+  const [subTab, setSubTab] = useState('estrutura');
+
+  // Estados para Cibersegurança e Proteção de Dados (Gesec)
+  const [cyberFiltroClassificacao, setCyberFiltroClassificacao] = useState('todos');
+  const [cyberFiltroCriticidade, setCyberFiltroCriticidade] = useState('todos');
+  const [cyberSimuladorAtivoId, setCyberSimuladorAtivoId] = useState('');
+
+  // Estados para Análise Quantitativa de Risco (ALE / SLE / Monte Carlo)
+  const [quantProcId, setQuantProcId] = useState(processos[0]?.id_processo || '');
+  const [quantAmeaca, setQuantAmeaca] = useState('ransomware');
+  const [quantEf, setQuantEf] = useState(0.40);
+  const [quantAro, setQuantAro] = useState(0.5);
+  const [quantMitigacaoEficiencia, setQuantMitigacaoEficiencia] = useState(0.80);
+  const [quantCustoDrp, setQuantCustoDrp] = useState(150000);
+  const [monteCarloResults, setMonteCarloResults] = useState(null);
+
+  // Estado para o Visualizador BIA Tree (Linhagem de Dependências)
   const [selectedBiaProcId, setSelectedBiaProcId] = useState(processos[0]?.id_processo || '');
+  
+  // Efeito para manter os seletores sincronizados com os processos disponíveis para o perfil logado
+  useEffect(() => {
+    if (processos.length > 0) {
+      if (!selectedBiaProcId || !processos.some(p => p.id_processo === selectedBiaProcId)) {
+        setSelectedBiaProcId(processos[0].id_processo);
+      }
+      if (!quantProcId || !processos.some(p => p.id_processo === quantProcId)) {
+        setQuantProcId(processos[0].id_processo);
+      }
+    }
+  }, [processos, selectedBiaProcId, quantProcId]);
+
+  // Derivadas do processo selecionado no BIA Tree
   const selectedBiaProc = processos.find(p => p.id_processo === selectedBiaProcId);
-  const biaContrato = selectedBiaProc ? db.contratos.list().find(c => c.id_contrato === selectedBiaProc.id_contrato) : null;
+  const biaContrato = selectedBiaProc ? db.contratos.list().find(c => c.id_contrato === selectedBiaProc.id_contrato_cliente || c.id_contrato === selectedBiaProc.id_contrato) : null;
   const biaAtivos = selectedBiaProc ? ativos.filter(a => a.id_gerencia === selectedBiaProc.id_gerencia) : [];
   const biaRiscos = selectedBiaProc ? riscos.filter(r => r.id_processo === selectedBiaProc.id_processo) : [];
+  
+  const biaAtivoCMDB = selectedBiaProc?.ativo_cmdb_id 
+    ? db.ativosSistemas.list().find(a => a.id_ativo === selectedBiaProc.ativo_cmdb_id) 
+    : null;
+  const biaPco = selectedBiaProc 
+    ? db.planosContinuidade.list().find(p => p.id_processo === selectedBiaProc.id_processo || p.processo?.id_processo === selectedBiaProc.id_processo) 
+    : null;
+  const biaAin = selectedBiaProc 
+    ? (db.analiseImpacto?.list ? db.analiseImpacto.list().find(a => a.id_processo === selectedBiaProc.id_processo) : null)
+    : null;
 
+  const biaGargaloSLA = selectedBiaProc?.requer_drp && Number(selectedBiaProc.sla_tic) > Number(selectedBiaProc.sla_contrato_cliente);
+  const biaPerdaHora = (biaContrato?.valor_faturamento || 0) * (selectedBiaProc?.criticidade === 'Crítica' ? 0.05 : selectedBiaProc?.criticidade === 'Alta' ? 0.02 : 0.005);
 
-  // Estados locais de controle de abas internas
-  const [subTab, setSubTab] = useState('estrutura'); // 'estrutura', 'riscos', 'ativos'
+  const rodarSimulacaoMonteCarlo = () => {
+    const proc = processos.find(p => p.id_processo === quantProcId);
+    const contrato = db.contratos.list().find(c => c.id_contrato === proc?.id_contrato_cliente);
+    
+    const assetValue = (contrato?.valor_faturamento || 5000000);
+    const sleNominal = assetValue * quantEf;
+    const aleNominalSemDRP = sleNominal * quantAro;
+    const aleNominalComDRP = aleNominalSemDRP * (1 - quantMitigacaoEficiencia);
+    const economiaAnual = aleNominalSemDRP - aleNominalComDRP;
+    const rosi = ((economiaAnual - quantCustoDrp) / (quantCustoDrp || 1)) * 100;
+
+    const N = 1000;
+    const perdasSemDRP = [];
+    const perdasComDRP = [];
+
+    for (let i = 0; i < N; i++) {
+      const randAro = Math.max(0, quantAro + (Math.random() - 0.5) * quantAro * 0.6);
+      const randEf = Math.min(1.0, Math.max(0.05, quantEf + (Math.random() - 0.5) * quantEf * 0.4));
+      const randMit = Math.min(0.99, Math.max(0.2, quantMitigacaoEficiencia + (Math.random() - 0.5) * 0.2));
+
+      const lossSem = assetValue * randEf * randAro;
+      const lossCom = lossSem * (1 - randMit);
+
+      perdasSemDRP.push(lossSem);
+      perdasComDRP.push(lossCom);
+    }
+
+    perdasSemDRP.sort((a, b) => a - b);
+    perdasComDRP.sort((a, b) => a - b);
+
+    const getPercentile = (arr, p) => arr[Math.floor(arr.length * p)];
+
+    setMonteCarloResults({
+      assetValue,
+      sleNominal,
+      aleNominalSemDRP,
+      aleNominalComDRP,
+      economiaAnual,
+      rosi,
+      semDRP: {
+        media: perdasSemDRP.reduce((a, b) => a + b, 0) / N,
+        p50: getPercentile(perdasSemDRP, 0.50),
+        p90: getPercentile(perdasSemDRP, 0.90),
+        p95: getPercentile(perdasSemDRP, 0.95),
+        p99: getPercentile(perdasSemDRP, 0.99)
+      },
+      comDRP: {
+        media: perdasComDRP.reduce((a, b) => a + b, 0) / N,
+        p50: getPercentile(perdasComDRP, 0.50),
+        p90: getPercentile(perdasComDRP, 0.90),
+        p95: getPercentile(perdasComDRP, 0.95),
+        p99: getPercentile(perdasComDRP, 0.99)
+      }
+    });
+  };
 
   // Estados dos formulários
   const [showGerenciaForm, setShowGerenciaForm] = useState(false);
@@ -214,7 +310,7 @@ export default function OrganizacaoRiscos({ db }) {
     <div className="space-y-8 animate-fade-in">
       
       {/* Subnavegação Interna */}
-      <div className="flex border-b border-slate-200 dark:border-slate-800 gap-6 text-sm font-semibold">
+      <div className="flex border-b border-slate-200 dark:border-slate-800 gap-6 text-sm font-semibold flex-wrap">
         <button 
           onClick={() => setSubTab('estrutura')}
           className={`pb-3 transition-all ${subTab === 'estrutura' ? 'border-b-2 border-indigo-600 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`}
@@ -238,6 +334,18 @@ export default function OrganizacaoRiscos({ db }) {
           className={`pb-3 transition-all ${subTab === 'dependencias' ? 'border-b-2 border-indigo-600 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`}
         >
           Visualizador BIA Tree
+        </button>
+        <button 
+          onClick={() => setSubTab('ciberseg')}
+          className={`pb-3 transition-all flex items-center gap-1.5 ${subTab === 'ciberseg' ? 'border-b-2 border-rose-600 dark:border-rose-400 text-rose-600 dark:text-rose-400 font-bold' : 'text-slate-500 dark:text-slate-400'}`}
+        >
+          🔒 Proteção de Dados & Cibersegurança (Gesec)
+        </button>
+        <button 
+          onClick={() => setSubTab('quantitativo')}
+          className={`pb-3 transition-all flex items-center gap-1.5 ${subTab === 'quantitativo' ? 'border-b-2 border-emerald-600 dark:border-emerald-400 text-emerald-600 dark:text-emerald-400 font-bold' : 'text-slate-500 dark:text-slate-400'}`}
+        >
+          📊 Risco Quantitativo (Monte Carlo / ALE)
         </button>
       </div>
 
@@ -1029,97 +1137,156 @@ export default function OrganizacaoRiscos({ db }) {
           {/* Render da Árvore de Dependências */}
           {selectedBiaProc ? (
             <div className="overflow-x-auto p-6 bg-slate-100/50 dark:bg-slate-950/20 rounded-2xl border border-slate-200 dark:border-slate-850 min-w-full">
-              <div className="flex flex-col lg:flex-row items-stretch justify-between gap-6 min-w-[900px] py-4">
+              <div className="flex flex-col lg:flex-row items-stretch justify-between gap-4 min-w-[1100px] py-4">
                 
                 {/* 1. NÓ DO PROCESSO CRÍTICO */}
-                <div className="flex-1 bg-white dark:bg-slate-900 p-5 rounded-xl border border-l-4 border-l-indigo-650 border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-4 hover:shadow-md transition-shadow">
-                  <div className="space-y-3">
-                    <span className="text-[8px] bg-indigo-50 dark:bg-indigo-950 text-indigo-650 dark:text-indigo-400 px-2 py-0.5 rounded font-black uppercase">Processo</span>
-                    <h4 className="font-extrabold text-slate-850 dark:text-white text-xs mt-1">{selectedBiaProc.nome}</h4>
-                    <p className="text-[10px] text-slate-450 dark:text-slate-500 leading-relaxed line-clamp-3">{selectedBiaProc.descricao}</p>
+                <div className="flex-1 bg-white dark:bg-slate-900 p-4 rounded-xl border border-l-4 border-l-indigo-600 border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-3 hover:shadow-md transition-shadow">
+                  <div className="space-y-2">
+                    <span className="text-[8px] bg-indigo-50 dark:bg-indigo-950 text-indigo-650 dark:text-indigo-400 px-2 py-0.5 rounded font-black uppercase">1. Processo BIA</span>
+                    <h4 className="font-extrabold text-slate-850 dark:text-white text-xs mt-1 truncate" title={selectedBiaProc.nome}>{selectedBiaProc.nome}</h4>
+                    <p className="text-[10px] text-slate-450 dark:text-slate-500 leading-relaxed line-clamp-2">{selectedBiaProc.descricao || 'Sem descrição cadastrada.'}</p>
                   </div>
-                  <div className="border-t border-slate-100 dark:border-slate-850 pt-2.5 text-[9.5px] text-slate-500 space-y-1">
-                    <div>Criticidade: <span className={`font-bold ${selectedBiaProc.criticidade === 'Crítica' || selectedBiaProc.criticidade === 'Alta' ? 'text-rose-500' : 'text-slate-550'}`}>{selectedBiaProc.criticidade}</span></div>
-                    <div>Dono: <span className="font-bold">{selectedBiaProc.id_gerencia}</span></div>
+                  <div className="border-t border-slate-100 dark:border-slate-850 pt-2 text-[9.5px] text-slate-500 space-y-1">
+                    <div>Código: <span className="font-bold text-indigo-600 dark:text-indigo-400">{selectedBiaProc.id_processo}</span></div>
+                    <div>Criticidade BIA: <span className={`font-black ${selectedBiaProc.criticidade === 'Crítica' ? 'text-rose-500' : selectedBiaProc.criticidade === 'Alta' ? 'text-orange-500' : 'text-slate-550'}`}>{selectedBiaProc.criticidade}</span></div>
+                    <div>Gerência: <span className="font-bold">{selectedBiaProc.id_gerencia}</span></div>
                   </div>
                 </div>
 
                 {/* SETA 1 */}
-                <div className="flex items-center justify-center text-slate-400 dark:text-slate-600 font-black text-lg select-none">➔</div>
+                <div className="flex items-center justify-center text-slate-350 dark:text-slate-650 font-black text-lg select-none">➔</div>
 
-                {/* 2. NÓ DO CONTRATO */}
-                <div className="flex-1 bg-white dark:bg-slate-900 p-5 rounded-xl border border-l-4 border-l-teal-500 border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-4 hover:shadow-md transition-shadow">
-                  <div className="space-y-3">
-                    <span className="text-[8px] bg-teal-50 dark:bg-teal-950/40 text-teal-650 dark:text-teal-400 px-2 py-0.5 rounded font-black uppercase">Contrato Vinculado</span>
+                {/* 2. NÓ DO CONTRATO & PERDAS */}
+                <div className="flex-1 bg-white dark:bg-slate-900 p-4 rounded-xl border border-l-4 border-l-teal-500 border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-3 hover:shadow-md transition-shadow">
+                  <div className="space-y-2">
+                    <span className="text-[8px] bg-teal-50 dark:bg-teal-950/40 text-teal-650 dark:text-teal-400 px-2 py-0.5 rounded font-black uppercase">2. Contrato & Perdas</span>
                     {biaContrato ? (
                       <>
-                        <h4 className="font-extrabold text-slate-850 dark:text-white text-xs mt-1">{biaContrato.nome}</h4>
-                        <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed"><strong>SLA:</strong> {biaContrato.clausulas_risco}</p>
+                        <h4 className="font-extrabold text-slate-850 dark:text-white text-xs mt-1 truncate" title={biaContrato.nome}>{biaContrato.nome}</h4>
+                        <p className="text-[9.5px] text-teal-600 dark:text-teal-400 font-bold">R$ {biaContrato.valor_faturamento?.toLocaleString('pt-BR')} / ano</p>
                       </>
                     ) : (
                       <>
-                        <h4 className="font-bold text-slate-400 text-xs mt-1">Sem Contrato Externo</h4>
-                        <p className="text-[10px] text-slate-400 mt-1 italic">Processo de apoio interno ou contingenciado por recursos próprios.</p>
+                        <h4 className="font-bold text-slate-400 text-xs mt-1">Apoio Interno</h4>
+                        <p className="text-[9.5px] text-slate-400 italic">Sem contrato direto de cliente.</p>
                       </>
                     )}
                   </div>
-                  {biaContrato && (
-                    <div className="border-t border-slate-100 dark:border-slate-850 pt-2.5 text-[9.5px] text-slate-500 space-y-1">
-                      <div>Código: <span className="font-bold">{biaContrato.id_contrato}</span></div>
-                      <div>Valor: <span className="font-bold text-teal-600">R$ {biaContrato.valor_faturamento.toLocaleString('pt-BR')}</span></div>
+                  <div className="border-t border-slate-100 dark:border-slate-850 pt-2 text-[9.5px] text-slate-500 space-y-1">
+                    <div>Perda Est./Hora: <strong className="text-rose-600 dark:text-rose-400">R$ {biaPerdaHora.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}</strong></div>
+                    <div>Perda Est./Dia: <strong className="text-rose-600 dark:text-rose-400">R$ {(biaPerdaHora * 24).toLocaleString('pt-BR', { maximumFractionDigits: 2 })}</strong></div>
+                  </div>
+                </div>
+
+                {/* SETA 2 */}
+                <div className="flex items-center justify-center text-slate-350 dark:text-slate-650 font-black text-lg select-none">➔</div>
+
+                {/* 3. NÓ DE ATIVO CMDB */}
+                <div className="flex-1 bg-white dark:bg-slate-900 p-4 rounded-xl border border-l-4 border-l-purple-500 border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-3 hover:shadow-md transition-shadow">
+                  <div className="space-y-2">
+                    <span className="text-[8px] bg-purple-50 dark:bg-purple-950/40 text-purple-650 dark:text-purple-400 px-2 py-0.5 rounded font-black uppercase">3. Ativo CMDB (TI)</span>
+                    {biaAtivoCMDB ? (
+                      <>
+                        <h4 className="font-extrabold text-slate-850 dark:text-white text-xs mt-1 truncate" title={biaAtivoCMDB.nome}>{biaAtivoCMDB.nome}</h4>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className={`text-[8px] font-black px-1.5 py-0.2 rounded uppercase ${
+                            biaAtivoCMDB.criticidade_contrato === 'C0' ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400' :
+                            biaAtivoCMDB.criticidade_contrato === 'C1' ? 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400' :
+                            'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                          }`}>
+                            Crit. Contrato: {biaAtivoCMDB.criticidade_contrato || 'C3'}
+                          </span>
+                          <span className="text-[8px] bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300 px-1.5 py-0.2 rounded font-bold uppercase">
+                            {biaAtivoCMDB.tipo}
+                          </span>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <h4 className="font-bold text-slate-400 text-xs mt-1">Sem Ativo Vinculado</h4>
+                        <p className="text-[9.5px] text-slate-400 italic">Processo não exige DRP de TI.</p>
+                      </>
+                    )}
+                  </div>
+                  {biaAtivoCMDB && (
+                    <div className="border-t border-slate-100 dark:border-slate-850 pt-2 text-[9.5px] text-slate-500 space-y-0.5">
+                      <div>Redundância: <span className="font-bold">{biaAtivoCMDB.tipo_redundancia}</span></div>
+                      <div>Status: <span className="font-bold text-emerald-600">{biaAtivoCMDB.status_ativo}</span></div>
                     </div>
                   )}
                 </div>
 
-                {/* SETA 2 */}
-                <div className="flex items-center justify-center text-slate-400 dark:text-slate-600 font-black text-lg select-none">➔</div>
+                {/* SETA 3 */}
+                <div className="flex items-center justify-center text-slate-350 dark:text-slate-650 font-black text-lg select-none">➔</div>
 
-                {/* 3. NÓ DE ATIVOS DE TI */}
-                <div className="flex-1 bg-white dark:bg-slate-900 p-5 rounded-xl border border-l-4 border-l-purple-500 border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-4 hover:shadow-md transition-shadow">
-                  <div className="space-y-3">
-                    <span className="text-[8px] bg-purple-50 dark:bg-purple-950/40 text-purple-650 dark:text-purple-400 px-2 py-0.5 rounded font-black uppercase">Ativos & Infraestrutura</span>
-                    <div className="mt-2 space-y-1.5 max-h-[110px] overflow-y-auto pr-1">
-                      {biaAtivos.map(at => (
-                        <div key={at.id_ativo} className="flex justify-between items-center bg-slate-50 dark:bg-slate-955 px-2 py-1 rounded text-[9px] border border-slate-150 dark:border-slate-850">
-                          <span className="font-semibold text-slate-700 dark:text-slate-300 truncate w-32" title={at.nome}>{at.nome}</span>
-                          <span className={`px-1.5 rounded text-[8px] font-bold uppercase ${at.criticidade === 'Critica' ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-650'}`}>{at.criticidade}</span>
+                {/* 4. NÓ DE ESTRATÉGIA DE DR & SLAS */}
+                <div className="flex-1 bg-white dark:bg-slate-900 p-4 rounded-xl border border-l-4 border-l-amber-500 border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-3 hover:shadow-md transition-shadow">
+                  <div className="space-y-2">
+                    <span className="text-[8px] bg-amber-50 dark:bg-amber-950/40 text-amber-655 dark:text-amber-450 px-2 py-0.5 rounded font-black uppercase">4. Estratégia DR & SLAs</span>
+                    {selectedBiaProc.requer_drp ? (
+                      <>
+                        <h4 className="font-extrabold text-slate-850 dark:text-white text-xs mt-1 truncate" title={selectedBiaProc.estrategia_drp}>
+                          {selectedBiaProc.estrategia_drp || 'Não informada'}
+                        </h4>
+                        <div className="space-y-0.5 text-[9.5px] text-slate-500">
+                          <div>SLA Contrato: <strong className="text-slate-700 dark:text-slate-300">{selectedBiaProc.sla_contrato_cliente} min</strong></div>
+                          <div>SLA TIC: <strong className={biaGargaloSLA ? 'text-rose-500 font-black animate-pulse' : 'text-emerald-600 font-bold'}>{selectedBiaProc.sla_tic} min</strong></div>
                         </div>
-                      ))}
-                      {biaAtivos.length === 0 && (
-                        <span className="text-[10px] text-slate-400 italic">Nenhum ativo de TI mapeado no BIA.</span>
-                      )}
-                    </div>
+                      </>
+                    ) : (
+                      <>
+                        <h4 className="font-bold text-slate-400 text-xs mt-1">Dispensa DRP</h4>
+                        <p className="text-[9.5px] text-slate-400 italic">Não exige infraestrutura de contingência.</p>
+                      </>
+                    )}
                   </div>
-                  <div className="border-t border-slate-100 dark:border-slate-850 pt-2.5 text-[9.5px] text-slate-500">
-                    Total de Sistemas: <span className="font-bold text-purple-600">{biaAtivos.length}</span>
+                  <div className="border-t border-slate-100 dark:border-slate-850 pt-2 text-[9.5px]">
+                    {selectedBiaProc.requer_drp && biaGargaloSLA ? (
+                      <span className="text-[8.5px] bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400 px-2 py-0.5 rounded font-black uppercase animate-pulse inline-block">
+                        ⚠️ Gargalo de SLA Detectado
+                      </span>
+                    ) : selectedBiaProc.requer_drp ? (
+                      <span className="text-[8.5px] bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded font-black uppercase inline-block">
+                        ✅ SLA TIC Compatível
+                      </span>
+                    ) : (
+                      <span className="text-slate-400 italic">-</span>
+                    )}
                   </div>
                 </div>
 
-                {/* SETA 3 */}
-                <div className="flex items-center justify-center text-slate-400 dark:text-slate-600 font-black text-lg select-none">➔</div>
+                {/* SETA 4 */}
+                <div className="flex items-center justify-center text-slate-350 dark:text-slate-650 font-black text-lg select-none">➔</div>
 
-                {/* 4. NÓ DE RISCOS & CONTROLE RESIDUAL */}
-                <div className="flex-1 bg-white dark:bg-slate-900 p-5 rounded-xl border border-l-4 border-l-amber-500 border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-4 hover:shadow-md transition-shadow">
-                  <div className="space-y-3">
-                    <span className="text-[8px] bg-amber-50 dark:bg-amber-950/40 text-amber-655 dark:text-amber-450 px-2 py-0.5 rounded font-black uppercase">Riscos Associados</span>
-                    <div className="mt-2 space-y-1.5 max-h-[110px] overflow-y-auto pr-1">
-                      {biaRiscos.map(r => {
-                        const score = (r.impacto_residual * r.probabilidade_residual) || (r.impacto * r.probabilidade) || 0;
-                        const badgeColor = score >= 12 ? 'text-rose-600 bg-rose-50 border-rose-200/50' : score >= 8 ? 'text-orange-600 bg-orange-50 border-orange-200/50' : 'text-emerald-600 bg-emerald-50 border-emerald-200/50';
-                        return (
-                          <div key={r.id_risco} className="p-1 bg-slate-50 dark:bg-slate-955 rounded text-[9px] border border-slate-150 dark:border-slate-850 flex justify-between items-center">
-                            <span className="font-bold text-slate-700 dark:text-slate-350 truncate w-32" title={r.titulo}>{r.titulo}</span>
-                            <span className={`px-1.5 py-0.2 rounded text-[8px] font-black border ${badgeColor}`}>Score: {score}</span>
-                          </div>
-                        );
-                      })}
-                      {biaRiscos.length === 0 && (
-                        <span className="text-[10px] text-slate-400 italic">Sem riscos operacionais vinculados.</span>
-                      )}
-                    </div>
+                {/* 5. NÓ DE PLANO PCO/PRD & WORKFLOW */}
+                <div className="flex-1 bg-white dark:bg-slate-900 p-4 rounded-xl border border-l-4 border-l-emerald-500 border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-3 hover:shadow-md transition-shadow">
+                  <div className="space-y-2">
+                    <span className="text-[8px] bg-emerald-50 dark:bg-emerald-950/40 text-emerald-650 dark:text-emerald-400 px-2 py-0.5 rounded font-black uppercase">5. Plano PCO/PRD & Status</span>
+                    {biaPco ? (
+                      <>
+                        <h4 className="font-extrabold text-slate-850 dark:text-white text-xs mt-1">{biaPco.id_pco} (v{biaPco.versao})</h4>
+                        <span className={`inline-block px-2 py-0.5 rounded text-[8.5px] font-black uppercase ${
+                          biaPco.status_aprovacao === 'Vigente' ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-200' :
+                          'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400 border border-amber-200'
+                        }`}>
+                          {biaPco.status_aprovacao}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <h4 className="font-bold text-slate-400 text-xs mt-1">Plano Pendente</h4>
+                        <p className="text-[9.5px] text-slate-400 italic">PCO/PRD ainda não elaborado.</p>
+                      </>
+                    )}
                   </div>
-                  <div className="border-t border-slate-100 dark:border-slate-850 pt-2.5 text-[9.5px] text-slate-500">
-                    Riscos Mapeados: <span className="font-bold text-amber-600">{biaRiscos.length}</span>
+                  <div className="border-t border-slate-100 dark:border-slate-850 pt-2 text-[9.5px] text-slate-500">
+                    {biaPco?.parecer_tic ? (
+                      <div className="truncate text-indigo-600 dark:text-indigo-400 font-semibold" title={biaPco.parecer_tic}>
+                        Aval TIC: {biaPco.parecer_tic.substring(0, 30)}...
+                      </div>
+                    ) : (
+                      <div>Parecer TIC: <span className="text-slate-400 italic">Aguardando</span></div>
+                    )}
                   </div>
                 </div>
 
@@ -1132,6 +1299,566 @@ export default function OrganizacaoRiscos({ db }) {
           )}
         </div>
       )}
+
+      {/* SUB-ABA 5: PROTEÇÃO DE DADOS & CIBERSEGURANÇA (GESEC / ISO 27001 & LGPD) */}
+      {subTab === 'ciberseg' && (() => {
+        const todosAtivosCyber = db.ativosSistemas.list();
+        
+        // Filtros
+        const ativosFiltrados = todosAtivosCyber.filter(a => {
+          const matchClass = cyberFiltroClassificacao === 'todos' || 
+            (cyberFiltroClassificacao === 'confidencial' && (a.criticidade_contrato === 'C0' || a.id_ativo === 'ATV-SYS01' || a.id_ativo === 'ATV-SYS03')) ||
+            (cyberFiltroClassificacao === 'restrito' && a.criticidade_contrato === 'C1') ||
+            (cyberFiltroClassificacao === 'interno' && (a.criticidade_contrato === 'C2' || a.criticidade_contrato === 'C3'));
+          
+          const matchCrit = cyberFiltroCriticidade === 'todos' || a.criticidade_contrato === cyberFiltroCriticidade;
+          return matchClass && matchCrit;
+        });
+
+        // KPIs
+        const totalConfidenciais = todosAtivosCyber.filter(a => a.criticidade_contrato === 'C0' || a.id_ativo === 'ATV-SYS01' || a.id_ativo === 'ATV-SYS03').length;
+        const totalC0C1 = todosAtivosCyber.filter(a => a.criticidade_contrato === 'C0' || a.criticidade_contrato === 'C1').length;
+        const totalRedundancia = todosAtivosCyber.filter(a => a.tipo_redundancia === 'geografica' || a.tipo_redundancia === 'ativa' || a.criticidade_contrato === 'C0').length;
+        const scoreLGPD = Math.round((totalRedundancia / (todosAtivosCyber.length || 1)) * 100);
+
+        const ativoSimulacao = todosAtivosCyber.find(a => a.id_ativo === cyberSimuladorAtivoId);
+        const processoSimulacao = ativoSimulacao ? db.processosCriticos.list().find(p => p.ativo_cmdb_id === ativoSimulacao.id_ativo) : null;
+        const contratoSimulacao = processoSimulacao ? db.contratos.list().find(c => c.id_contrato === processoSimulacao.id_contrato_cliente) : null;
+
+        // Cálculo de Risco LGPD (Multa 2% faturamento até R$ 50M)
+        const multaLGPD = contratoSimulacao ? Math.min(50000000, (contratoSimulacao.valor_faturamento || 10000000) * 0.02) : 200000;
+
+        return (
+          <div className="space-y-6 animate-fade-in">
+            
+            {/* Header da Aba Gesec */}
+            <div className="bg-slate-900 text-white p-6 rounded-2xl border border-slate-800 shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="bg-rose-500/20 text-rose-400 border border-rose-500/30 px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider">
+                    Gesec — Cibersegurança & Privacidade
+                  </span>
+                  <span className="text-slate-400 text-xs">• Responsável: Diego Ferreira</span>
+                </div>
+                <h3 className="text-lg font-black tracking-tight text-white flex items-center gap-2">
+                  🔒 Painel de Proteção de Dados LGPD & Resiliência Cibernética (ISO 27001)
+                </h3>
+                <p className="text-xs text-slate-400 max-w-3xl leading-relaxed">
+                  Monitoramento contínuo de ativos CMDB com dados confidenciais/pessoais, redundância geográfica, criptografia de backup e mitigação de vazamentos em conformidade com a LGPD (Lei 13.709/2018), ISO 27001 (SGSI), ISO 27031:2023 e NIST CSF.
+                </p>
+              </div>
+              <div className="flex gap-2 flex-wrap text-[10px] font-bold">
+                <span className="bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300">ISO 27001</span>
+                <span className="bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300">ISO 27031</span>
+                <span className="bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300">NIST CSF</span>
+                <span className="bg-rose-950/60 border border-rose-500/30 text-rose-300 px-3 py-1.5 rounded-lg">LGPD</span>
+              </div>
+            </div>
+
+            {/* Cards KPI Gesec */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Ativos Confidenciais (LGPD)</span>
+                <div className="flex justify-between items-baseline">
+                  <strong className="text-2xl font-black text-rose-600 dark:text-rose-400">{totalConfidenciais}</strong>
+                  <span className="text-[10px] font-bold text-slate-400">Dados Pessoais / PI</span>
+                </div>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400">Sistemas com tratamento de dados sensíveis</p>
+              </div>
+
+              <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Ativos C0 / C1 CMDB</span>
+                <div className="flex justify-between items-baseline">
+                  <strong className="text-2xl font-black text-amber-600 dark:text-amber-400">{totalC0C1}</strong>
+                  <span className="text-[10px] font-bold text-slate-400">Alta Criticidade</span>
+                </div>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400">Exigem criptografia & backup imutável</p>
+              </div>
+
+              <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Redundância Geográfica</span>
+                <div className="flex justify-between items-baseline">
+                  <strong className="text-2xl font-black text-indigo-600 dark:text-indigo-400">{totalRedundancia}</strong>
+                  <span className="text-[10px] font-bold text-slate-400">Multi-Region</span>
+                </div>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400">Protegidos contra falha de Data Center</p>
+              </div>
+
+              <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Índice Conformidade LGPD</span>
+                <div className="flex justify-between items-baseline">
+                  <strong className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{scoreLGPD}%</strong>
+                  <span className="text-[10px] font-bold text-emerald-500">Adequado</span>
+                </div>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400">Controles de criptografia & privacidade</p>
+              </div>
+            </div>
+
+            {/* Filtros de Inventário Cyber */}
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs flex flex-col sm:flex-row justify-between items-center gap-4 text-xs">
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                <span className="font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">Filtrar por:</span>
+                
+                <select 
+                  value={cyberFiltroClassificacao}
+                  onChange={(e) => setCyberFiltroClassificacao(e.target.value)}
+                  className="bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 font-semibold text-slate-800 dark:text-slate-200 focus:outline-rose-500"
+                >
+                  <option value="todos">Todas as Classificações LGPD</option>
+                  <option value="confidencial">Confidencial (Dados Pessoais / PII)</option>
+                  <option value="restrito">Restrito (Dados Negócio)</option>
+                  <option value="interno">Uso Interno</option>
+                </select>
+
+                <select 
+                  value={cyberFiltroCriticidade}
+                  onChange={(e) => setCyberFiltroCriticidade(e.target.value)}
+                  className="bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 font-semibold text-slate-800 dark:text-slate-200 focus:outline-rose-500"
+                >
+                  <option value="todos">Todas as Criticidades CMDB</option>
+                  <option value="C0">C0 - Crítico Máximo</option>
+                  <option value="C1">C1 - Alta Criticidade</option>
+                  <option value="C2">C2 - Média Criticidade</option>
+                  <option value="C3">C3 - Baixa Criticidade</option>
+                </select>
+              </div>
+
+              <span className="text-[11px] text-slate-400 font-medium">Exibindo {ativosFiltrados.length} de {todosAtivosCyber.length} ativos CMDB</span>
+            </div>
+
+            {/* Tabela de Ativos e Governança de Proteção de Dados */}
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
+              <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-955 flex justify-between items-center">
+                <h4 className="font-extrabold text-slate-850 dark:text-white text-xs uppercase tracking-wider">
+                  Matriz de Ativos CMDB & Controles de Segurança (Gesec)
+                </h4>
+                <span className="text-[10px] text-slate-400 font-semibold">ISO 27001 Controls & LGPD §46</span>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300">
+                  <thead className="bg-slate-100 dark:bg-slate-850 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200 dark:border-slate-800">
+                    <tr>
+                      <th className="p-3.5">Ativo CMDB & Gerência</th>
+                      <th className="p-3.5">Criticidade CMDB</th>
+                      <th className="p-3.5">Classificação LGPD</th>
+                      <th className="p-3.5">Controles de Segurança Cibernética</th>
+                      <th className="p-3.5 text-center">Conformidade ISO 27001</th>
+                      <th className="p-3.5 text-right">Ação</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-850">
+                    {ativosFiltrados.map((atv) => {
+                      const isConfidencial = atv.criticidade_contrato === 'C0' || atv.id_ativo === 'ATV-SYS01' || atv.id_ativo === 'ATV-SYS03';
+                      const isC0C1 = atv.criticidade_contrato === 'C0' || atv.criticidade_contrato === 'C1';
+
+                      return (
+                        <tr key={atv.id_ativo} className="hover:bg-slate-50 dark:hover:bg-slate-850/50 transition-colors">
+                          
+                          {/* Nome e Gerência */}
+                          <td className="p-3.5">
+                            <strong className="text-slate-900 dark:text-white block font-bold">{atv.nome}</strong>
+                            <span className="text-[10px] text-slate-400 font-mono">{atv.id_ativo} • {atv.tipo}</span>
+                          </td>
+
+                          {/* Criticidade CMDB */}
+                          <td className="p-3.5">
+                            <span className={`text-[9px] font-black px-2 py-0.5 rounded uppercase ${
+                              atv.criticidade_contrato === 'C0' ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400' :
+                              atv.criticidade_contrato === 'C1' ? 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400' :
+                              'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                            }`}>
+                              {atv.criticidade_contrato || 'C0'}
+                            </span>
+                          </td>
+
+                          {/* Classificação LGPD */}
+                          <td className="p-3.5">
+                            {isConfidencial ? (
+                              <span className="bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 text-[9px] font-black px-2 py-0.5 rounded uppercase border border-rose-300 dark:border-rose-800">
+                                🔒 CONFIDENCIAL / DADOS PESSOAIS
+                              </span>
+                            ) : isC0C1 ? (
+                              <span className="bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 text-[9px] font-black px-2 py-0.5 rounded uppercase border border-amber-300 dark:border-amber-800">
+                                🔑 RESTRITO (DADOS NEGÓCIO)
+                              </span>
+                            ) : (
+                              <span className="bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 text-[9px] font-bold px-2 py-0.5 rounded uppercase">
+                                📁 USO INTERNO
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Controles de Cibersegurança */}
+                          <td className="p-3.5">
+                            <div className="flex flex-wrap gap-1 text-[9px]">
+                              <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-1.5 py-0.5 rounded font-semibold">
+                                🔒 AES-256 (Repouso)
+                              </span>
+                              <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-1.5 py-0.5 rounded font-semibold">
+                                🌐 TLS 1.3 (Trânsito)
+                              </span>
+                              {isC0C1 && (
+                                <span className="bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded font-bold">
+                                  🛡️ Backup Imutável
+                                </span>
+                              )}
+                              {atv.tipo_redundancia && (
+                                <span className="bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 px-1.5 py-0.5 rounded font-bold">
+                                  Multi-Region ({atv.tipo_redundancia})
+                                </span>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* Status ISO 27001 */}
+                          <td className="p-3.5 text-center">
+                            <span className="bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 font-extrabold text-[9px] px-2.5 py-1 rounded-full border border-emerald-300 dark:border-emerald-800">
+                              ✅ CONFORME ISO 27001
+                            </span>
+                          </td>
+
+                          {/* Ação */}
+                          <td className="p-3.5 text-right">
+                            <button
+                              onClick={() => setCyberSimuladorAtivoId(atv.id_ativo)}
+                              className="bg-rose-600 hover:bg-rose-700 text-white font-bold px-3 py-1.5 rounded-lg text-[10px] transition-colors shadow-2xs"
+                            >
+                              🚨 Simular Vazamento LGPD
+                            </button>
+                          </td>
+
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* MODAL / CARD DE SIMULAÇÃO DE VAZAMENTO DE DADOS & IMPACTO REGULATÓRIO */}
+            {ativoSimulacao && (
+              <div className="bg-slate-900 border-2 border-rose-500/50 p-6 rounded-2xl text-white space-y-4 shadow-2xl animate-scale-up">
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">🚨</span>
+                    <div>
+                      <h4 className="font-black text-rose-400 text-sm uppercase">
+                        Diagnóstico de Impacto por Vazamento de Dados (LGPD §52)
+                      </h4>
+                      <p className="text-[11px] text-slate-400">Ativo CMDB: <strong>{ativoSimulacao.nome}</strong> ({ativoSimulacao.id_ativo})</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setCyberSimuladorAtivoId('')}
+                    className="text-slate-400 hover:text-white font-bold text-xs"
+                  >
+                    ✕ Fechar Diagnóstico
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                  <div className="bg-slate-800/80 p-4 rounded-xl border border-slate-700">
+                    <span className="text-[9px] text-slate-400 font-bold uppercase block">Risco de Multa LGPD Estima</span>
+                    <strong className="text-xl font-black text-rose-400 mt-1 block">
+                      R$ {multaLGPD.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </strong>
+                    <span className="text-[9px] text-slate-400 block mt-1">Até 2% do faturamento (Lei 13.709 §52)</span>
+                  </div>
+
+                  <div className="bg-slate-800/80 p-4 rounded-xl border border-slate-700">
+                    <span className="text-[9px] text-slate-400 font-bold uppercase block">Classificação da Informação</span>
+                    <strong className="text-sm font-bold text-amber-300 mt-1 block uppercase">
+                      CONFIDENCIAL / DADOS DE CLIENTES
+                    </strong>
+                    <span className="text-[9px] text-slate-400 block mt-1">Exige notificação imediata à ANPD em 48h</span>
+                  </div>
+
+                  <div className="bg-slate-800/80 p-4 rounded-xl border border-slate-700">
+                    <span className="text-[9px] text-slate-400 font-bold uppercase block">Status da Criptografia & Contingência</span>
+                    <strong className="text-sm font-bold text-emerald-400 mt-1 block">
+                      AES-256 OK • BACKUP IMUTÁVEL OK
+                    </strong>
+                    <span className="text-[9px] text-slate-400 block mt-1">Mitigador atenuante perante autoridade reguladora</span>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-rose-950/40 border border-rose-500/30 rounded-xl space-y-2 text-xs">
+                  <h5 className="font-bold text-rose-300 uppercase text-[11px]">Plano de Resposta a Incidentes Cibernéticos (NIST CSF Respond):</h5>
+                  <ul className="list-disc list-inside space-y-1 text-slate-300 text-[11px]">
+                    <li><strong>Contenção Imediata:</strong> Isolar credenciais e revogar tokens de acesso à API em menos de 15 minutos.</li>
+                    <li><strong>Notificação ANPD & DPO:</strong> Emitir comunicado formal ao encarregado de dados (DPO) e à autoridade em até 48h.</li>
+                    <li><strong>Restauração por Backup Imutável:</strong> Acionar réplica geograficamente isolada e validar hash de integridade SHA-256.</li>
+                  </ul>
+                </div>
+              </div>
+            )}
+
+          </div>
+        );
+      })()}
+
+      {/* SUB-ABA 6: ANÁLISE QUANTITATIVA DE RISCO FINANCEIRO (MONTE CARLO / ALE / SLE) */}
+      {subTab === 'quantitativo' && (() => {
+        const procSelecionado = processos.find(p => p.id_processo === quantProcId);
+        const contratoProc = procSelecionado ? db.contratos.list().find(c => c.id_contrato === procSelecionado.id_contrato_cliente) : null;
+        const assetValueCalc = contratoProc?.valor_faturamento || 5000000;
+        const sleCalc = assetValueCalc * quantEf;
+        const aleCalcSemDRP = sleCalc * quantAro;
+        const aleCalcComDRP = aleCalcSemDRP * (1 - quantMitigacaoEficiencia);
+        const economiaCalc = aleCalcSemDRP - aleCalcComDRP;
+        const rosiCalc = ((economiaCalc - quantCustoDrp) / (quantCustoDrp || 1)) * 100;
+
+        return (
+          <div className="space-y-6 animate-fade-in text-xs">
+            
+            {/* Header da Aba Quantitativa */}
+            <div className="bg-slate-900 text-white p-6 rounded-2xl border border-slate-800 shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider">
+                    Modelagem Quantitativa FAIR / ISO 27005
+                  </span>
+                  <span className="text-slate-400 text-xs">• 1.000 Iterações Estocásticas</span>
+                </div>
+                <h3 className="text-lg font-black tracking-tight text-white flex items-center gap-2">
+                  📊 Simulador de Análise Quantitativa de Risco Financeiro (ALE / SLE / ROSI)
+                </h3>
+                <p className="text-xs text-slate-400 max-w-3xl leading-relaxed">
+                  Calcule a expectativa de perdas financeiras anuais (ALE), exposição por único incidente (SLE) e a justificativa econômica do investimento em DRP/PCO (ROSI) através de simulações de Monte Carlo.
+                </p>
+              </div>
+              <div className="flex gap-2 flex-wrap text-[10px] font-bold">
+                <span className="bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300">FAIR Framework</span>
+                <span className="bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300">ISO 27005</span>
+                <span className="bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 px-3 py-1.5 rounded-lg">Monte Carlo 1.000x</span>
+              </div>
+            </div>
+
+            {/* Painel de Controles da Simulação */}
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
+              <h4 className="font-extrabold text-slate-850 dark:text-white text-xs uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 pb-3">
+                1. Parâmetros de Entrada & Ameaça
+              </h4>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                
+                {/* Seletor de Processo */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase">Processo sob Análise *</label>
+                  <select 
+                    value={quantProcId}
+                    onChange={(e) => setQuantProcId(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 font-bold text-slate-850 dark:text-slate-200 focus:outline-emerald-500"
+                  >
+                    {processos.map(p => (
+                      <option key={p.id_processo} value={p.id_processo}>{p.id_processo} - {p.nome}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Preset de Ameaça */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase">Preset de Ameaça de Risco</label>
+                  <select 
+                    value={quantAmeaca}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setQuantAmeaca(val);
+                      if (val === 'ransomware') { setQuantEf(0.45); setQuantAro(0.5); }
+                      else if (val === 'outage_dc') { setQuantEf(0.30); setQuantAro(0.2); }
+                      else if (val === 'vendor_failure') { setQuantEf(0.25); setQuantAro(0.3); }
+                      else if (val === 'sinistro') { setQuantEf(0.70); setQuantAro(0.05); }
+                    }}
+                    className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 font-semibold text-slate-850 dark:text-slate-200 focus:outline-emerald-500"
+                  >
+                    <option value="ransomware">🛡️ Ransomware / Ciberataque (EF 45%, ARO 0.5/ano)</option>
+                    <option value="outage_dc">⚡ Queda Data Center / Nuvem (EF 30%, ARO 0.2/ano)</option>
+                    <option value="vendor_failure">🏢 Falha de Fornecedor Crítico (EF 25%, ARO 0.3/ano)</option>
+                    <option value="sinistro">🔥 Sinistro Físico / Incêndio (EF 70%, ARO 0.05/ano)</option>
+                  </select>
+                </div>
+
+                {/* Fator de Exposição (EF) */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase">Fator de Exposição (EF: {(quantEf * 100).toFixed(0)}%)</label>
+                  <input 
+                    type="range"
+                    min="0.05"
+                    max="1.0"
+                    step="0.05"
+                    value={quantEf}
+                    onChange={(e) => setQuantEf(parseFloat(e.target.value))}
+                    className="w-full accent-emerald-600 cursor-pointer mt-2"
+                  />
+                  <span className="text-[9px] text-slate-400 block">% do valor do ativo perdido por evento</span>
+                </div>
+
+                {/* Frequência Anual (ARO) */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase">Frequência Anual de Ocorrência (ARO)</label>
+                  <input 
+                    type="number"
+                    step="0.05"
+                    min="0.01"
+                    max="5.0"
+                    value={quantAro}
+                    onChange={(e) => setQuantAro(parseFloat(e.target.value) || 0.1)}
+                    className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 font-bold text-slate-850 dark:text-slate-200"
+                  />
+                  <span className="text-[9px] text-slate-400 block">Ex: 0.5 = 1 ocorrência a cada 2 anos</span>
+                </div>
+
+                {/* Eficiência da Mitigação DRP */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase">Eficiência Mitigatória do DRP ({(quantMitigacaoEficiencia * 100).toFixed(0)}%)</label>
+                  <input 
+                    type="range"
+                    min="0.10"
+                    max="0.99"
+                    step="0.05"
+                    value={quantMitigacaoEficiencia}
+                    onChange={(e) => setQuantMitigacaoEficiencia(parseFloat(e.target.value))}
+                    className="w-full accent-emerald-600 cursor-pointer mt-2"
+                  />
+                  <span className="text-[9px] text-slate-400 block">% do dano financeiro absorvido pela contingência</span>
+                </div>
+
+                {/* Custo Anual da Contingência */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase">Custo Anual do DRP / PCO (R$)</label>
+                  <input 
+                    type="number"
+                    step="10000"
+                    value={quantCustoDrp}
+                    onChange={(e) => setQuantCustoDrp(parseFloat(e.target.value) || 0)}
+                    className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 font-bold text-slate-850 dark:text-slate-200"
+                  />
+                  <span className="text-[9px] text-slate-400 block">Orçamento anual de infraestrutura de DR</span>
+                </div>
+
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <button 
+                  onClick={rodarSimulacaoMonteCarlo}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-black px-6 py-3 rounded-xl transition-all shadow-md text-xs flex items-center gap-2 cursor-pointer"
+                >
+                  🎲 Executar 1.000 Simulações de Monte Carlo
+                </button>
+              </div>
+            </div>
+
+            {/* Painel de Resultados Nominal FAIR */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs space-y-1">
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Valor do Ativo em Risco (AV)</span>
+                <strong className="text-xl font-black text-slate-900 dark:text-white block">
+                  R$ {assetValueCalc.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </strong>
+                <span className="text-[9px] text-slate-400 block">Faturamento anual do contrato</span>
+              </div>
+
+              <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs space-y-1">
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Single Loss Expectancy (SLE)</span>
+                <strong className="text-xl font-black text-rose-600 dark:text-rose-400 block">
+                  R$ {sleCalc.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </strong>
+                <span className="text-[9px] text-slate-400 block">Perda financeira por evento único (AV x EF)</span>
+              </div>
+
+              <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs space-y-1">
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">ALE Sem DRP (Anual Esperado)</span>
+                <strong className="text-xl font-black text-amber-600 dark:text-amber-400 block">
+                  R$ {aleCalcSemDRP.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </strong>
+                <span className="text-[9px] text-slate-400 block">Perda anual projetada sem contingência</span>
+              </div>
+
+              <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs space-y-1">
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Retorno do Investimento (ROSI)</span>
+                <strong className={`text-xl font-black block ${rosiCalc >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600'}`}>
+                  {rosiCalc.toFixed(1)}% ROSI
+                </strong>
+                <span className="text-[9px] text-slate-400 block">Justificativa financeira do DRP</span>
+              </div>
+            </div>
+
+            {/* RESULTADOS DA SIMULAÇÃO DE MONTE CARLO (1.000 ITERAÇÕES) */}
+            {monteCarloResults && (
+              <div className="bg-slate-900 text-white p-6 rounded-2xl border border-slate-800 space-y-6 shadow-2xl animate-scale-up">
+                <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">🎲</span>
+                    <div>
+                      <h4 className="font-black text-emerald-400 text-sm uppercase">
+                        Distribuição Estocástica de Monte Carlo (1.000 Iterações)
+                      </h4>
+                      <p className="text-[10px] text-slate-400">Processo: <strong>{procSelecionado?.nome}</strong> • Ameaça: <strong>{quantAmeaca.toUpperCase()}</strong></p>
+                    </div>
+                  </div>
+                  <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-lg text-[10px] font-black uppercase">
+                    Economia Estimada: R$ {monteCarloResults.economiaAnual.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/ano
+                  </span>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs text-slate-300">
+                    <thead className="bg-slate-800 text-[10px] font-black uppercase text-slate-400 border-b border-slate-700">
+                      <tr>
+                        <th className="p-3">Cenário de Confiança</th>
+                        <th className="p-3">Sem Contingência DRP (Perda R$)</th>
+                        <th className="p-3">Com Contingência DRP (Perda R$)</th>
+                        <th className="p-3 text-right">Redução do Risco (%)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800 text-xs">
+                      <tr className="hover:bg-slate-800/50">
+                        <td className="p-3 font-bold text-slate-200">Média Estocástica (Expected Loss)</td>
+                        <td className="p-3 text-amber-400 font-bold">R$ {monteCarloResults.semDRP.media.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                        <td className="p-3 text-emerald-400 font-bold">R$ {monteCarloResults.comDRP.media.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                        <td className="p-3 text-right font-black text-emerald-400">-{(quantMitigacaoEficiencia * 100).toFixed(0)}%</td>
+                      </tr>
+                      <tr className="hover:bg-slate-800/50">
+                        <td className="p-3 font-bold text-slate-200">P50 (Cenário Provável / Mediana)</td>
+                        <td className="p-3 font-semibold">R$ {monteCarloResults.semDRP.p50.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                        <td className="p-3 font-semibold text-emerald-300">R$ {monteCarloResults.comDRP.p50.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                        <td className="p-3 text-right text-emerald-400">-{(quantMitigacaoEficiencia * 100).toFixed(0)}%</td>
+                      </tr>
+                      <tr className="hover:bg-slate-800/50">
+                        <td className="p-3 font-bold text-slate-200">P90 (Cenário Severo)</td>
+                        <td className="p-3 font-semibold text-orange-400">R$ {monteCarloResults.semDRP.p90.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                        <td className="p-3 font-semibold text-emerald-300">R$ {monteCarloResults.comDRP.p90.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                        <td className="p-3 text-right text-emerald-400">-{(quantMitigacaoEficiencia * 100).toFixed(0)}%</td>
+                      </tr>
+                      <tr className="hover:bg-slate-800/50 bg-rose-950/20">
+                        <td className="p-3 font-bold text-rose-400">P95 — Value at Risk (VaR 95%)</td>
+                        <td className="p-3 font-black text-rose-400">R$ {monteCarloResults.semDRP.p95.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                        <td className="p-3 font-black text-emerald-400">R$ {monteCarloResults.comDRP.p95.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                        <td className="p-3 text-right font-black text-emerald-400">-{(quantMitigacaoEficiencia * 100).toFixed(0)}%</td>
+                      </tr>
+                      <tr className="hover:bg-slate-800/50 bg-rose-950/40">
+                        <td className="p-3 font-bold text-rose-300">P99 — Catástrofe Extrema (Tail Risk)</td>
+                        <td className="p-3 font-black text-rose-300">R$ {monteCarloResults.semDRP.p99.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                        <td className="p-3 font-black text-emerald-300">R$ {monteCarloResults.comDRP.p99.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                        <td className="p-3 text-right font-black text-emerald-400">-{(quantMitigacaoEficiencia * 100).toFixed(0)}%</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="p-4 bg-emerald-950/40 border border-emerald-500/30 rounded-xl space-y-1 text-slate-300 text-[11px]">
+                  <h5 className="font-bold text-emerald-400 uppercase text-[11px]">Conclusão de Governança Quantitativa:</h5>
+                  <p>
+                    Com um orçamento anual de <strong>R$ {quantCustoDrp.toLocaleString('pt-BR')}</strong> no DRP/PCO, a organização reduz o <strong>Value at Risk (P95)</strong> de R$ {monteCarloResults.semDRP.p95.toLocaleString('pt-BR')} para R$ {monteCarloResults.comDRP.p95.toLocaleString('pt-BR')}, gerando um <strong>ROSI de {monteCarloResults.rosi.toFixed(1)}%</strong>. O investimento é plenamente justificável perante a diretoria executiva e conselho de administração.
+                  </p>
+                </div>
+              </div>
+            )}
+
+          </div>
+        );
+      })()}
 
     </div>
   );

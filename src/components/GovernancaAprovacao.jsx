@@ -9,10 +9,10 @@ import { notificationService } from '../services/notificationService';
 
 // ── Constantes de Workflow ───────────────────────────────────────────────────
 const ALCADAS = [
-  { key: 'geric',   label: 'Validação GERIC (2ª Linha)', icon: ShieldCheck,   pendente: 'Pendente GERIC',        devolvido: 'Devolvido GERIC',    roles: ['admin_geric'] },
-  { key: 'tic',     label: 'Aval TIC / ANS',             icon: Cpu,           pendente: 'Pendente TIC',           devolvido: 'Devolvido TIC',      roles: ['tic', 'admin_geric'] },
-  { key: 'gerente', label: 'Assinatura Gerente Exec',   icon: User,          pendente: 'Pendente Gerente Exec',  devolvido: 'Devolvido Gerente',  roles: ['gerente_exec', 'admin_geric'] },
-  { key: 'comite',  label: 'Deliberação Comitê Conti',   icon: Award,         pendente: 'Pendente Comitê',        devolvido: 'Reprovado Comitê',   roles: ['conti', 'admin_geric'] },
+  { key: 'geric',   label: 'Validação GERIC (2ª Linha)', icon: ShieldCheck,   pendente: 'Pendente GERIC',        devolvido: 'Devolvido GERIC',    roles: ['admin_geric', 'tic_governanca'] },
+  { key: 'tic',     label: 'Aval TIC / ANS',             icon: Cpu,           pendente: 'Pendente TIC',           devolvido: 'Devolvido TIC',      roles: ['tic', 'tic_governanca', 'tic_executor', 'admin_geric'] },
+  { key: 'gerente', label: 'Assinatura Gerente Exec',   icon: User,          pendente: 'Pendente Gerente Exec',  devolvido: 'Devolvido Gerente',  roles: ['gerente_exec', 'tic_governanca', 'admin_geric'] },
+  { key: 'comite',  label: 'Deliberação Comitê Conti',   icon: Award,         pendente: 'Pendente Comitê',        devolvido: 'Reprovado Comitê',   roles: ['conti', 'tic_governanca', 'admin_geric'] },
 ];
 
 const STATUS_ORDER = {
@@ -218,8 +218,42 @@ function PlanCard({ plano, db, usuario, onRefresh }) {
       }
     }
 
-    if (podeAgir(['tic', 'admin_geric']) && status === 'Pendente TIC') {
+    if (podeAgir(['tic', 'tic_executor', 'tic_governanca', 'admin_geric']) && status === 'Pendente TIC') {
       const semAns = !ansVigente && !dispensaAns;
+      const requerDRP = plano.processo?.requer_drp;
+      const slaGargalo = requerDRP && Number(plano.processo.sla_tic) > Number(plano.processo.sla_contrato_cliente);
+      
+      const prepararCamposExtras = () => {
+        const fields = [];
+        if (semAns) {
+          fields.push({ key: 'ans_vinculado', label: 'Informe o nº do ANS/Contrato verificado', type: 'text', placeholder: 'Ex: CTR-001 ou SEM-ANS-FORMAL', required: false });
+        }
+        if (requerDRP) {
+          fields.push({
+            key: 'validacao_procedimentos',
+            label: 'Os procedimentos de restauração estão condizentes com a estratégia?',
+            type: 'select',
+            options: [
+              { value: 'Sim', label: 'Sim, validados e compatíveis com a estratégia' },
+              { value: 'Não', label: 'Não, exigem revisão técnica' }
+            ],
+            required: true
+          });
+          if (slaGargalo) {
+            fields.push({
+              key: 'aceite_termo_risco',
+              label: 'Declaro ciência do GARGALO de SLA (Meta TIC > Contrato Cliente) e ACEITO o Termo de Risco Operacional',
+              type: 'select',
+              options: [
+                { value: 'Sim, aceito o termo de risco', label: 'Sim, Aceito o Termo de Risco Operacional' }
+              ],
+              required: true
+            });
+          }
+        }
+        return fields.length > 0 ? fields : null;
+      };
+
       return (
         <div className="flex flex-col gap-2">
           {semAns && (
@@ -243,10 +277,33 @@ function PlanCard({ plano, db, usuario, onRefresh }) {
               <span className="text-sky-700 dark:text-sky-400 font-bold">Dispensa registrada: {dispensaAns}</span>
             </div>
           )}
-          <div className="flex flex-wrap gap-2">
+          
+          {/* Painel do DRP Técnico */}
+          {requerDRP && (
+            <div className={`p-3 border rounded-lg text-[10px] space-y-1.5 ${slaGargalo ? 'bg-rose-50/50 dark:bg-rose-950/20 border-rose-300/40' : 'bg-indigo-50/30 dark:bg-indigo-950/10 border-indigo-200/40'}`}>
+              <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-700 dark:text-slate-350 uppercase">
+                🛡️ Validação Técnica de DRP
+              </div>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-slate-500 dark:text-slate-400">
+                <div>Ativo CMDB: <strong className="text-slate-750 dark:text-slate-200">{plano.processo.ativo_cmdb_id}</strong></div>
+                <div>Estratégia: <strong className="text-slate-750 dark:text-slate-200">{plano.processo.estrategia_drp}</strong></div>
+                <div>SLA Contrato: <strong className="text-slate-750 dark:text-slate-200">{plano.processo.sla_contrato_cliente} min</strong></div>
+                <div>SLA TIC: <strong className={slaGargalo ? 'text-rose-500 font-black animate-pulse' : 'text-emerald-500 font-bold'}>{plano.processo.sla_tic} min</strong></div>
+              </div>
+              {slaGargalo && (
+                <div className="text-[9px] text-rose-600 dark:text-rose-400 font-bold flex items-center gap-1">
+                  ⚠️ Incompatibilidade detectada: Risco de quebra de SLA no cliente final. Aceite de termo de risco obrigatório!
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-2 mt-1">
             <button
-              onClick={() => abrirModal('aval_tic', 'Aval TIC — Aprovar e encaminhar ao Gerente Executivo', 'Descreva o aval técnico da TIC (PRD, redundância, ANS verificado)...', 'Pendente Gerente Exec',
-                semAns ? [{ key: 'ans_vinculado', label: 'Informe o nº do ANS/Contrato verificado', type: 'text', placeholder: 'Ex: CTR-001 ou SEM-ANS-FORMAL', required: false }] : null
+              onClick={() => abrirModal('aval_tic', 'Aval TIC — Aprovar e encaminhar ao Gerente Executivo', 
+                slaGargalo ? 'Descreva os motivos técnicos e de negócios para aprovar este plano MESMO com incompatibilidade de SLA (Parecer de Termo de Risco)...' : 'Descreva o aval técnico da TIC (PRD, redundância, ANS verificado)...', 
+                'Pendente Gerente Exec',
+                prepararCamposExtras()
               )}
               className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold cursor-pointer transition-colors flex items-center gap-1"
             >
@@ -335,7 +392,17 @@ function PlanCard({ plano, db, usuario, onRefresh }) {
       camposExtras.parecer_geric = parecer;
     }
     if (modal.proxStatus === 'Pendente Gerente Exec') {
-      camposExtras.parecer_tic = parecer;
+      let finalParecer = parecer;
+      if (extras?.validacao_procedimentos) {
+        camposExtras.validacao_procedimentos_tic = extras.validacao_procedimentos;
+        finalParecer = `[Procedimentos Validados: ${extras.validacao_procedimentos}] ${finalParecer}`;
+      }
+      if (extras?.aceite_termo_risco) {
+        camposExtras.aceite_termo_risco_tic = extras.aceite_termo_risco;
+        finalParecer = `[TERMO DE RISCO OPERACIONAL ACEITO] ${finalParecer}`;
+      }
+      camposExtras.parecer_tic = finalParecer;
+      parecer = finalParecer;
     }
     if (modal.proxStatus === 'Pendente Comitê') {
       camposExtras.parecer_gerente = parecer;

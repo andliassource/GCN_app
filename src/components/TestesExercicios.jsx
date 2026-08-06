@@ -29,6 +29,33 @@ export default function TestesExercicios({ db }) {
   const [tabletopParticipantes, setTabletopParticipantes] = useState('');
   const [planosAcao, setPlanosAcao] = useState(db.planosAcao ? db.planosAcao.list() : []);
 
+  // Estados para o Simulador de Failover / Comutação de DR (ISO 27031 / NIST CSF)
+  const [showFailoverSim, setShowFailoverSim] = useState(false);
+  const [failoverProcId, setFailoverProcId] = useState(db.processosCriticos.list()[0]?.id_processo || '');
+  const [failoverTimer, setFailoverTimer] = useState(0);
+  const [failoverActive, setFailoverActive] = useState(false);
+  const [failoverStep, setFailoverStep] = useState(1); // 1: Setup, 2: Comutação Ativa, 3: Conclusão
+  const [failoverChecklist, setFailoverChecklist] = useState({
+    step1: false,
+    step2: false,
+    step3: false,
+    step4: false,
+    step5: false
+  });
+  const [failoverOperador, setFailoverOperador] = useState('');
+
+  useEffect(() => {
+    let interval = null;
+    if (failoverActive) {
+      interval = setInterval(() => {
+        setFailoverTimer(prev => prev + 1);
+      }, 1000);
+    } else {
+      clearInterval(interval);
+    }
+    return () => clearInterval(interval);
+  }, [failoverActive]);
+
   // Estado para sugestão de ajuste automático nos planos (Requisito 5)
   const [sugestaoAjuste, setSugestaoAjuste] = useState(null);
 
@@ -297,6 +324,49 @@ export default function TestesExercicios({ db }) {
     });
   };
 
+  const handleSaveFailoverResult = () => {
+    const proc = processos.find(p => p.id_processo === failoverProcId);
+    const pco = planosPco.find(p => p.id_processo === failoverProcId);
+    const prd = planosPrd.find(p => p.id_processo === failoverProcId);
+
+    const rtoRealMinutos = Math.ceil(failoverTimer / 60);
+    const rtoMetaMinutos = Number(proc?.sla_tic || 30);
+    const passou = rtoRealMinutos <= rtoMetaMinutos;
+
+    const novoTeste = db.testesAvaliacoes.create({
+      id_pco: pco?.id_pco || null,
+      id_prd: prd?.id_prd || null,
+      id_processo: failoverProcId,
+      tipo_teste: 'simulacao_campo',
+      data_teste: new Date().toISOString(),
+      resultado: passou ? 'Sucesso' : 'Falha',
+      areas_melhoria: `Simulado de Failover de DR (ISO 27031 / NIST). RTO Real obtido: ${Math.floor(failoverTimer / 60)}m ${failoverTimer % 60}s (Meta TIC: ${rtoMetaMinutos} min). Operador: ${failoverOperador || 'Equipe de TI/DRP'}.`,
+      acionado_por: failoverOperador || usuario?.nome || 'TI Executor',
+      cenarios_testados: [
+        { cenario: 'sistemas', resultado: passou ? 'passou' : 'falhou', observacoes: `Failover de site primário para secundário executado em ${Math.floor(failoverTimer / 60)}m ${failoverTimer % 60}s.` }
+      ]
+    });
+
+    recarregarListas();
+    setShowFailoverSim(false);
+    setFailoverActive(false);
+
+    // Gerar PDF da Ata
+    const interv = db.intervenientes.listForProcesso(failoverProcId);
+    const html = pdfService.htmlAtaTeste(novoTeste, proc, pco, interv);
+    pdfService.exportar(`Ata de Failover DR — ${novoTeste.id_teste}`, html, {
+      nome_empresa: 'GCN System',
+      confidencialidade: 'RESTRITO',
+      versao: '2026.1',
+      autor: 'Geati & Geric — Governança de TIC'
+    });
+
+    setNotification({ type: 'success', text: `Simulado de Failover registrado com sucesso! RTO obtido: ${Math.floor(failoverTimer / 60)}m ${failoverTimer % 60}s.` });
+  };
+
+  const selectedFailoverProc = processos.find(p => p.id_processo === failoverProcId);
+  const selectedFailoverAtivo = db.ativosSistemas.list().find(a => a.id_ativo === selectedFailoverProc?.ativo_cmdb_id);
+
   return (
     <div className="space-y-8 animate-fade-in">
       
@@ -311,6 +381,18 @@ export default function TestesExercicios({ db }) {
         <div className="flex items-center gap-3">
           {canCreate() && (
             <>
+              <button 
+                onClick={() => {
+                  setShowFailoverSim(true);
+                  setFailoverStep(1);
+                  setFailoverTimer(0);
+                  setFailoverActive(false);
+                  setFailoverChecklist({ step1: false, step2: false, step3: false, step4: false, step5: false });
+                }}
+                className="bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2.5 rounded-lg text-xs flex items-center justify-center gap-2 shadow-2xs transition-colors whitespace-nowrap cursor-pointer"
+              >
+                ⚡ Simulado Failover DR (ISO 27031)
+              </button>
               <button 
                 onClick={() => { setShowTabletop(true); setTabletopStep(1); setNotification(null); setSugestaoAjuste(null); }}
                 className="bg-purple-650 hover:bg-purple-700 text-white font-bold px-4 py-2.5 rounded-lg text-xs flex items-center justify-center gap-2 shadow-2xs transition-colors whitespace-nowrap cursor-pointer"
@@ -992,6 +1074,243 @@ export default function TestesExercicios({ db }) {
                       className="flex-1 bg-purple-650 hover:bg-purple-700 text-white font-bold py-2.5 rounded-xl transition-all cursor-pointer shadow-xs"
                     >
                       💾 Gravar como Teste Oficial
+                    </button>
+                  </div>
+                </div>
+              )}
+
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: SIMULADOR DE FAILOVER DE DR (ISO 27031 / NIST CSF) */}
+      {showFailoverSim && (
+        <div className="fixed inset-0 bg-slate-950/75 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-3xl rounded-2xl border border-rose-500/30 shadow-2xl overflow-hidden flex flex-col animate-scale-up text-xs text-slate-750 dark:text-slate-350">
+            
+            {/* Header Modal */}
+            <div className="p-4 border-b border-rose-500/20 bg-rose-950/20 flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">⚡</span>
+                <div>
+                  <h3 className="font-black text-rose-700 dark:text-rose-400 uppercase tracking-wider text-xs">
+                    Simulador de Failover & Comutação de Site DR (ISO 27031 / NIST CSF)
+                  </h3>
+                  <p className="text-[10px] text-slate-400">Teste de Comutação Real em Tempo Real de Data Center Primário para Secundário</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => { setShowFailoverSim(false); setFailoverActive(false); }}
+                className="p-1 rounded-lg hover:bg-rose-900/30 text-slate-400 hover:text-white cursor-pointer"
+              >
+                <span className="text-base">✕</span>
+              </button>
+            </div>
+
+            {/* Conteúdo */}
+            <div className="p-6 flex-1 overflow-y-auto space-y-6">
+              
+              {/* PASSO 1: CONFIGURAÇÃO DO SIMULADO */}
+              {failoverStep === 1 && (
+                <div className="space-y-5">
+                  <div className="bg-rose-50 dark:bg-rose-950/30 p-4 rounded-xl border border-rose-200 dark:border-rose-900/40 text-rose-800 dark:text-rose-300 space-y-2">
+                    <p className="font-bold text-sm">🎯 Preparação para a Comutação de DR</p>
+                    <p className="text-[11px] leading-relaxed opacity-90">
+                      Selecione o processo e ativo crítico CMDB para simular a queda de infraestrutura primária e alternância para a réplica de DR. Ao iniciar, o cronômetro de RTO em tempo real começará a contar.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase">Processo Crítico *</label>
+                      <select 
+                        value={failoverProcId}
+                        onChange={(e) => setFailoverProcId(e.target.value)}
+                        className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 font-bold text-slate-850 dark:text-slate-200 focus:outline-rose-500"
+                      >
+                        {processos.map(p => (
+                          <option key={p.id_processo} value={p.id_processo}>{p.id_processo} - {p.nome}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase">Líder / Operador do Failover *</label>
+                      <input 
+                        type="text"
+                        placeholder="Ex: Patrícia Lima (Gestora Getic)"
+                        value={failoverOperador}
+                        onChange={(e) => setFailoverOperador(e.target.value)}
+                        className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 text-slate-850 dark:text-slate-200 focus:outline-rose-500 font-semibold"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Resumo do Ativo CMDB */}
+                  {selectedFailoverProc && (
+                    <div className="p-4 bg-slate-50 dark:bg-slate-955 rounded-xl border border-slate-200 dark:border-slate-850 grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+                      <div>
+                        <span className="text-[9px] text-slate-400 font-bold uppercase block">Ativo CMDB</span>
+                        <strong className="text-xs text-indigo-600 dark:text-indigo-400 font-bold">{selectedFailoverAtivo?.nome || selectedFailoverProc.ativo_cmdb_id || 'N/A'}</strong>
+                      </div>
+                      <div>
+                        <span className="text-[9px] text-slate-400 font-bold uppercase block">Criticidade CMDB</span>
+                        <span className={`text-[9px] font-black px-2 py-0.5 rounded uppercase ${selectedFailoverAtivo?.criticidade_contrato === 'C0' ? 'bg-rose-100 text-rose-700' : 'bg-orange-100 text-orange-700'}`}>
+                          {selectedFailoverAtivo?.criticidade_contrato || 'C0'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[9px] text-slate-400 font-bold uppercase block">Estratégia DR</span>
+                        <strong className="text-xs text-amber-600 dark:text-amber-400 font-bold">{selectedFailoverProc.estrategia_drp || 'Hot Standby'}</strong>
+                      </div>
+                      <div>
+                        <span className="text-[9px] text-slate-400 font-bold uppercase block">SLA Meta TIC</span>
+                        <strong className="text-xs text-emerald-600 dark:text-emerald-400 font-black">{selectedFailoverProc.sla_tic || 15} minutos</strong>
+                      </div>
+                    </div>
+                  )}
+
+                  <button 
+                    onClick={() => {
+                      if (!failoverOperador.trim()) {
+                        alert('Informe o operador responsável pelo Failover.');
+                        return;
+                      }
+                      setFailoverStep(2);
+                      setFailoverTimer(0);
+                      setFailoverActive(true);
+                    }}
+                    className="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-xl transition-all cursor-pointer shadow-md text-xs flex items-center justify-center gap-2"
+                  >
+                    ▶️ Iniciar Comutação em Tempo Real (Start Chronometer)
+                  </button>
+                </div>
+              )}
+
+              {/* PASSO 2: EXECUÇÃO DA COMUTAÇÃO COM CRONÔMETRO */}
+              {failoverStep === 2 && (
+                <div className="space-y-6">
+                  
+                  {/* DISPLAY CENTRAL DO CRONÔMETRO RTO */}
+                  <div className="bg-slate-900 border-2 border-rose-500/50 rounded-2xl p-6 text-center space-y-2 shadow-2xl relative overflow-hidden">
+                    <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-rose-500/20 px-2.5 py-1 rounded-full text-rose-400 border border-rose-500/30">
+                      <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                      <span className="text-[9px] font-black uppercase tracking-wider">FAILOVER EM EXECUÇÃO</span>
+                    </div>
+
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest block">Tempo Decorrido de Downtime (RTO Real)</span>
+                    
+                    <div className="text-5xl font-black text-rose-400 font-mono tracking-wider">
+                      {String(Math.floor(failoverTimer / 60)).padStart(2, '0')}:{String(failoverTimer % 60).padStart(2, '0')}
+                    </div>
+
+                    <div className="text-[10px] text-slate-400 flex justify-center gap-4 pt-1">
+                      <span>RTO Meta TIC: <strong className="text-emerald-400 font-bold">{selectedFailoverProc?.sla_tic || 15}:00 min</strong></span>
+                      <span>SLA Cliente: <strong className="text-sky-400 font-bold">{selectedFailoverProc?.sla_contrato_cliente || 30}:00 min</strong></span>
+                    </div>
+                  </div>
+
+                  {/* CHECKLIST DE PROCEDIMENTOS DE FAILOVER */}
+                  <div className="space-y-3 bg-slate-50 dark:bg-slate-955 p-5 rounded-xl border border-slate-200 dark:border-slate-850">
+                    <h4 className="font-extrabold text-slate-850 dark:text-white text-xs uppercase tracking-wider">
+                      Checklist Técnico de Comutação (Passo a Passo)
+                    </h4>
+
+                    {[
+                      { key: 'step1', title: '1. Health Check & Isolamento do Site Primário', desc: 'Isolar tráfego no Data Center Primário (AWS us-east-1) e interromper requisições ativas.' },
+                      { key: 'step2', title: '2. Promoção do Banco de Dados Secundário (Read Replica)', desc: 'Promover a réplica do banco de dados DR para o modo Primary de leitura e escrita.' },
+                      { key: 'step3', title: '3. Redirecionamento de DNS & CNAME Route 53', desc: 'Alterar apontamento de DNS corporativo para o IP/Endpoint do Data Center Secundário (us-west-2).' },
+                      { key: 'step4', title: '4. Testes de Sanidade das APIs (Smoke Test 200 OK)', desc: 'Validar resposta da API transacional no ambiente secundário com requisições sintéticas.' },
+                      { key: 'step5', title: '5. Liberação das Operações & Notificação da Crise', desc: 'Confirmar restauração completa dos serviços e notificar Comitê de Crise e GERIC.' },
+                    ].map(st => (
+                      <label key={st.key} className={`flex items-start gap-3 p-3 rounded-lg border transition-all cursor-pointer ${
+                        failoverChecklist[st.key] ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-500/40 text-emerald-900 dark:text-emerald-300' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300'
+                      }`}>
+                        <input 
+                          type="checkbox"
+                          checked={failoverChecklist[st.key]}
+                          onChange={(e) => setFailoverChecklist({ ...failoverChecklist, [st.key]: e.target.checked })}
+                          className="mt-1 rounded text-rose-600 focus:ring-rose-500 w-4 h-4 cursor-pointer"
+                        />
+                        <div>
+                          <p className="font-bold text-xs">{st.title}</p>
+                          <p className="text-[10px] text-slate-450 dark:text-slate-400 mt-0.5">{st.desc}</p>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+
+                  <button 
+                    disabled={!Object.values(failoverChecklist).every(Boolean)}
+                    onClick={() => {
+                      setFailoverActive(false);
+                      setFailoverStep(3);
+                    }}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl transition-all cursor-pointer shadow-md text-xs"
+                  >
+                    ⏹️ Finalizar Comutação & Gravar Resultado
+                  </button>
+                </div>
+              )}
+
+              {/* PASSO 3: CONCLUSÃO & DIAGNÓSTICO DO FAILOVER */}
+              {failoverStep === 3 && (
+                <div className="space-y-6 text-center animate-fade-in">
+                  <div className="bg-slate-50 dark:bg-slate-955 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+                    <span className="text-4xl">🏁</span>
+                    <div>
+                      <h4 className="font-black text-slate-850 dark:text-white text-sm uppercase">Comutação de DR Finalizada!</h4>
+                      <p className="text-[10px] text-slate-450 mt-0.5">Processo: {selectedFailoverProc?.nome} • Ativo CMDB: {selectedFailoverAtivo?.nome || selectedFailoverProc?.ativo_cmdb_id}</p>
+                    </div>
+
+                    {/* RTO Real vs Meta */}
+                    <div className="grid grid-cols-2 gap-4 max-w-sm mx-auto">
+                      <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+                        <span className="text-[9px] text-slate-400 font-bold block uppercase">RTO Real Obtido</span>
+                        <strong className="text-2xl font-black text-indigo-600 dark:text-indigo-400">
+                          {String(Math.floor(failoverTimer / 60)).padStart(2, '0')}:{String(failoverTimer % 60).padStart(2, '0')}
+                        </strong>
+                      </div>
+                      <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+                        <span className="text-[9px] text-slate-400 font-bold block uppercase">RTO Meta TIC</span>
+                        <strong className="text-2xl font-black text-slate-700 dark:text-slate-300">
+                          {selectedFailoverProc?.sla_tic || 15}:00 min
+                        </strong>
+                      </div>
+                    </div>
+
+                    {/* Status de Aderência ao SLA */}
+                    <div className="max-w-md mx-auto">
+                      {Math.ceil(failoverTimer / 60) <= Number(selectedFailoverProc?.sla_tic || 15) ? (
+                        <div className="p-3 bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 rounded-xl border border-emerald-300 dark:border-emerald-800 text-xs font-extrabold uppercase">
+                          ✅ COMUTAÇÃO DE DR EXECUTADA DENTRO DO SLA DE TIC!
+                        </div>
+                      ) : (
+                        <div className="p-3 bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-400 rounded-xl border border-rose-300 dark:border-rose-800 text-xs font-extrabold uppercase">
+                          ⚠️ ESTOURO DE RTO DE TIC — GARGALO TÉCNICO REGISTRADO
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button 
+                      onClick={() => {
+                        setShowFailoverSim(false);
+                        setFailoverActive(false);
+                      }}
+                      className="flex-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold py-2.5 rounded-xl cursor-pointer"
+                    >
+                      Cancelar
+                    </button>
+                    <button 
+                      onClick={handleSaveFailoverResult}
+                      className="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 rounded-xl transition-all cursor-pointer shadow-md text-xs"
+                    >
+                      💾 Gravar Teste & Gerar Ata de Failover (PDF)
                     </button>
                   </div>
                 </div>

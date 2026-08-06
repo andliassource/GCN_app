@@ -223,9 +223,74 @@ export default function GestaoCrises({ db }) {
             
             {/* Form de Disparo em Massa */}
             <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-              <h4 className="font-bold text-slate-850 dark:text-white text-xs uppercase tracking-wider flex items-center gap-2">
-                📢 Disparar Comunicado de Emergência / Crise (MNS)
-              </h4>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+                <h4 className="font-bold text-slate-850 dark:text-white text-xs uppercase tracking-wider flex items-center gap-2">
+                  📢 Disparar Comunicado de Emergência / Crise (Gemac MNS)
+                </h4>
+                <span className="text-[10px] text-slate-400 font-semibold">ISO 22301 §8.4.3 Communication</span>
+              </div>
+
+              {/* Botões de Templates Pré-Formatados de Incidentes */}
+              <div className="space-y-1.5 bg-slate-50 dark:bg-slate-955 p-3 rounded-lg border border-slate-200 dark:border-slate-850">
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Templates Rápidos de Incidentes (Gemac):</span>
+                <div className="flex flex-wrap gap-2">
+                  <button 
+                    type="button"
+                    onClick={() => setComunicadoForm({
+                      titulo: 'Ataque Cibernético DDoS / Degradação de APIs',
+                      mensagem: 'Identificamos uma volumetria atípica de requisições maliciosas afetando as APIs transacionais. A equipe de Cibersegurança (Gesec) ativou a mitigação de mitigação de DDoS. Serviços estão operando em regime de alta latência.',
+                      destino: 'ALL',
+                      severidade: 'Alerta Crítico',
+                      canal: 'all_channels'
+                    })}
+                    className="bg-rose-100 dark:bg-rose-950/80 hover:bg-rose-200 text-rose-700 dark:text-rose-300 px-2.5 py-1 rounded text-[10px] font-bold transition-colors cursor-pointer"
+                  >
+                    🛡️ DDoS / Ciberataque
+                  </button>
+
+                  <button 
+                    type="button"
+                    onClick={() => setComunicadoForm({
+                      titulo: 'Queda de Data Center / Comutação de Site DR',
+                      mensagem: 'Devido à indisponibilidade de infraestrutura no Data Center Primário, a equipe de TI (Getic) iniciou a comutação para o Data Center Secundário (Site DR). O tempo estimado para plena recuperação é de até 15 minutos.',
+                      destino: 'ALL',
+                      severidade: 'Evacuação / Desastre',
+                      canal: 'all_channels'
+                    })}
+                    className="bg-amber-100 dark:bg-amber-950/80 hover:bg-amber-200 text-amber-700 dark:text-amber-300 px-2.5 py-1 rounded text-[10px] font-bold transition-colors cursor-pointer"
+                  >
+                    ⚡ Queda Data Center / DR
+                  </button>
+
+                  <button 
+                    type="button"
+                    onClick={() => setComunicadoForm({
+                      titulo: 'Indisponibilidade Predial Emergencial / Home Office Mandatório',
+                      mensagem: 'Orientamos todos os colaboradores das gerências afetadas a atuarem em regime de trabalho remoto emergencial a partir deste momento devido a sinistro físico nas dependências do edifício sede.',
+                      destino: 'ALL',
+                      severidade: 'Evacuação / Desastre',
+                      canal: 'app_email'
+                    })}
+                    className="bg-indigo-100 dark:bg-indigo-950/80 hover:bg-indigo-200 text-indigo-700 dark:text-indigo-300 px-2.5 py-1 rounded text-[10px] font-bold transition-colors cursor-pointer"
+                  >
+                    🏢 Sinistro Predial / Home Office
+                  </button>
+
+                  <button 
+                    type="button"
+                    onClick={() => setComunicadoForm({
+                      titulo: 'Instabilidade em Links de Conectividade',
+                      mensagem: 'Informamos oscilação na operadora de conectividade principal. A equipe de infraestrutura ativou o link redundante secundário. É possível haver lentidão momentânea no acesso às aplicações.',
+                      destino: 'ALL',
+                      severidade: 'Informativo Geral',
+                      canal: 'app_email'
+                    })}
+                    className="bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 text-slate-700 dark:text-slate-300 px-2.5 py-1 rounded text-[10px] font-bold transition-colors cursor-pointer"
+                  >
+                    📡 Falha de Telecom / Link
+                  </button>
+                </div>
+              </div>
 
               {isAdmin() ? (
                 <form onSubmit={handleDispararAlerta} className="space-y-4">
@@ -265,7 +330,7 @@ export default function GestaoCrises({ db }) {
                       value={comunicadoForm.titulo}
                       onChange={e => setComunicadoForm({...comunicadoForm, titulo: e.target.value})}
                       placeholder="Ex: Evasão Predial do Bloco A ou Falha Geral do Sistema de Pagamentos"
-                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 text-slate-850 dark:text-slate-300 focus:outline-indigo-500"
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 text-slate-850 dark:text-slate-300 focus:outline-indigo-500 font-semibold"
                       required
                     />
                   </div>
