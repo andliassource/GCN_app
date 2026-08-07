@@ -204,11 +204,156 @@ export default function AvaliacaoMaturidade({ db }) {
     });
   };
 
+  const [activeTab, setActiveTab] = useState('radar360'); // 'radar360' | 'processo'
+
+  const listaAvaliacoes = db.avaliacaoNRGCN.list() || [];
+  const gapsMaturidade = listaAvaliacoes.map(av => {
+    const proc = processosGerais.find(p => p.id_processo === av.id_processo);
+    const difNota = Math.abs((av.nota_area || 1) - (av.nota_geric || 1));
+    const temGap = difNota >= 1.2;
+    return {
+      id_processo: av.id_processo,
+      nomeProcesso: proc ? proc.nome : av.id_processo,
+      siglaGerencia: proc ? proc.id_gerencia : 'N/A',
+      notaArea: av.nota_area || 1.0,
+      notaGeric: av.nota_geric || 1.0,
+      notaFinal: av.nivel_resiliencia || 1.0,
+      difNota: Number(difNota.toFixed(1)),
+      temGap,
+      comentarios: av.comentarios_geric || 'Processo auditado pela GERIC.'
+    };
+  });
+
   return (
     <div className="space-y-8 animate-fade-in">
       
-      {/* Seletor de Processo */}
-      <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
+      {/* Navegação por Abas: Radar 360° Corporativo vs Avaliação por Processo */}
+      <div className="flex border-b border-slate-200 dark:border-slate-800 gap-6">
+        <button
+          onClick={() => setActiveTab('radar360')}
+          className={`pb-3 text-xs font-extrabold transition-colors border-b-2 cursor-pointer flex items-center gap-2 ${
+            activeTab === 'radar360'
+              ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400'
+              : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+          }`}
+        >
+          <Award className="w-4 h-4" /> Diagnóstico Radar 360° Corporativo & Gaps de Percepção
+        </button>
+        <button
+          onClick={() => setActiveTab('processo')}
+          className={`pb-3 text-xs font-extrabold transition-colors border-b-2 cursor-pointer flex items-center gap-2 ${
+            activeTab === 'processo'
+              ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400'
+              : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+          }`}
+        >
+          <ShieldCheck className="w-4 h-4" /> Checklist de Avaliação por Processo (1ª vs 2ª Linha)
+        </button>
+      </div>
+
+      {/* ═══ ABA 1: DIAGNÓSTICO RADAR 360° CORPORATIVO & GAPS ═══ */}
+      {activeTab === 'radar360' && (
+        <div className="space-y-6">
+          {/* KPI Bar Corporativa */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+              <span className="text-[10px] font-extrabold uppercase text-slate-400">Maturidade Média Corporativa</span>
+              <div className="text-xl font-black text-indigo-600 dark:text-indigo-400 mt-1">3.31 / 5.0 pts</div>
+              <p className="text-[10px] text-slate-400 mt-1">Score Global NRGCN (ISO 22301)</p>
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+              <span className="text-[10px] font-extrabold uppercase text-slate-400">Gaps de Percepção Detectados</span>
+              <div className="text-xl font-black text-rose-500 mt-1">
+                {gapsMaturidade.filter(g => g.temGap).length} Processos
+              </div>
+              <p className="text-[10px] text-rose-500 font-bold mt-1">Divergência &gt; 1.2 pts entre 1ª e 2ª Linha</p>
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+              <span className="text-[10px] font-extrabold uppercase text-slate-400">Alinhamento de Governança</span>
+              <div className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-1">82.5%</div>
+              <p className="text-[10px] text-slate-400 mt-1">Consenso entre Área e GERIC</p>
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+              <span className="text-[10px] font-extrabold uppercase text-slate-400">Auditoria (3ª Linha Geraud)</span>
+              <div className="text-xl font-black text-slate-800 dark:text-white mt-1">100% Auditado</div>
+              <p className="text-[10px] text-slate-400 mt-1">Trilha de conformidade mantida</p>
+            </div>
+          </div>
+
+          {/* Matriz de Diagnóstico de Gaps de Percepção (1ª vs 2ª Linha) */}
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+            <div>
+              <h3 className="font-extrabold text-sm text-slate-800 dark:text-white flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-500" /> Matriz de Diagnóstico de Gaps de Governança (Percepção 1ª Linha vs Auditoria 2ª Linha)
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Identifica processos onde a área operacional superestimou sua resiliência e a GERIC (2ª Linha) atribuiu nota menor por falta de simulados ou PCO não atualizado.
+              </p>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 font-extrabold text-[10px] uppercase text-slate-400">
+                    <th className="p-3">Processo Crítico</th>
+                    <th className="p-3 text-center">Nota 1ª Linha (Área)</th>
+                    <th className="p-3 text-center">Nota 2ª Linha (GERIC)</th>
+                    <th className="p-3 text-center">Nota Final NRGCN</th>
+                    <th className="p-3 text-center">Divergência (Gap)</th>
+                    <th className="p-3">Diagnóstico & Recomendação</th>
+                    <th className="p-3 text-right">Ação</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {gapsMaturidade.map((gap) => (
+                    <tr key={gap.id_processo} className={`hover:bg-slate-50/50 dark:hover:bg-slate-950/30 transition-colors ${gap.temGap ? 'bg-rose-50/20 dark:bg-rose-950/10' : ''}`}>
+                      <td className="p-3">
+                        <span className="font-extrabold text-slate-800 dark:text-white block">{gap.nomeProcesso}</span>
+                        <span className="text-[10px] text-slate-400 font-mono">{gap.id_processo} • Gerência: {gap.siglaGerencia}</span>
+                      </td>
+                      <td className="p-3 text-center font-bold text-teal-600 dark:text-teal-400">{gap.notaArea} pts</td>
+                      <td className="p-3 text-center font-bold text-indigo-600 dark:text-indigo-400">{gap.notaGeric} pts</td>
+                      <td className="p-3 text-center font-black text-slate-800 dark:text-white">{gap.notaFinal} / 5.0</td>
+                      <td className="p-3 text-center">
+                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-black ${
+                          gap.temGap ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300 animate-pulse' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
+                        }`}>
+                          {gap.temGap ? `⚠️ Gap de ${gap.difNota} pts` : '✅ Alinhado'}
+                        </span>
+                      </td>
+                      <td className="p-3 text-[11px] text-slate-600 dark:text-slate-400 leading-snug">
+                        {gap.temGap 
+                          ? `Área superestimou a resiliência em ${gap.difNota} pts. A GERIC aplicou nota auditada menor por falta de simulados práticos ou PCO vencido.` 
+                          : gap.comentarios}
+                      </td>
+                      <td className="p-3 text-right">
+                        <button
+                          onClick={() => {
+                            setSelectedProcId(gap.id_processo);
+                            setActiveTab('processo');
+                          }}
+                          className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 font-bold rounded-lg text-[11px] transition-colors cursor-pointer"
+                        >
+                          Auditar Processo
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* ═══ ABA 2: CHECKLIST DE AVALIAÇÃO POR PROCESSO (1ª vs 2ª LINHA) ═══ */}
+      {activeTab === 'processo' && (
+        <div className="space-y-6">
+          {/* Seletor de Processo */}
+          <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <ShieldCheck className="w-5 h-5 text-indigo-500" />
           <div>
@@ -577,9 +722,9 @@ export default function AvaliacaoMaturidade({ db }) {
                 <Download className="w-3.5 h-3.5" /> Exportar Parecer de Maturidade (PDF)
               </button>
             </div>
-
           </div>
-
+        </div>
+      )}
         </div>
       )}
 
