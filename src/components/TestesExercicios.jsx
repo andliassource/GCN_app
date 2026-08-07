@@ -17,6 +17,7 @@ export default function TestesExercicios({ db }) {
   // Estados locais
   const [showForm, setShowForm] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState('');
+  const [notification, setNotification] = useState(null);
   // Estados do Plano Anual & Calendário de Simulados (ISO 22301 §8.5)
   const [activeSubTab, setActiveSubTab] = useState('calendario'); // 'calendario' | 'historico'
   const [simuladosAnuais, setSimuladosAnuais] = useState(db.calendarioSimuladosAnuais ? db.calendarioSimuladosAnuais.list() : []);
