@@ -4,7 +4,7 @@
 // ============================================================================
 
 const INITIAL_DATA = {
-  db_version: "12.0",
+  db_version: "13.0",
 
   // ── CONFIG DO SISTEMA ─────────────────────────────────────────────────────
   configSistema: {
@@ -34,7 +34,6 @@ const INITIAL_DATA = {
     { id_usuario: "USR-012", nome: "Bruno Mendes", email: "gesit@empresa.com.br", id_gerencia: "GER-TIC05", role: "tic_executor", senha: "gesit2026" },
     { id_usuario: "USR-013", nome: "Diego Ferreira (Gesec)", email: "gesec@empresa.com.br", id_gerencia: "GER-TIC04", role: "tic_executor", senha: "gesec2026" },
     { id_usuario: "USR-014", nome: "Gilberto Ramos", email: "gepin@empresa.com.br", id_gerencia: "GER-NEG07", role: "gestor_area", senha: "gepin2026" },
-    { id_usuario: "USR-015", nome: "Priscila Silva", email: "psim@empresa.com.br", id_gerencia: "GER-NEG08", role: "gestor_area", senha: "psim2026" },
     { id_usuario: "USR-016", nome: "Ana Ribeiro (Gepes/RH)", email: "gepes@empresa.com.br", id_gerencia: "GER-APO01", role: "apoio_pessoas", senha: "gepes2026" },
     { id_usuario: "USR-017", nome: "Carla Mendes (Gefic/Fin)", email: "gefic@empresa.com.br", id_gerencia: "GER-APO02", role: "apoio_financeiro", senha: "gefic2026" },
     { id_usuario: "USR-018", nome: "Luis Fernandes (Gesuc/Supr)", email: "gesuc@empresa.com.br", id_gerencia: "GER-APO03", role: "apoio_suprimentos", senha: "gesuc2026" }
@@ -61,7 +60,6 @@ const INITIAL_DATA = {
     { id_gerencia: "GER-NEG05", nome: "Gerência Executiva de Operações e Liquidação", sigla: "Geoliq", tipo: "Negócios", id_diretoria: "DIR-002", email: "geoliq@empresa.com.br", telefone: "(11) 98001-9006", observacao: "Opera a liquidação financeira e conciliação bancária." },
     { id_gerencia: "GER-NEG06", nome: "Gerência Executiva de Negócios Corporativos", sigla: "Gencorp", tipo: "Negócios", id_diretoria: "DIR-002", email: "gencorp@empresa.com.br", telefone: "(11) 98001-9007", observacao: "Gerencia contratos empresariais e soluções B2B." },
     { id_gerencia: "GER-NEG07", nome: "Gerência de Projetos e Inovação", sigla: "Gepin", tipo: "Negócios", id_diretoria: "DIR-002", email: "gepin@empresa.com.br", telefone: "(11) 98001-9021", observacao: "Área de negócio que executa sua própria DR." },
-    { id_gerencia: "GER-NEG08", nome: "Gerência de Processos e Segurança da Informação", sigla: "PSIM", tipo: "Negócios", id_diretoria: "DIR-002", email: "psim@empresa.com.br", telefone: "(11) 98001-9022", observacao: "Área de negócio que realiza sua própria DR." },
     { id_gerencia: "GER-GOV01", nome: "Gerência de Gestão de Riscos e GCN (2ª Linha)", sigla: "Geric", tipo: "Governança", id_diretoria: "DIR-002", email: "geric@empresa.com.br", telefone: "(11) 98001-0001", observacao: "Segunda linha de defesa. Gestão de todos os PCOs e PRDs. Coordena com Geemp o Comitê de Crise." },
     { id_gerencia: "GER-GOV02", nome: "Gerência de Governança Corporativa e Crises", sigla: "Geemp", tipo: "Governança", id_diretoria: "DIR-002", email: "geemp@empresa.com.br", telefone: "(11) 98001-0008", observacao: "Conduz o Comitê de Crise. Elabora o regimento de crises (PGC). Preside atas." },
     { id_gerencia: "GER-GOV03", nome: "Gerência de Marketing e Comunicação Corporativa", sigla: "Gemac", tipo: "Governança", id_diretoria: "DIR-002", email: "gemac@empresa.com.br", telefone: "(11) 98001-0005", observacao: "Coordena comunicação interna e externa em crises. Única autorizada a emitir notas à imprensa." },
@@ -211,10 +209,6 @@ const INITIAL_DATA = {
       faturamento_anual: 180000, perda_hora_estimada: 5000, ciclo_vida: "Crescimento", indicacao_gerel: "Ambiente de inovação em expansão. Alto potencial futuro mas baixo impacto financeiro atual.",
       responsavel_testes: "Gilberto Ramos (Gepin)", verificador_geric: "Roberto Carlos (Geric)", gestor_accountability: "Gilberto Ramos (Gepin)",
       total_incidentes_12m: 0, ultimo_teste: null, status_plano: "Em Elaboração", rpo_minutos: 720 },
-    { id_processo: "PROC-PSI-001", nome: "Auditoria e Conformidade de Processos (PSIM)", descricao: "Análise de conformidade regulatória e mapeamento dos fluxos corporativos.", id_contrato: "", criticidade: "Média", id_gerencia: "GER-NEG08", requer_drp: false, ativo_cmdb_id: "", estrategia_drp: "Backup & Restore", sla_contrato_cliente: 0, sla_tic: 0, status_aprovacao_tic: "Pendente",
-      faturamento_anual: 0, perda_hora_estimada: 3000, ciclo_vida: "Maturidade", indicacao_gerel: "Processo interno regulatório. Impacto indireto em compliance. Baixa prioridade de DR.",
-      responsavel_testes: "Priscila Silva (PSIM)", verificador_geric: "Roberto Carlos (Geric)", gestor_accountability: "Priscila Silva (PSIM)",
-      total_incidentes_12m: 0, ultimo_teste: null, status_plano: "Sem Plano", rpo_minutos: 1440 },
     { id_processo: "PROC-NED-001", nome: "Plataforma de Crédito Digital (Gened)", descricao: "Originação e gestão de crédito digital com motor de decisão automatizado.", id_contrato: "", criticidade: "Crítica", id_gerencia: "GER-NEG03", requer_drp: true, ativo_cmdb_id: "ATV-SYS01", estrategia_drp: "Hot Standby / Ativo-Ativo", sla_contrato_cliente: 30, sla_tic: 15, status_aprovacao_tic: "Pendente",
       faturamento_anual: 4500000, perda_hora_estimada: 150000, ciclo_vida: "Crescimento", indicacao_gerel: "Maior produto digital da empresa. Crescimento de 60% YoY. Prioridade absoluta de investimento.",
       responsavel_testes: "Gestor Gened", verificador_geric: "Roberto Carlos (Geric)", gestor_accountability: "Diretora Fernanda Rocha",
