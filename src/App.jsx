@@ -5,6 +5,7 @@ import DashboardGeric from './components/DashboardGeric';
 import DashboardBOD from './components/DashboardBOD';
 import SimuladorEstresse from './components/SimuladorEstresse';
 import MatrizInterdependencia from './components/MatrizInterdependencia';
+import RelatoriosConformidade from './components/RelatoriosConformidade';
 import ContratosDocs from './components/ContratosDocs';
 import BaseIncidentes from './components/BaseIncidentes';
 import AnaliseImpacto from './components/AnaliseImpacto';
@@ -63,6 +64,8 @@ function MainLayout() {
         return <SimuladorEstresse db={dbService} />;
       case 'dependencias':
         return <MatrizInterdependencia db={dbService} />;
+      case 'relatorios':
+        return <RelatoriosConformidade db={dbService} />;
       case 'priorizacao':
         return <MatrizPriorizacao db={dbService} />;
       case 'organizacao':
