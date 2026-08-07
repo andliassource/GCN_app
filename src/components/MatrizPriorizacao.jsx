@@ -169,8 +169,8 @@ export default function MatrizPriorizacao({ db }) {
   const [mcResult, setMcResult] = useState(null);
   const [mcRunning, setMcRunning] = useState(false);
 
-  const processos = db.processosCriticos.getAll();
-  const gerencias = db.gerencias.getAll();
+  const processos = (db.processosCriticos?.list ? db.processosCriticos.list() : []) || [];
+  const gerencias = (db.gerencias?.list ? db.gerencias.list() : []) || [];
 
   const getGerencia = useCallback((id) => gerencias.find(g => g.id_gerencia === id), [gerencias]);
 
