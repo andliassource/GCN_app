@@ -4,7 +4,7 @@
 // ============================================================================
 
 const INITIAL_DATA = {
-  db_version: "13.0",
+  db_version: "14.0",
 
   // ── CONFIG DO SISTEMA ─────────────────────────────────────────────────────
   configSistema: {
@@ -1103,8 +1103,8 @@ export const dbService = {
         processosSemPCO: processosSemPCO.length,
         processosSemAIN: processosSemAIN.length,
         totalPCO: planosPCO.length,
-        pcosAprovados: planosPCO.filter(p => p.status_aprovacao === 'Aprovado').length,
-        pcosPendentes: planosPCO.filter(p => p.status_aprovacao === 'Pendente').length,
+        pcosAprovados: planosPCO.filter(p => p.status_aprovacao === 'Aprovado' || p.status_aprovacao === 'Vigente').length,
+        pcosPendentes: planosPCO.filter(p => p.status_aprovacao && (p.status_aprovacao.startsWith('Pendente') || p.status_aprovacao === 'Em Elaboração')).length,
         pcosVencidos: pcosVencidos.length,
         pcosVencendo30: pcosVencendo30.length,
         pcosVencendo60: pcosVencendo60.length,
