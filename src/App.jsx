@@ -15,6 +15,7 @@ import OrganizacaoRiscos from './components/OrganizacaoRiscos';
 import ConfiguracaoSistema from './components/ConfiguracaoSistema';
 import LoginPage from './components/LoginPage';
 import PainelApoio from './components/PainelApoio';
+import MatrizPriorizacao from './components/MatrizPriorizacao';
 
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { dbService } from './services/db';
@@ -53,6 +54,8 @@ function MainLayout() {
     switch (activeTab) {
       case 'dashboard':
         return <DashboardGeric db={dbService} />;
+      case 'priorizacao':
+        return <MatrizPriorizacao db={dbService} />;
       case 'organizacao':
         return <OrganizacaoRiscos db={dbService} />;
       case 'contratos':

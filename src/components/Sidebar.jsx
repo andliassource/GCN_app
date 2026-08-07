@@ -36,6 +36,7 @@ export default function Sidebar({
 
   const allMenuItems = [
     { id: 'dashboard', label: 'Painel Executivo Geric', icon: LayoutDashboard, roles: ALL_ROLES },
+    { id: 'priorizacao', label: 'Matriz de Priorização', icon: Target, roles: ALL_ROLES },
     { id: 'organizacao', label: 'Estrutura & Riscos', icon: Network, roles: ALL_ROLES },
     { id: 'contratos', label: '1. Ingestão de Contratos', icon: FileText, roles: ALL_ROLES },
     { id: 'incidentes', label: '2. Base de Incidentes & Lições', icon: AlertOctagon, roles: ALL_ROLES },
