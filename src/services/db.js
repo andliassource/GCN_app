@@ -525,7 +525,7 @@ const getDB = () => {
   }
   try {
     const db = JSON.parse(dbStr);
-    if (db.db_version !== "10.0") {
+    if (db.db_version !== INITIAL_DATA.db_version) {
       localStorage.setItem("gcn_database", JSON.stringify(INITIAL_DATA));
       return INITIAL_DATA;
     }
