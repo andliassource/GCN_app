@@ -16,7 +16,8 @@ import {
   Target,
   X,
   HeartHandshake,
-  Crown
+  Crown,
+  Layers
 } from 'lucide-react';
 
 export default function Sidebar({ 
@@ -39,6 +40,7 @@ export default function Sidebar({
     { id: 'dashboard', label: 'Painel Executivo Geric', icon: LayoutDashboard, roles: ALL_ROLES },
     { id: 'bod', label: 'Painel C-Level & Conselho (BOD)', icon: Crown, roles: ALL_ROLES },
     { id: 'simulador', label: 'Simulador de Estresse (What-If)', icon: Zap, roles: ALL_ROLES },
+    { id: 'dependencias', label: 'Matriz de Interdependência (SPOF)', icon: Layers, roles: ALL_ROLES },
     { id: 'priorizacao', label: 'Matriz de Priorização', icon: Target, roles: ALL_ROLES },
     { id: 'organizacao', label: 'Estrutura & Riscos', icon: Network, roles: ALL_ROLES },
     { id: 'contratos', label: '1. Ingestão de Contratos', icon: FileText, roles: ALL_ROLES },
