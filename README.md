@@ -1,13 +1,4 @@
-# React + Vite
-
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-# 🛡️ GCN Master — Sistema de Gestão de Continuidade de Negócios
+# 🛡️ GCN Master — Sistema de Gestão de Continuidade de Negócios (v11.0)
 
 > **Conformidade Regulatória Rigorosa:** ABNT NBR ISO 22301:2020 (Gestão de Continuidade de Negócios) & ISO 27031:2011 (Prontidão de TI para Continuidade).
 
@@ -23,87 +14,76 @@ A aplicação faz a transição completa da governança tradicional (baseada em 
 
 ## 🏛️ Arquitetura Funcional & Módulos
 
-### 1. 🏢 Estrutura Organizacional & Gestão de Riscos Dinâmicos
-- **Segregação de 1ª e 2ª Linha:** Vinculação de processos críticos às gerências executivas proprietárias (1ª linha), sob supervisão e governança da GERIC (2ª linha).
-- **Matriz de Riscos Dinâmicos:** Cálculo de Score de Risco Inerente vs. Residual (Probabilidade x Impacto), com tooltips explicativos flutuantes e vinculo direto a planos de ação mitigatórios.
+### 1. 🎯 Matriz de Priorização de Negócios (4×4) & Monte Carlo
+- **Matriz 4×4 Tridimensional**: Classifica negócios por **Impacto no Negócio (0–100)** vs **Probabilidade/Urgência (0–60)** em 4 quadrantes (Q1 a Q4 - Prioridade Máxima).
+- **Métricas de Impacto Financeiro**: Incorpora **Faturamento Anual (30%)**, **Perda Financeira/Hora (25%)**, Criticidade do Processo (20%), Ativo CMDB (15%) e Histórico de Incidentes (10%).
+- **Indicadores Gerel (Ciclo de Vida do Negócio)**: Ponderação estratégica de `Crescimento` (+20%), `Maturidade` (1.0x), `Declínio` (0.5x) e `Sunset` (0.3x). Negócios em declínio recebem redução de score para evitar investimentos desnecessários em DR.
+- **Simulador Monte Carlo (1.000 iterações)**: Simulação estocástica de perdas anualizadas esperadas com gráfico de histograma e cálculo de percentis **P50, P90 e P95**.
+- **Accountability das Três Linhas**: Atribuição clara por processo de quem executa os Testes (1ª Linha), quem Verifica (2ª Linha - GERIC) e quem detém o Accountability executivo.
 
-### 2. 📑 Ingestão de Contratos Críticos & Notificação de Ponto Único
-- **Gestão Contratual & SLAs:** Vinculação de contratos externos a processos de negócios com controle de datas de vigência e multas.
-- **Alerta de Ponto de Falha Único (Single Point of Failure):** Notificação automática quando um processo crítico depende exclusivamente de um único fornecedor sem contingência cadastrada (Multi-Vendor).
-- **Controle de Notificações Multi-Destinatário:** Alertas visuais e e-mails automáticos para gestores das áreas e fiscais GERIC em prazos de vencimento de 90, 60 e 30 dias.
+### 2. 🏢 Painel de Contingências das Áreas de Apoio
+- **Gesap (Administração Predial)**: Simulador de Evacuação Predial interativo com cronômetro em tempo real (SLA ABNT NBR 15219 de 15min) + 6 cenários realistas (Incêndio 193, Alagamento, HVAC/CPD, Gerador/UPS, Ameaça de Bomba PM 190, Vazamento de Gás NR-15).
+- **Gepes (Pessoas / RH)**: 6 cenários (Greves, Pandemia/Epidemia, Falha na Folha CLT 459, eSocial/DCTFWeb em Risco, Acidente de Trabalho CAT 24h, Perda de Liderança Crítica).
+- **Gefic (Financeiro e Tesouraria)**: 6 cenários (Descumprimento Tributário SPED/EFD/DCTF, Bloqueio Judicial BacenJud/SISBAJUD, Falha de ERP/CNAB, Fraude Financeira Lei 7.492/86, Contingência Contábil CPC 25, Crise de Liquidez).
+- **Gesuc (Suprimentos e Contratos)**: 5 cenários (Falha de Single Vendor, Fornecedor em Recuperação Judicial, Ruptura de Cadeia Logística, Gap Contratual, Inconformidade LGPD/Compliance ANPD).
 
-### 3. 📊 Análise de Impacto de Negócio (AIN / BIA)
-- **Métricas Chave de Continuidade:**
-  - **RTO (Recovery Time Objective):** Tempo máximo tolerável para restabelecimento da operação.
-  - **RPO (Recovery Point Objective):** Limite máximo aceitável de perda de dados.
-  - **MTDCN (Maximum Tolerable Period of Disruption):** Tempo máximo antes de ocorrerem danos irreparáveis ou sanções regulatórias.
-- **Gráficos Comparativos:** Visualização da curva de impacto financeiro e operacional acumulado ao longo do tempo.
+### 3. 🚨 Central de Crises & Disparo de Comunicados (Gemac & Geemp)
+- **Disparo MNS em Massa**: Segregação estrita para uso exclusivo da Gemac (`comunicacao_crise`) e Geric (`admin_geric`).
+- **Atas do Comitê de Crise**: Presididas por Geemp (`gov_corporativa`), Geric e Secretaria Conti.
 
-### 4. ⚡ Editor Inteligente de Planos PCO & PRD (v5.0)
-- **Formulários Estruturados em 4 Cenários Normativos:**
-  - **Cenário A (Acesso Predial / Home Office):** Limiares de % mínimo operacional, % crítico e unidade de contingência física.
-  - **Cenário B (Sistemas & TI):** Tabela dinâmica por ativo de TI com RTO/RPO individual por sistema, link de contingência (DR) e rito de restauração.
-  - **Cenário C (Fornecedores Críticos):** Fornecedor principal vs. alternativo, contato do fiscal e rito de contingência contratual.
-  - **Cenário D (Absenteísmo & Pessoas):** Limiares de ausência (Modo Degradado vs. Modo Crítico) e indicação do substituto de liderança.
-- **Botão ✨ Sugerir Texto:** Inteligência baseada em templates dinâmicos que injetam o nome do processo, SLAs, ativos e fornecedores reais em cláusulas padronizadas ISO.
+### 4. 🏢 Estrutura Organizacional & Gestão de Riscos Dinâmicos
+- **Segregação de 1ª e 2ª Linha**: Vinculação de processos críticos às gerências executivas proprietárias (1ª linha), sob supervisão e governança da GERIC (2ª linha).
+- **Matriz de Riscos Dinâmicos**: Cálculo de Score de Risco Inerente vs. Residual (Probabilidade x Impacto), com tooltips explicativos flutuantes e vinculo direto a planos de ação mitigatórios.
 
-### 5. ⚖️ Workflow de Aprovação em 4 Alçadas (ISO 22301 §8.4.5)
-O sistema exige tramitação estruturada de aprovações com parecer obrigatório e notificações em cada etapa:
+### 5. 📑 Ingestão de Contratos Críticos & Notificação de Ponto Único
+- **Gestão Contratual & SLAs**: Vinculação de contratos externos a processos de negócios com controle de datas de vigência e multas.
+- **Alerta de Ponto de Falha Único (Single Point of Failure)**: Notificação automática quando um processo crítico depende exclusivamente de um único fornecedor sem contingência cadastrada.
 
+### 6. 📊 Análise de Impacto de Negócio (AIN / BIA)
+- **Métricas Chave de Continuidade**: RTO (Recovery Time Objective), RPO (Recovery Point Objective) e MTDCN (Maximum Tolerable Period of Disruption).
+
+### 7. ⚡ Editor Inteligente de Planos PCO & PRD (v5.0)
+- Formulários estruturados nos Cenários A (Acesso Predial), B (Sistemas/TI), C (Fornecedores) e D (Absenteísmo/Pessoas).
+
+### 8. ⚖️ Workflow de Aprovação em 4 Alçadas (ISO 22301 §8.4.5)
 ```
-[Área (1ª Linha)] 
-       │ (Enviar)
-       ▼
-[1ª Alçada — GERIC] ──(Aprovar)──► [2ª Alçada — TIC / ANS] ──(Aprovar)──► [3ª Alçada — Gerente Exec] ──(Assinar)──► [4ª Alçada — Comitê Conti] ──► ✅ VIGENTE
-       │                                  │                                      │                                      │
-  (Devolver)                         (Devolver)                             (Devolver)                             (Reprovar)
-       └──────────────────────────────────┴──────────────────────────────────────┴──────────────────────────────────────┘
+[1ª Linha (Elaborador)] ──► [1ª Alçada — GERIC (2ª Linha)] ──► [2ª Alçada — Geati (TIC)] ──► [3ª Alçada — Gerente Exec] ──► [4ª Alçada — Comitê Conti / Geemp] ──► ✅ VIGENTE
 ```
-
-- **Verificação de ANS pela TIC:** Na 2ª alçada, a TIC deve confirmar a vigência do ANS/SLA do processo ou registrar uma **Dispensa Formal Justificável**.
-- **Log de Auditoria:** Rastro histórico por plano contendo timestamps, aprovadores, alçadas e pareceres na íntegra.
-
-### 6. 🧪 Testes por Cenário & Exercícios de Mesa (ISO 22301 §9.2)
-- **Simulador de Mesa (Tabletop Simulator):** Roteiros interativos com pontuação dinâmica por decisão.
-- **Geração de Ata de Simulado em PDF:** Emissão da ata oficial de teste vinculando automaticamente os intervenientes do PCO, resultados por cenário e lições aprendidas.
-
-### 7. 📄 Exportação de PDFs Corporativos Oficiais
-- **PCO Corporativo:** Capa oficial, resumo executivo, tabela de ativos com failover, e **Quadro de Homologação (Seção 0)** com os pareceres e selos das 4 alçadas.
-- **Proteção Regulatória:** Download oficial bloqueado para planos que ainda não atingiram o status `Vigente`, com emissão de cópia de rascunho mediante aviso.
 
 ---
 
 ## 🔐 Matriz de Perfis e Permissões (RBAC)
 
-| Perfil (`role`) | Descrição | Permissões no Sistema |
+| Perfil (`role`) | Gerência | Descrição e Atribuições no Sistema |
 |---|---|---|
-| `admin_geric` | Administrador / Riscos & GCN (2ª Linha) | Acesso total a todos os módulos, aprovação de 1ª Alçada GERIC, aprovação pelo Comitê Conti, edição de configurações globais e matriz de riscos. |
-| `tic` | Infraestrutura & Governança de TI | Acesso aos processos da TIC, concessão de Aval Técnico (2ª Alçada TIC), verificação de ANS e cadastro de PRDs de TI (ISO 27031). |
-| `gerente_exec` | Gerente Executivo da Área | Visão dos processos da gerência, assinatura do plano (3ª Alçada) e acompanhamento de planos de ação. |
-| `gestor_area` | Gestor de Processo (1ª Linha) | Edição de PCOs da sua gerência, envio de planos para revisão GERIC, visualização de notificações e simulados. |
-| `conti` | Secretária / Membro do Comitê Conti | Registro de deliberações de atas do Comitê Conti (4ª Alçada) para concessão de status Vigente. |
-| `visualizador` | Auditor / Leitor | Acesso de leitura aos dashboards e relatórios sem permissão de alteração. |
+| `admin_geric` | GERIC | **2ª Linha / Admin**. Acesso total, aprovação na 1ª e 4ª alçadas, matriz de riscos e priorização. |
+| `gov_corporativa` | Geemp | **Governança Corporativa**. Comitê de crises, deliberação na 4ª alçada Conti e visão corporativa. |
+| `comunicacao_crise` | Gemac | **Comunicação de Crises**. Autorização exclusiva para disparo de comunicados MNS em massa. |
+| `apoio_predial` | Gesap | **Apoio Predial**. Evacuação predial, brigada, HVAC, geradores e manutenção física. |
+| `apoio_pessoas` | Gepes | **Apoio RH**. Absenteísmo, greves, folha CLT 459, eSocial, CAT e sucessão de liderança. |
+| `apoio_financeiro` | Gefic | **Apoio Financeiro**. Liberação de verbas, tributos (SPED/EFD/DCTF), BacenJud e liquidez. |
+| `apoio_suprimentos` | Gesuc | **Apoio Suprimentos**. Single vendor, contratação emergencial e fornecedores em RJ. |
+| `tic_governanca` | Geati | **Governança TIC**. Parecer de ANS/SLA de TI na 2ª alçada e governança de TIC. |
+| `tic_executor` | Getic / Gesec / Gesit | **TI Executora**. DRP, ISO 27031, SOC/SIEM, clusters Kubernetes e links WAN. |
+| `gestor_area` | Gecob / Gered / etc. | **1ª Linha de Defesa**. Elaboração de PCOs, testes de 1ª linha e dono do processo. |
+| `gerente_exec` | Dites / Diope / Diafi | **Diretoria Executiva**. Signature da 3ª alçada e accountability final. |
+| `conti` | Comitê Conti | **Secretaria Conti**. Deliberação formal de ata de vigência na 4ª alçada. |
+| `visualizador` | Geral | **Auditor / Leitor**. Acesso somente leitura. |
 
 ---
 
 ## 🛠️ Tecnologias Utilizadas
 
 - **Frontend Core:** React.js + Vite (JavaScript SPA)
-- **Estilização:** Vanilla CSS3 + Tailwind CSS (tokens de design, suporte nativo a Dark/Light Mode, glassmorphism e animações)
+- **Gráficos & Visualização:** Recharts (Scatter Plot 4x4, BarChart Monte Carlo)
+- **Estilização:** Vanilla CSS3 + Tailwind CSS (suporte a Dark/Light Mode, glassmorphism e animações)
 - **Ícones:** Lucide React
-- **Persistência de Dados:** Camada de serviço portável (`src/services/db.js` com suporte a `localStorage` e adaptável para Firebase Firestore / Azure Dataverse / SQL Server)
-- **Serviço de PDF:** Gerador HTML2PDF embutido (`pdfService.js`) com templates corporativos parametrizados
-- **Deploy & Hospedagem:** GitHub (Código Fonte) & Firebase Hosting (Produção Web)
+- **Persistência de Dados:** `src/services/db.js` (Mock localStorage v11.0, adaptável para Firestore/SQL)
+- **Deploy & Hospedagem:** GitHub (`main`) & Firebase Hosting ([https://gcn-projeto.web.app](https://gcn-projeto.web.app))
 
 ---
 
 ## 🚀 Como Executar o Projeto Localmente
-
-### Pré-requisitos
-- **Node.js:** v18.0.0 ou superior
-- **npm:** v9.0.0 ou superior
-
-### Passo a Passo
 
 ```bash
 # 1. Clonar o repositório
@@ -112,24 +92,14 @@ git clone https://github.com/andliassource/GCN_app.git
 # 2. Entrar na pasta do projeto
 cd GCN_app
 
-# 3. Instalar as dependências
+# 3. Instalar dependências
 npm install
 
-# 4. Iniciar o servidor de desenvolvimento
+# 4. Iniciar servidor local
 npm run dev
 ```
 
-O aplicativo estará disponível no navegador em `http://localhost:5173`.
-
-### Build e Deploy
-
-```bash
-# Gerar o bundle de produção
-npm run build
-
-# Fazer o deploy no Firebase Hosting (exige firebase-tools autenticado)
-npx firebase-tools deploy --only hosting
-```
+O aplicativo estará disponível em `http://localhost:5173`.
 
 ---
 
@@ -137,15 +107,16 @@ npx firebase-tools deploy --only hosting
 
 | Requisito Normativo | Seção ISO | Implementação no GCN Master |
 |---|---|---|
-| **Política e Objetivos de Continuidade** | ISO 22301 §5.2 | Módulo de Governança & Avaliação NRGCN |
+| **Política e Objetivos de Continuidade** | ISO 22301 §5.2 | Governança & Avaliação NRGCN |
 | **Análise de Impacto nos Negócios (BIA)** | ISO 22301 §8.2.2 | Módulo 3 — Análise de Impacto (AIN/BIA) |
+| **Priorização Estratégica de Negócios** | ISO 22301 §8.2.3 / §8.3 | Matriz 4×4, Monte Carlo, Faturamento & Gerel |
 | **Avaliação de Riscos** | ISO 22301 §8.2.3 | Módulo 1 — Estrutura & Riscos Dinâmicos |
-| **Estratégias de Continuidade** | ISO 22301 §8.3 | Módulo 4 — PCO v5.0 (Cenários A, B, C, D) |
-| **Planos e Procedimentos (PCO/PRD)** | ISO 22301 §8.4 / ISO 27031 | Módulo 4 — Editor de Planos & Failover por Ativo |
-| **Estrutura de Resposta a Incidentes & Crises** | ISO 22301 §8.4.2 | Módulo 8 — Gestão de Crises & Incidentes |
-| **Aprovação & Homologação de Planos** | ISO 22301 §8.4.5 | Módulo 7 — Workflow em 4 Alçadas |
-| **Programa de Exercícios e Testes** | ISO 22301 §9.2 | Módulo 5 — Testes por Cenário & Ata PDF |
-| **Avaliação do Desempenho e Revisão** | ISO 22301 §9.3 | Módulo 6 — Revisões & Histórico de Versões |
+| **Estratégias de Continuidade (Áreas de Apoio)** | ISO 22301 §8.3 | Painel de Apoio (Gesap, Gepes, Gefic, Gesuc) |
+| **Planos e Procedimentos (PCO/PRD)** | ISO 22301 §8.4 / ISO 27031 | Editor de Planos & Failover por Ativo |
+| **Estrutura de Resposta a Incidentes & Crises** | ISO 22301 §8.4.2 | Gestão de Crises & Disparo Gemac MNS |
+| **Aprovação & Homologação de Planos** | ISO 22301 §8.4.5 | Workflow em 4 Alçadas (Geric, Geati, Exec, Conti) |
+| **Programa de Exercícios e Testes** | ISO 22301 §9.2 | Testes por Cenário & Evacuação Predial |
+| **Avaliação do Desempenho e Revisão** | ISO 22301 §9.3 | Revisões & Histórico de Versões |
 
 ---
 
