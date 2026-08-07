@@ -17,7 +17,8 @@ import {
   X,
   HeartHandshake,
   Crown,
-  Layers
+  Layers,
+  Zap
 } from 'lucide-react';
 
 export default function Sidebar({ 
