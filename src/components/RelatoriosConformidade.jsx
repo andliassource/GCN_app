@@ -258,20 +258,20 @@ export default function RelatoriosConformidade({ db }) {
 
           <div className="grid grid-cols-3 gap-6 text-center text-[9px] pt-4">
             <div className="space-y-1">
-              <div className="border-b border-slate-400 pb-2 font-bold text-slate-800">1ª Linha (Gestores de Processos)</div>
-              <div className="text-slate-500">Patrícia Lima / Marcos Costa</div>
+              <div className="border-b border-slate-400 pb-2 font-bold text-slate-800">1ª Linha (Operações, TIC & Negócios)</div>
+              <div className="text-slate-500">Gestores de Áreas, Geati, Geemp & Getic</div>
               <div className="text-[8px] text-emerald-700 font-mono">Assinado digitalmente</div>
             </div>
 
             <div className="space-y-1">
-              <div className="border-b border-slate-400 pb-2 font-bold text-slate-800">2ª Linha (GERIC / Geemp / Geati)</div>
-              <div className="text-slate-500">Riscos, GCN & Governança Corporativa</div>
+              <div className="border-b border-slate-400 pb-2 font-bold text-slate-800">2ª Linha (GERIC - Riscos, Compliance & GCN)</div>
+              <div className="text-slate-500">Gestão de Riscos e Continuidade</div>
               <div className="text-[8px] text-emerald-700 font-mono">Assinado digitalmente</div>
             </div>
 
             <div className="space-y-1">
               <div className="border-b border-slate-400 pb-2 font-bold text-slate-800">3ª Linha (GERAUD - Auditoria Interna)</div>
-              <div className="text-slate-500">Auditoria Independente (Reporte ao Conselho)</div>
+              <div className="text-slate-500">Auditoria Independente (Sem Vínculo à Diretoria)</div>
               <div className="text-[8px] text-emerald-700 font-mono">Parecer de Conformidade Emitido</div>
             </div>
           </div>
