@@ -183,7 +183,7 @@ export default function DashboardBOD({ db }) {
             100% <span className="text-xs font-medium text-emerald-500">Aderente</span>
           </div>
           <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-snug">
-            1ª Linha (Gestores), 2ª Linha (GERIC/Geati) e 3ª Linha (Comitê Geemp) ativas com perfis auditáveis.
+            1ª Linha (Gestores), 2ª Linha (GERIC/Geemp/Geati - Riscos & GCN) e 3ª Linha (Geraud - Auditoria Interna Independente sem vinculação a diretoria).
           </p>
         </div>
 

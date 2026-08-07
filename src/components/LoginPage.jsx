@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 const DEMO_PERFIS = [
   { label: 'Administrador Geric (Riscos/GCN)', email: 'geric@empresa.com.br', senha: 'geric2026', role: 'admin_geric', cor: 'indigo' },
   { label: 'Arthur Mendes (Geemp Gov Corp)', email: 'geemp@empresa.com.br', senha: 'geemp2026', role: 'gov_corporativa', cor: 'amber' },
+  { label: 'Carlos Eduardo (Geraud Auditoria 3ª Linha)', email: 'auditoria@empresa.com.br', senha: 'auditoria2026', role: 'auditoria_interna', cor: 'emerald' },
   { label: 'Eduardo Santos (Geati Gov TIC)', email: 'geati@empresa.com.br', senha: 'geati2026', role: 'tic_governanca', cor: 'sky' },
   { label: 'Vanessa Lopes (Gemac Comms)', email: 'gemac@empresa.com.br', senha: 'gemac2026', role: 'comunicacao_crise', cor: 'rose' },
   { label: 'Sandro Lima (Gesap Predial)', email: 'gesap@empresa.com.br', senha: 'gesap2026', role: 'apoio_predial', cor: 'purple' },

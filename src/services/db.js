@@ -4,7 +4,7 @@
 // ============================================================================
 
 const INITIAL_DATA = {
-  db_version: "15.0",
+  db_version: "16.0",
 
   // ── CONFIG DO SISTEMA ─────────────────────────────────────────────────────
   configSistema: {
@@ -36,7 +36,8 @@ const INITIAL_DATA = {
     { id_usuario: "USR-014", nome: "Gilberto Ramos", email: "gepin@empresa.com.br", id_gerencia: "GER-NEG07", role: "gestor_area", senha: "gepin2026" },
     { id_usuario: "USR-016", nome: "Ana Ribeiro (Gepes/RH)", email: "gepes@empresa.com.br", id_gerencia: "GER-APO01", role: "apoio_pessoas", senha: "gepes2026" },
     { id_usuario: "USR-017", nome: "Carla Mendes (Gefic/Fin)", email: "gefic@empresa.com.br", id_gerencia: "GER-APO02", role: "apoio_financeiro", senha: "gefic2026" },
-    { id_usuario: "USR-018", nome: "Luis Fernandes (Gesuc/Supr)", email: "gesuc@empresa.com.br", id_gerencia: "GER-APO03", role: "apoio_suprimentos", senha: "gesuc2026" }
+    { id_usuario: "USR-018", nome: "Luis Fernandes (Gesuc/Supr)", email: "gesuc@empresa.com.br", id_gerencia: "GER-APO03", role: "apoio_suprimentos", senha: "gesuc2026" },
+    { id_usuario: "USR-019", nome: "Carlos Eduardo (Geraud - Auditoria 3ª Linha)", email: "auditoria@empresa.com.br", id_gerencia: "GER-AUD01", role: "auditoria_interna", senha: "auditoria2026" }
   ],
 
   // ── DIRETORIAS ────────────────────────────────────────────────────────────
@@ -63,6 +64,7 @@ const INITIAL_DATA = {
     { id_gerencia: "GER-GOV01", nome: "Gerência de Gestão de Riscos e GCN (2ª Linha)", sigla: "Geric", tipo: "Governança", id_diretoria: "DIR-002", email: "geric@empresa.com.br", telefone: "(11) 98001-0001", observacao: "Segunda linha de defesa. Gestão de todos os PCOs e PRDs. Coordena com Geemp o Comitê de Crise." },
     { id_gerencia: "GER-GOV02", nome: "Gerência de Governança Corporativa e Crises", sigla: "Geemp", tipo: "Governança", id_diretoria: "DIR-002", email: "geemp@empresa.com.br", telefone: "(11) 98001-0008", observacao: "Conduz o Comitê de Crise. Elabora o regimento de crises (PGC). Preside atas." },
     { id_gerencia: "GER-GOV03", nome: "Gerência de Marketing e Comunicação Corporativa", sigla: "Gemac", tipo: "Governança", id_diretoria: "DIR-002", email: "gemac@empresa.com.br", telefone: "(11) 98001-0005", observacao: "Coordena comunicação interna e externa em crises. Única autorizada a emitir notas à imprensa." },
+    { id_gerencia: "GER-AUD01", nome: "Gerência Executiva de Auditoria Interna (3ª Linha Independente)", sigla: "Geraud", tipo: "Auditoria", id_diretoria: "INDEP", email: "auditoria@empresa.com.br", telefone: "(11) 98001-9999", observacao: "Terceira linha de defesa independente (IIA). Reporte exclusivo e direto ao Conselho de Administração e Comitê de Auditoria (sem vinculação hierárquica à Diretoria Executiva ou Presidência)." },
     { id_gerencia: "GER-APO01", nome: "Gerência Executiva de Pessoas e Recursos Humanos", sigla: "Gepes", tipo: "Apoio", id_diretoria: "DIR-003", email: "gepes@empresa.com.br", telefone: "(11) 98001-9008", observacao: "PCO de apoio: SLA interno de 24h para recrutamento emergencial. Sem contrato externo de faturamento." },
     { id_gerencia: "GER-APO02", nome: "Gerência Executiva de Finanças e Tesouraria", sigla: "Gefic", tipo: "Apoio", id_diretoria: "DIR-003", email: "gefic@empresa.com.br", telefone: "(11) 98001-9009", observacao: "PCO de apoio: SLA de 4h para liberação de pagamentos emergenciais in crises. Sem contrato externo." },
     { id_gerencia: "GER-APO03", nome: "Gerência Executiva de Suprimentos e Contratos", sigla: "Gesuc", tipo: "Apoio", id_diretoria: "DIR-003", email: "gesuc@empresa.com.br", telefone: "(11) 98001-9010", observacao: "Gerencia aquisições de emergência e aciona fornecedores alternativos em contingências." },

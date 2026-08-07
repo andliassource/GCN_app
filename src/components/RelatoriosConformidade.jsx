@@ -264,15 +264,15 @@ export default function RelatoriosConformidade({ db }) {
             </div>
 
             <div className="space-y-1">
-              <div className="border-b border-slate-400 pb-2 font-bold text-slate-800">2ª Linha (GERIC - Riscos e GCN)</div>
-              <div className="text-slate-500">Roberto Santos (Gerente GERIC)</div>
+              <div className="border-b border-slate-400 pb-2 font-bold text-slate-800">2ª Linha (GERIC / Geemp / Geati)</div>
+              <div className="text-slate-500">Riscos, GCN & Governança Corporativa</div>
               <div className="text-[8px] text-emerald-700 font-mono">Assinado digitalmente</div>
             </div>
 
             <div className="space-y-1">
-              <div className="border-b border-slate-400 pb-2 font-bold text-slate-800">3ª Linha / Comitê (Geemp)</div>
-              <div className="text-slate-500">Conselho de Administração</div>
-              <div className="text-[8px] text-emerald-700 font-mono">Homologado via Ata</div>
+              <div className="border-b border-slate-400 pb-2 font-bold text-slate-800">3ª Linha (GERAUD - Auditoria Interna)</div>
+              <div className="text-slate-500">Auditoria Independente (Reporte ao Conselho)</div>
+              <div className="text-[8px] text-emerald-700 font-mono">Parecer de Conformidade Emitido</div>
             </div>
           </div>
         </div>
