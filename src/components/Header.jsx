@@ -19,6 +19,7 @@ export default function Header({ activeTab, db, onNavigate, onToggleMobileMenu }
     switch (activeTab) {
       case 'dashboard': return 'Painel Executivo — Gestão GCN (Geric)';
       case 'bod': return 'Painel C-Level & Conselho de Administração (BOD View)';
+      case 'simulador': return 'Simulador de Estresse & Teste de Impacto Cascata (What-If)';
       case 'priorizacao': return 'Matriz de Priorização de Negócios (4×4)';
       case 'organizacao': return 'Estrutura Organizacional e Análise de Riscos';
       case 'contratos': return 'Ingestão e Análise de Contratos';
