@@ -17,7 +17,38 @@ export default function TestesExercicios({ db }) {
   // Estados locais
   const [showForm, setShowForm] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState('');
-  const [notification, setNotification] = useState(null);
+  // Estados do Plano Anual & Calendário de Simulados (ISO 22301 §8.5)
+  const [activeSubTab, setActiveSubTab] = useState('calendario'); // 'calendario' | 'historico'
+  const [simuladosAnuais, setSimuladosAnuais] = useState(db.calendarioSimuladosAnuais ? db.calendarioSimuladosAnuais.list() : []);
+  const [selectedEvidenciaSim, setSelectedEvidenciaSim] = useState(null);
+  const [showNovoSimuladoModal, setShowNovoSimuladoModal] = useState(false);
+  const [novoSimuladoForm, setNovoSimuladoForm] = useState({
+    titulo: '',
+    trimestre: 'Q3 2026',
+    data_agendada: '',
+    id_processo: db.processosCriticos.list()[0]?.id_processo || '',
+    tipo: 'Simulação de Mesa (Tabletop)',
+    gerencia_responsavel: 'Geric',
+    rto_meta_min: 30
+  });
+
+  const handleCreateNovoSimuladoAnual = (e) => {
+    e.preventDefault();
+    if (!novoSimuladoForm.titulo || !novoSimuladoForm.data_agendada) return;
+    const created = db.calendarioSimuladosAnuais.create({
+      ...novoSimuladoForm,
+      status: 'Agendado',
+      resultado: 'Aguardando Execução',
+      rto_meta_min: Number(novoSimuladoForm.rto_meta_min),
+      rto_atingido_min: null,
+      evidencias: [],
+      parecer_geric: 'Agendado no Plano Anual corporativo.',
+      parecer_auditoria: 'Aguardando execução pela 1ª e 2ª Linhas.'
+    });
+    setSimuladosAnuais(db.calendarioSimuladosAnuais.list());
+    setShowNovoSimuladoModal(false);
+    setNotification({ type: 'success', text: `Simulado "${created.titulo}" agendado no Plano Anual corporativo!` });
+  };
   
   // Estados para o Simulador de Exercício de Mesa (Tabletop)
   const [showTabletop, setShowTabletop] = useState(false);
@@ -414,6 +445,128 @@ export default function TestesExercicios({ db }) {
       {notification && (
         <div className="p-4 rounded-xl border border-indigo-500/20 bg-indigo-50/50 dark:bg-indigo-950/20 text-indigo-800 dark:text-indigo-400 text-xs font-semibold flex items-center gap-2">
           <CheckCircle2 className="w-5 h-5 text-indigo-500" /> {notification.text}
+        </div>
+      )}
+
+      {/* Sub-Navegação de Abas: Calendário Anual vs Histórico Executado */}
+      <div className="flex border-b border-slate-200 dark:border-slate-800 gap-6">
+        <button
+          onClick={() => setActiveSubTab('calendario')}
+          className={`pb-3 text-xs font-extrabold transition-colors border-b-2 cursor-pointer flex items-center gap-2 ${
+            activeSubTab === 'calendario'
+              ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400'
+              : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+          }`}
+        >
+          <Calendar className="w-4 h-4" /> Plano & Calendário Anual de Exercícios (ISO 22301 §8.5)
+        </button>
+        <button
+          onClick={() => setActiveSubTab('historico')}
+          className={`pb-3 text-xs font-extrabold transition-colors border-b-2 cursor-pointer flex items-center gap-2 ${
+            activeSubTab === 'historico'
+              ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400'
+              : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+          }`}
+        >
+          <Activity className="w-4 h-4" /> Histórico de Testes Realizados ({testes.length})
+        </button>
+      </div>
+
+      {/* ═══ ABA 1: PLANO & CALENDÁRIO ANUAL DE SIMULADOS (ISO 22301 §8.5) ═══ */}
+      {activeSubTab === 'calendario' && (
+        <div className="space-y-6">
+          {/* KPI Bar do Plano Anual */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+              <span className="text-[10px] font-extrabold uppercase text-slate-400">Coordenadas do Plano Anual</span>
+              <div className="text-xl font-black text-slate-800 dark:text-white mt-1">4 / 4 Trimestres</div>
+              <p className="text-[10px] text-emerald-600 font-bold mt-1">100% de cobertura operacional</p>
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+              <span className="text-[10px] font-extrabold uppercase text-slate-400">Progresso do Cronograma</span>
+              <div className="text-xl font-black text-slate-800 dark:text-white mt-1">50% Executado</div>
+              <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+                <div className="bg-emerald-500 h-full w-1/2"></div>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+              <span className="text-[10px] font-extrabold uppercase text-slate-400">Aderência ISO 22301 §8.5</span>
+              <div className="text-xl font-black text-indigo-600 dark:text-indigo-400 mt-1">100% Aderente</div>
+              <p className="text-[10px] text-slate-400 mt-1">Exercícios com trilha de evidências</p>
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+              <span className="text-[10px] font-extrabold uppercase text-slate-400">Auditoria (3ª Linha Geraud)</span>
+              <div className="text-sm font-black text-emerald-600 dark:text-emerald-400">Evidências Homologadas</div>
+              {canCreate() && (
+                <button
+                  onClick={() => setShowNovoSimuladoModal(true)}
+                  className="mt-2 w-full py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] rounded-lg shadow-xs transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                >
+                  <Plus className="w-3 h-3" /> Agendar No Plano
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Cards por Trimestre (Q1, Q2, Q3, Q4) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {simuladosAnuais.map((sim) => (
+              <div key={sim.id_simulado} className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+                <div className="flex justify-between items-start border-b border-slate-200 dark:border-slate-800 pb-3">
+                  <div>
+                    <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
+                      {sim.trimestre}
+                    </span>
+                    <h4 className="font-extrabold text-sm text-slate-800 dark:text-white mt-1.5 leading-tight">{sim.titulo}</h4>
+                  </div>
+                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold ${
+                    sim.status === 'Concluído' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' :
+                    sim.status === 'Agendado' ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300' :
+                    'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                  }`}>
+                    {sim.status}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <span className="text-slate-400 font-medium text-[10px]">Data Agendada:</span>
+                    <p className="font-bold text-slate-800 dark:text-white">{new Date(sim.data_agendada).toLocaleDateString('pt-BR')}</p>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 font-medium text-[10px]">Tipo de Exercício:</span>
+                    <p className="font-bold text-slate-800 dark:text-white">{sim.tipo}</p>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 font-medium text-[10px]">Gerência Responsável:</span>
+                    <p className="font-bold text-slate-800 dark:text-white">{sim.gerencia_responsavel}</p>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 font-medium text-[10px]">Resultado RTO:</span>
+                    <p className="font-bold text-emerald-600 dark:text-emerald-400">
+                      {sim.rto_atingido_min ? `${sim.rto_atingido_min} min (Meta: ${sim.rto_meta_min} min)` : `Meta: ${sim.rto_meta_min} min`}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Evidências & Botão de Trilha */}
+                <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-xs">
+                  <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium flex items-center gap-1">
+                    <Paperclip className="w-3.5 h-3.5 text-indigo-500" /> {sim.evidencias?.length || 0} evidência(s) anexa(s)
+                  </span>
+                  <button
+                    onClick={() => setSelectedEvidenciaSim(sim)}
+                    className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 font-bold rounded-lg text-[11px] flex items-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <FileText className="w-3.5 h-3.5" /> Trilha de Evidências & Parecer
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -1319,6 +1472,188 @@ export default function TestesExercicios({ db }) {
             </div>
 
           </div>
+        </div>
+      )}
+
+      {/* ═══ MODAL: TRILHA DE EVIDÊNCIAS & PARECER DE AUDITORIA ═══ */}
+      {selectedEvidenciaSim && (
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-xl w-full p-6 space-y-6 shadow-2xl">
+            <div className="flex justify-between items-start border-b border-slate-200 dark:border-slate-800 pb-3">
+              <div>
+                <span className="text-[10px] font-extrabold uppercase text-indigo-600 dark:text-indigo-400">
+                  {selectedEvidenciaSim.trimestre} • {selectedEvidenciaSim.tipo}
+                </span>
+                <h3 className="font-extrabold text-base text-slate-800 dark:text-white mt-0.5">
+                  {selectedEvidenciaSim.titulo}
+                </h3>
+              </div>
+              <button onClick={() => setSelectedEvidenciaSim(null)} className="text-slate-400 hover:text-slate-600 font-bold text-xs cursor-pointer">✕ Fechar</button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              {/* Status & RTO */}
+              <div className="grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+                <div>
+                  <span className="text-slate-400 font-medium text-[10px] block">Status do Simulado:</span>
+                  <span className="font-extrabold text-emerald-600 dark:text-emerald-400">{selectedEvidenciaSim.status} — {selectedEvidenciaSim.resultado}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-medium text-[10px] block">RTO de Execução:</span>
+                  <span className="font-extrabold text-slate-800 dark:text-white">
+                    {selectedEvidenciaSim.rto_atingido_min ? `${selectedEvidenciaSim.rto_atingido_min} min` : 'Em Agendamento'} (Meta: {selectedEvidenciaSim.rto_meta_min} min)
+                  </span>
+                </div>
+              </div>
+
+              {/* Lista de Evidências Anexadas */}
+              <div className="space-y-2">
+                <span className="font-extrabold uppercase text-[10px] text-slate-500 block">📁 Evidências Digitais de Execução</span>
+                {selectedEvidenciaSim.evidencias && selectedEvidenciaSim.evidencias.length > 0 ? (
+                  <div className="space-y-2">
+                    {selectedEvidenciaSim.evidencias.map((ev, i) => (
+                      <div key={i} className="flex justify-between items-center p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+                        <div className="flex items-center gap-2">
+                          <Paperclip className="w-4 h-4 text-indigo-500" />
+                          <div>
+                            <p className="font-bold text-slate-800 dark:text-white">{ev.nome}</p>
+                            <p className="text-[10px] text-slate-400">{ev.tipo} • {ev.tamanho}</p>
+                          </div>
+                        </div>
+                        <span className="text-[9px] font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">Verificado OK</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-slate-400 italic">Nenhuma evidência anexa até a realização do exercício.</p>
+                )}
+              </div>
+
+              {/* Parecer GERIC (2ª Linha) */}
+              <div className="p-3.5 bg-indigo-50/60 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-850 rounded-xl space-y-1">
+                <span className="font-extrabold text-[10px] uppercase text-indigo-700 dark:text-indigo-300 block">
+                  🛡️ Parecer da 2ª Linha (GERIC — Gestão de Riscos & GCN)
+                </span>
+                <p className="text-[11px] text-slate-700 dark:text-slate-300 leading-snug">{selectedEvidenciaSim.parecer_geric}</p>
+              </div>
+
+              {/* Homologação GERAUD (3ª Linha) */}
+              <div className="p-3.5 bg-emerald-50/60 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-850 rounded-xl space-y-1">
+                <span className="font-extrabold text-[10px] uppercase text-emerald-700 dark:text-emerald-300 block">
+                  ⚖️ Homologação da 3ª Linha (GERAUD — Auditoria Interna Independente)
+                </span>
+                <p className="text-[11px] text-slate-700 dark:text-slate-300 leading-snug">{selectedEvidenciaSim.parecer_auditoria}</p>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-slate-200 dark:border-slate-800">
+              <button
+                onClick={() => setSelectedEvidenciaSim(null)}
+                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-lg cursor-pointer"
+              >
+                Concluir Visualização
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ MODAL: AGENDAR NOVO SIMULADO CORPORATIVO NO PLANO ANUAL ═══ */}
+      {showNovoSimuladoModal && (
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+          <form onSubmit={handleCreateNovoSimuladoAnual} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-5 shadow-2xl">
+            <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
+              <h3 className="font-extrabold text-sm text-slate-800 dark:text-white flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-indigo-500" /> Agendar Exercício no Plano Anual (ISO 22301 §8.5)
+              </h3>
+              <button type="button" onClick={() => setShowNovoSimuladoModal(false)} className="text-slate-400 hover:text-slate-600 font-bold text-xs cursor-pointer">✕</button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <div className="space-y-1">
+                <label className="font-bold text-slate-500 uppercase text-[10px]">Título do Simulado *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: Simulado de Contingência de Câmbio..."
+                  value={novoSimuladoForm.titulo}
+                  onChange={(e) => setNovoSimuladoForm({ ...novoSimuladoForm, titulo: e.target.value })}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-indigo-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-500 uppercase text-[10px]">Trimestre *</label>
+                  <select
+                    value={novoSimuladoForm.trimestre}
+                    onChange={(e) => setNovoSimuladoForm({ ...novoSimuladoForm, trimestre: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-indigo-500"
+                  >
+                    <option value="Q1 2026">Q1 2026</option>
+                    <option value="Q2 2026">Q2 2026</option>
+                    <option value="Q3 2026">Q3 2026</option>
+                    <option value="Q4 2026">Q4 2026</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-500 uppercase text-[10px]">Data Agendada *</label>
+                  <input
+                    type="date"
+                    required
+                    value={novoSimuladoForm.data_agendada}
+                    onChange={(e) => setNovoSimuladoForm({ ...novoSimuladoForm, data_agendada: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-indigo-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-500 uppercase text-[10px]">Tipo de Exercício *</label>
+                  <select
+                    value={novoSimuladoForm.tipo}
+                    onChange={(e) => setNovoSimuladoForm({ ...novoSimuladoForm, tipo: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-indigo-500"
+                  >
+                    <option value="Simulação de Mesa (Tabletop)">Simulação de Mesa (Tabletop)</option>
+                    <option value="Exercício Prático de Campo">Exercício Prático de Campo</option>
+                    <option value="Teste Técnico de DR / Failover">Teste Técnico de DR / Failover</option>
+                    <option value="Simulado Cyber / Red Team">Simulado Cyber / Red Team</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-500 uppercase text-[10px]">Gerência Responsável *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ex: Getic / Gecob"
+                    value={novoSimuladoForm.gerencia_responsavel}
+                    onChange={(e) => setNovoSimuladoForm({ ...novoSimuladoForm, gerencia_responsavel: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-indigo-500"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-bold text-slate-500 uppercase text-[10px]">Meta de RTO (Minutos) *</label>
+                <input
+                  type="number"
+                  required
+                  value={novoSimuladoForm.rto_meta_min}
+                  onChange={(e) => setNovoSimuladoForm({ ...novoSimuladoForm, rto_meta_min: e.target.value })}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-indigo-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
+              <button type="button" onClick={() => setShowNovoSimuladoModal(false)} className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-350 font-bold text-xs rounded-lg cursor-pointer">Cancelar</button>
+              <button type="submit" className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-lg shadow-sm cursor-pointer">Confirmar Agendamento</button>
+            </div>
+          </form>
         </div>
       )}
 

@@ -4,7 +4,7 @@
 // ============================================================================
 
 const INITIAL_DATA = {
-  db_version: "16.0",
+  db_version: "17.0",
 
   // ── CONFIG DO SISTEMA ─────────────────────────────────────────────────────
   configSistema: {
@@ -517,6 +517,80 @@ const INITIAL_DATA = {
     { id_avaliacao: "EVL-005", id_processo: "PROC-TIC-001", nivel_resiliencia: 4.20, aderencia_ISO22301: 80.0, nota_area: 4.00, nota_geric: 4.30, checklist_area: "{}", checklist_geric: "{}", comentarios_geric: "Aprovado no simulado prático.", grafico_resultado: "radar_PROC-TIC-001" },
     { id_avaliacao: "EVL-006", id_processo: "PROC-APO-001", nivel_resiliencia: 2.10, aderencia_ISO22301: 27.5, nota_area: 2.00, nota_geric: 2.20, checklist_area: "{}", checklist_geric: "{}", comentarios_geric: "Plano de apoio pendente de treinamento.", grafico_resultado: "radar_PROC-APO-001" },
     { id_avaliacao: "EVL-007", id_processo: "PROC-APO-004", nivel_resiliencia: 3.80, aderencia_ISO22301: 70.0, nota_area: 4.00, nota_geric: 3.70, checklist_area: "{}", checklist_geric: "{}", comentarios_geric: "Concluído o teste predial de evacuação.", grafico_resultado: "radar_PROC-APO-004" }
+  ],
+
+  // ── PLANO ANUAL DE EXERCÍCIOS E SIMULADOS (ISO 22301 §8.5) ───────────────
+  calendarioSimuladosAnuais: [
+    {
+      id_simulado: "SIM-2026-Q1",
+      titulo: "Simulado de Mesa Tabletop — Canais Digitais e Cobrança",
+      trimestre: "Q1 2026",
+      data_agendada: "2026-02-15",
+      id_processo: "PROC-COB-001",
+      tipo: "Simulação de Mesa (Tabletop)",
+      gerencia_responsavel: "Gecob / Geric",
+      status: "Concluído",
+      resultado: "Sucesso (Score 95/100)",
+      rto_meta_min: 15,
+      rto_atingido_min: 14,
+      evidencias: [
+        { nome: "Ata_Tabletop_Q1_2026.pdf", tipo: "Ata de Exercício", tamanho: "1.2 MB", data: "2026-02-15" },
+        { nome: "Log_Failover_Gateways_Pagarme.txt", tipo: "Log Técnico", tamanho: "450 KB", data: "2026-02-15" }
+      ],
+      parecer_geric: "Exercício concluído com alto nível de prontidão da 1ª Linha. RTO atingido dentro do SLA.",
+      parecer_auditoria: "Evidências checadas e homologadas pela 3ª Linha (Geraud)."
+    },
+    {
+      id_simulado: "SIM-2026-Q2",
+      titulo: "Simulado de Evacuação Predial e Brigada de Incêndio",
+      trimestre: "Q2 2026",
+      data_agendada: "2026-05-20",
+      id_processo: "PROC-APO-004",
+      tipo: "Exercício Prático de Campo",
+      gerencia_responsavel: "Gesap / CBMERJ",
+      status: "Concluído",
+      resultado: "Sucesso Parcial",
+      rto_meta_min: 30,
+      rto_atingido_min: 28,
+      evidencias: [
+        { nome: "Laudo_CBMERJ_Simulado_Evacuacao.pdf", tipo: "Relatório Oficial", tamanho: "3.8 MB", data: "2026-05-20" },
+        { nome: "Lista_Presenca_Muster_Point.xlsx", tipo: "Controle de Pessoas", tamanho: "210 KB", data: "2026-05-20" }
+      ],
+      parecer_geric: "Evacuação concluída em 28 minutos. Plano de ação PA-003 aberto para ajuste de rotas no 3º andar.",
+      parecer_auditoria: "Plano mitigatório PA-003 sob acompanhamento da 3ª Linha."
+    },
+    {
+      id_simulado: "SIM-2026-Q3",
+      titulo: "Simulado de Failover DR de TI & Banco de Dados (AWS us-east-1)",
+      trimestre: "Q3 2026",
+      data_agendada: "2026-08-15",
+      id_processo: "PROC-TIC-001",
+      tipo: "Teste Técnico de DR / Failover",
+      gerencia_responsavel: "Getic / Geati",
+      status: "Agendado",
+      resultado: "Aguardando Execução",
+      rto_meta_min: 30,
+      rto_atingido_min: null,
+      evidencias: [],
+      parecer_geric: "Script de testes aprovado pela GERIC. War room agendada na sala 402.",
+      parecer_auditoria: "Auditoria Interna agendada para acompanhamento in loco."
+    },
+    {
+      id_simulado: "SIM-2026-Q4",
+      titulo: "Simulado de Cibersegurança & Resposta a Ransomware",
+      trimestre: "Q4 2026",
+      data_agendada: "2026-11-10",
+      id_processo: "PROC-TIC-002",
+      tipo: "Simulado Cyber / Red Team",
+      gerencia_responsavel: "Gesec / SOC",
+      status: "Planejado",
+      resultado: "Aguardando Q4",
+      rto_meta_min: 60,
+      rto_atingido_min: null,
+      evidencias: [],
+      parecer_geric: "Escopo em definição pela equipe de Cibersegurança.",
+      parecer_auditoria: "Pendente de alinhamento prévio."
+    }
   ]
 };
 
@@ -1187,6 +1261,31 @@ export const dbService = {
         meses.push({ mes: d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }), total, criticos });
       }
       return meses;
+    }
+  },
+
+  calendarioSimuladosAnuais: {
+    list: () => {
+      const db = getDB();
+      return db.calendarioSimuladosAnuais || [];
+    },
+    create: (sim) => {
+      const db = getDB();
+      if (!db.calendarioSimuladosAnuais) db.calendarioSimuladosAnuais = [];
+      const newSim = { ...sim, id_simulado: `SIM-${Date.now().toString().slice(-4)}`, evidencias: sim.evidencias || [] };
+      db.calendarioSimuladosAnuais.push(newSim);
+      saveDB(db);
+      return newSim;
+    },
+    update: (id, updates) => {
+      const db = getDB();
+      const idx = (db.calendarioSimuladosAnuais || []).findIndex(s => s.id_simulado === id);
+      if (idx !== -1) {
+        db.calendarioSimuladosAnuais[idx] = { ...db.calendarioSimuladosAnuais[idx], ...updates };
+        saveDB(db);
+        return db.calendarioSimuladosAnuais[idx];
+      }
+      return null;
     }
   }
 };
