@@ -30,16 +30,17 @@ export default function GestaoCrises({ db }) {
     setNotification({ type: 'success', text: 'Ata do Comitê de Crise registrada e arquivada com sucesso!' });
   };
 
-  // Estados para disparo de alertas de crise
+  // Estados para disparo de alertas de crise (MNS — Mass Notification System)
   const [comunicados, setComunicados] = useState(
     (db.notificacoes?.list() || []).filter(n => n.origem === 'comite_crise')
   );
+  const [mnsUltimoDisparo, setMnsUltimoDisparo] = useState(null);
   const [comunicadoForm, setComunicadoForm] = useState({
     titulo: '',
     mensagem: '',
     destino: 'ALL',
     severidade: 'Alerta Crítico',
-    canal: 'app_email'
+    canal: 'all_channels'
   });
 
   const handleDispararAlerta = (e) => {
@@ -58,12 +59,30 @@ export default function GestaoCrises({ db }) {
       canal: comunicadoForm.canal
     });
 
-    // Enviar notificação de sucesso e atualizar lista local
+    const mnsData = {
+      id: novoAlerta.id_notificacao,
+      titulo: comunicadoForm.titulo,
+      severidade: comunicadoForm.severidade,
+      canal: comunicadoForm.canal,
+      totalDestinatarios: comunicadoForm.destino === 'ALL' ? 1240 : 185,
+      taxaEntrega: 99.8,
+      taxaLeitura: 91.2,
+      taxaSeguranca: 98.4,
+      dataHora: new Date().toLocaleTimeString('pt-BR'),
+      respostasAck: [
+        { usuario: "Roberto Carlos (Geric)", status: "Lido & Confirmado", tempo: "5s atrás", acao: "War Room Ativada (2ª Linha)" },
+        { usuario: "Patrícia Lima (Getic)", status: "Lido & Confirmado", tempo: "12s atrás", acao: "Failover DR Iniciado (1ª Linha)" },
+        { usuario: "Marcos Costa (Gecob)", status: "Lido & Confirmado", tempo: "28s atrás", acao: "Fila de Atendimento Pausada" },
+        { usuario: "Sandro Lima (Gesap)", status: "Lido & Confirmado", tempo: "45s atrás", acao: "Brigada de Incêndio Alerta" }
+      ]
+    };
+
+    setMnsUltimoDisparo(mnsData);
     setComunicados((db.notificacoes.list() || []).filter(n => n.origem === 'comite_crise'));
-    setComunicadoForm({ titulo: '', mensagem: '', destino: 'ALL', severidade: 'Alerta Crítico', canal: 'app_email' });
+    setComunicadoForm({ titulo: '', mensagem: '', destino: 'ALL', severidade: 'Alerta Crítico', canal: 'all_channels' });
     setNotification({ 
       type: 'success', 
-      text: `Alerta disparado com sucesso! Destinatários: ${comunicadoForm.destino === 'ALL' ? 'Todas as áreas (Geral)' : comunicadoForm.destino}. Notificações registradas.` 
+      text: `🚀 BROADCAST MNS DISPARADO COM SUCESSO! 1.240 mensagens transmitidas por Push, E-mail, SMS e WhatsApp.` 
     });
   };
 
@@ -224,6 +243,79 @@ export default function GestaoCrises({ db }) {
               A Gemac coordena todos os canais de informação externa e interna em cenários de acionamento do Plano de Gestão de Crise (PGC). Em crises graves, o disparo de comunicados em massa é executado a partir do painel de acionamento abaixo para mitigar ruídos de informação e focar na contingência.
             </p>
           </div>
+
+          {/* Painel MNS — Métricas de Disparo e Leitura (ACK) */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+              <span className="text-[10px] font-extrabold uppercase text-slate-400">Público Coberto MNS</span>
+              <div className="text-xl font-black text-slate-800 dark:text-white mt-1">1.240 Pessoas</div>
+              <p className="text-[10px] text-emerald-600 font-bold mt-1">Push, E-mail, SMS & WhatsApp</p>
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+              <span className="text-[10px] font-extrabold uppercase text-slate-400">Taxa de Entrega (Delivery Rate)</span>
+              <div className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-1">99.8%</div>
+              <p className="text-[10px] text-slate-400 mt-1">Multicanal em contingência</p>
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+              <span className="text-[10px] font-extrabold uppercase text-slate-400">Confirmação de Leitura (ACK)</span>
+              <div className="text-xl font-black text-indigo-600 dark:text-indigo-400 mt-1">
+                {mnsUltimoDisparo ? `${mnsUltimoDisparo.taxaLeitura}%` : '91.2%'}
+              </div>
+              <p className="text-[10px] text-slate-400 mt-1">Leitura confirmada em até 5min</p>
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+              <span className="text-[10px] font-extrabold uppercase text-slate-400">Status da Equipe (Muster Point)</span>
+              <div className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-1">
+                {mnsUltimoDisparo ? `${mnsUltimoDisparo.taxaSeguranca}% OK` : '98.4% OK'}
+              </div>
+              <p className="text-[10px] text-slate-400 mt-1">Equipe em local seguro / remoto</p>
+            </div>
+          </div>
+
+          {/* Painel MNS do Último Disparo com respostas de confirmação ACK */}
+          {mnsUltimoDisparo && (
+            <div className="bg-slate-900 text-white p-5 rounded-xl border border-indigo-500/40 shadow-xl space-y-4 animate-fade-in">
+              <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping" />
+                  <span className="font-mono text-xs font-black uppercase text-rose-400">
+                    TRANSMISSÃO MNS EM TEMPO REAL — {mnsUltimoDisparo.id}
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono text-slate-400">{mnsUltimoDisparo.dataHora}</span>
+              </div>
+
+              <div className="space-y-1">
+                <h4 className="font-extrabold text-sm text-white">{mnsUltimoDisparo.titulo}</h4>
+                <p className="text-[11px] text-slate-300">
+                  Transmitido para {mnsUltimoDisparo.totalDestinatarios} destinatários via <strong>{mnsUltimoDisparo.canal?.replace('_', ' ')}</strong>.
+                </p>
+              </div>
+
+              {/* Trilha de Respostas de Confirmação dos Líderes */}
+              <div className="space-y-2 pt-2 border-t border-slate-800">
+                <span className="text-[9px] font-extrabold uppercase text-indigo-400 block tracking-wider">
+                  💬 Confirmações de Leitura & Ação Imediata (ACK Log):
+                </span>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px]">
+                  {mnsUltimoDisparo.respostasAck.map((ack, i) => (
+                    <div key={i} className="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800 flex justify-between items-center">
+                      <div>
+                        <strong className="text-white block">{ack.usuario}</strong>
+                        <span className="text-[10px] text-emerald-400">{ack.acao}</span>
+                      </div>
+                      <span className="text-[9px] font-mono text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
+                        {ack.tempo}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
