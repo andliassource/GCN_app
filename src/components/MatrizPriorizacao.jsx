@@ -6,7 +6,7 @@ import {
 import {
   Target, TrendingUp, AlertTriangle, ShieldCheck, Activity,
   Download, Dices, ChevronDown, ChevronUp, Search, ArrowUpDown,
-  FileCheck, Info, CheckCircle2, ShieldAlert, Edit3, PlusCircle, Trash2, Database
+  FileCheck, Info, CheckCircle2, ShieldAlert, Edit3, PlusCircle, Trash2, Database, Clock
 } from 'lucide-react';
 
 // ═══════════════════════════════════════════════════════════════════════════════
