@@ -298,11 +298,14 @@ export default function PainelApoio({ db }) {
     }
   };
 
+  const fornecedoresTPRM = db.fornecedoresCriticosTPRM ? db.fornecedoresCriticosTPRM.list() : [];
+
   const tabs = [
     { key: 'gesap', label: '🏢 Gesap (Predial)', role: 'apoio_predial', count: CENARIOS_PREDIAL.length },
     { key: 'gepes', label: '👥 Gepes (Pessoas/RH)', role: 'apoio_pessoas', count: CENARIOS_PESSOAS.length },
     { key: 'gefic', label: '💵 Gefic (Financeiro)', role: 'apoio_financeiro', count: CENARIOS_FINANCEIRO.length },
     { key: 'gesuc', label: '🚚 Gesuc (Suprimentos)', role: 'apoio_suprimentos', count: CENARIOS_SUPRIMENTOS.length },
+    { key: 'tprm', label: '🛡️ Terceiros & Fornecedores (TPRM)', role: 'all', count: fornecedoresTPRM.length },
   ];
 
   return (
@@ -451,15 +454,85 @@ export default function PainelApoio({ db }) {
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════════
-          GESUC — SUPRIMENTOS
+          TPRM — GESTÃO DE RISCOS DE TERCEIROS E FORNECEDORES CRÍTICOS
           ═══════════════════════════════════════════════════════════════════════ */}
-      {apoioTab === 'gesuc' && (
-        <div>
-          <h3 className="font-extrabold text-sm text-slate-800 dark:text-white mb-4">Cenários de Contingência de Suprimentos e Contratos (Gesuc)</h3>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            {CENARIOS_SUPRIMENTOS.map(c => (
-              <CardCenario key={c.id} cenario={c} acionado={!!acionados[c.id]} onAcionar={(id) => handleAcionarCenario(id, CENARIOS_SUPRIMENTOS)} />
-            ))}
+      {apoioTab === 'tprm' && (
+        <div className="space-y-6">
+          <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
+            <h3 className="font-extrabold text-sm text-slate-800 dark:text-white flex items-center gap-2">
+              <ShieldCheck className="w-4.5 h-4.5 text-indigo-500" /> Gestão de Riscos de Terceiros — TPRM (Third-Party Risk Management)
+            </h3>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+              Conforme exigido pelas normas ISO 22301:2019 e Resolução BACEN nº 4.893, todos os fornecedores críticos da cadeia de valor possuem avaliação de resiliência, auditoria de PCO próprio e monitoramento de SLA contratual.
+            </p>
+          </div>
+
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+            <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+              <h4 className="font-bold text-xs text-slate-800 dark:text-white">Matriz de Auditoria de Resiliência de Fornecedores Críticos</h4>
+              <span className="text-[10px] text-slate-400 font-bold">{fornecedoresTPRM.length} fornecedores críticos monitorados</span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-[10px]">
+                <thead>
+                  <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
+                    <th className="px-4 py-3 text-left font-bold text-slate-500">Fornecedor / Vendor</th>
+                    <th className="px-4 py-3 text-left font-bold text-slate-500">Serviço Prestado</th>
+                    <th className="px-4 py-3 text-center font-bold text-slate-500">Criticidade</th>
+                    <th className="px-4 py-3 text-center font-bold text-slate-500">Score Resiliência</th>
+                    <th className="px-4 py-3 text-center font-bold text-slate-500">PCO Auditado (GERIC)</th>
+                    <th className="px-4 py-3 text-center font-bold text-slate-500">RTO Contratual</th>
+                    <th className="px-4 py-3 text-center font-bold text-slate-500">Última Auditoria</th>
+                    <th className="px-4 py-3 text-left font-bold text-slate-500">Gestor do Vendor</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {fornecedoresTPRM.map((f) => (
+                    <tr key={f.id_fornecedor} className="border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                      <td className="px-4 py-3">
+                        <div className="font-extrabold text-slate-800 dark:text-white">{f.nome}</div>
+                        <div className="text-[8px] text-slate-400 font-mono">{f.id_fornecedor}</div>
+                      </td>
+                      <td className="px-4 py-3 text-slate-600 dark:text-slate-400 font-medium">{f.servico}</td>
+                      <td className="px-4 py-3 text-center">
+                        <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase ${
+                          f.criticidade === 'Crítica' ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400' :
+                          'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
+                        }`}>
+                          {f.criticidade}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-center font-black">
+                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] ${
+                          f.score_resiliencia >= 90 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' :
+                          'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
+                        }`}>
+                          {f.score_resiliencia} pts
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        {f.pco_proprio_auditado ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 rounded-full font-bold">
+                            <ShieldCheck className="w-3 h-3" /> Auditado OK
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 rounded-full font-bold">
+                            <ShieldAlert className="w-3 h-3" /> Pendente Auditoria
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-center font-bold text-slate-750 dark:text-slate-300">
+                        {f.rto_contratual_horas < 1 ? `${f.rto_contratual_horas * 60} min` : `${f.rto_contratual_horas}h`}
+                      </td>
+                      <td className="px-4 py-3 text-center text-slate-500 font-medium">
+                        {new Date(f.data_ultima_auditoria).toLocaleDateString('pt-BR')}
+                      </td>
+                      <td className="px-4 py-3 text-slate-600 dark:text-slate-400 font-medium">{f.responsavel_vendor}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}

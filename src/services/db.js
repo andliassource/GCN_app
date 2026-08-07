@@ -4,7 +4,7 @@
 // ============================================================================
 
 const INITIAL_DATA = {
-  db_version: "14.0",
+  db_version: "15.0",
 
   // ── CONFIG DO SISTEMA ─────────────────────────────────────────────────────
   configSistema: {
@@ -175,86 +175,96 @@ const INITIAL_DATA = {
     { id_contrato: "CON-ASTEC-09", nome: "Astec #09 - Manutenção Preventiva de ATMs Nacional", valor_faturamento: 110000.00, clausulas_risco: "Manutenção preventiva mensal de cada terminal.", multas: "Redução de 5% do repasse por terminal não visitado.", data_inicio: "2025-01-01", data_fim: "2028-01-01", id_gerencia: "GER-NEG02" }
   ],
 
-  // ── PROCESSOS CRÍTICOS (ENRIQUECIDOS p/ PRIORIZAÇÃO) ────────────────────────
+  // ── FORNECEDORES CRÍTICOS (TPRM - THIRD PARTY RISK MANAGEMENT) ──────────────
+  fornecedoresCriticosTPRM: [
+    { id_fornecedor: "FOR-001", nome: "Amazon Web Services (AWS)", servico: "Nuvem e Hosting Transacional", criticidade: "Crítica", pco_proprio_auditado: true, data_ultima_auditoria: "2026-01-15", rto_contratual_horas: 1.0, score_resiliencia: 98, responsavel_vendor: "Patrícia Lima (Getic)", contrato_id: "CON-001" },
+    { id_fornecedor: "FOR-002", nome: "Embratel S/A", servico: "Links Dedicados e Fibra Óptica", criticidade: "Alta", pco_proprio_auditado: true, data_ultima_auditoria: "2025-11-20", rto_contratual_horas: 2.0, score_resiliencia: 92, responsavel_vendor: "Patrícia Lima (Getic)", contrato_id: "CON-002" },
+    { id_fornecedor: "FOR-003", nome: "Topaz Solutions", servico: "Core Banking e Processamento", criticidade: "Crítica", pco_proprio_auditado: true, data_ultima_auditoria: "2026-03-10", rto_contratual_horas: 0.5, score_resiliencia: 95, responsavel_vendor: "Marcos Costa (Gecob)", contrato_id: "CON-GECOB-001" },
+    { id_fornecedor: "FOR-004", nome: "Astec Prestadores de Campo (13 Contratos)", servico: "Manutenção de Terminais em Campo", criticidade: "Média", pco_proprio_auditado: false, data_ultima_auditoria: "2025-05-10", rto_contratual_horas: 24.0, score_resiliencia: 68, responsavel_vendor: "Carla Souza (Gered)", contrato_id: "CON-ASTEC-01" },
+    { id_fornecedor: "FOR-005", nome: "Fortinet Brasil", servico: "Segurança de Perímetro e Firewalls", criticidade: "Crítica", pco_proprio_auditado: true, data_ultima_auditoria: "2026-02-01", rto_contratual_horas: 0.25, score_resiliencia: 99, responsavel_vendor: "Diego Ferreira (Gesec)", contrato_id: "" },
+    { id_fornecedor: "FOR-006", nome: "Zendesk Inc.", servico: "SaaS Atendimento e SAC", criticidade: "Alta", pco_proprio_auditado: true, data_ultima_auditoria: "2025-10-15", rto_contratual_horas: 4.0, score_resiliencia: 88, responsavel_vendor: "Marcos Costa (Gecob)", contrato_id: "" }
+  ],
+
+  // ── PROCESSOS CRÍTICOS (ENRIQUECIDOS p/ PRIORIZAÇÃO E BIA MTPD) ────────────
   processosCriticos: [
     { id_processo: "PROC-COB-001", nome: "Canal de Recebimentos Integrados", descricao: "Opera o canal de liquidação e recebimento integrado com a rede adquirente.", id_contrato: "CON-GECOB-001", criticidade: "Crítica", id_gerencia: "GER-NEG01", requer_drp: true, ativo_cmdb_id: "ATV-SYS01", estrategia_drp: "Hot Standby / Ativo-Ativo", sla_contrato_cliente: 30, sla_tic: 15, status_aprovacao_tic: "Aprovado",
       faturamento_anual: 3200000, perda_hora_estimada: 85000, ciclo_vida: "Maturidade", indicacao_gerel: "Produto consolidado. Responsável por 38% do faturamento Gecob. Investimento em DR prioritário.",
       responsavel_testes: "Marcos Costa (Gecob)", verificador_geric: "Roberto Carlos (Geric)", gestor_accountability: "Diretora Fernanda Rocha",
-      total_incidentes_12m: 2, ultimo_teste: "2026-06-15", status_plano: "Plano Aprovado", rpo_minutos: 15 },
+      total_incidentes_12m: 2, ultimo_teste: "2026-06-15", status_plano: "Plano Aprovado", rpo_minutos: 15, mtpd_horas: 1.0 },
     { id_processo: "PROC-COB-002", nome: "Cobrança Extrajudicial de Carteiras", descricao: "Indexação, gestão de vencimentos e cobrança automatizada de carteiras extrajudiciais.", id_contrato: "CON-GECOB-002", criticidade: "Alta", id_gerencia: "GER-NEG01", requer_drp: false, ativo_cmdb_id: "", estrategia_drp: "Backup & Restore", sla_contrato_cliente: 0, sla_tic: 0, status_aprovacao_tic: "Pendente",
       faturamento_anual: 1800000, perda_hora_estimada: 42000, ciclo_vida: "Maturidade", indicacao_gerel: "Receita estável. Portfolio de carteiras diversificado. Risco moderado.",
       responsavel_testes: "Marcos Costa (Gecob)", verificador_geric: "Roberto Carlos (Geric)", gestor_accountability: "Diretora Fernanda Rocha",
-      total_incidentes_12m: 0, ultimo_teste: "2026-03-20", status_plano: "Em Revisão", rpo_minutos: 60 },
+      total_incidentes_12m: 0, ultimo_teste: "2026-03-20", status_plano: "Em Revisão", rpo_minutos: 60, mtpd_horas: 24.0 },
     { id_processo: "PROC-COB-003", nome: "Plataforma Internacional de Câmbio", descricao: "Remessas internacionais e operações de câmbio sujeitas à regulação Bacen.", id_contrato: "CON-GECOB-003", criticidade: "Crítica", id_gerencia: "GER-NEG01", requer_drp: true, ativo_cmdb_id: "ATV-SEC01", estrategia_drp: "Warm Standby", sla_contrato_cliente: 15, sla_tic: 30, status_aprovacao_tic: "Pendente",
       faturamento_anual: 2500000, perda_hora_estimada: 120000, ciclo_vida: "Crescimento", indicacao_gerel: "Negócio em franca expansão. Câmbio digital com +40% de crescimento YoY. Prioridade máxima de investimento.",
       responsavel_testes: "Marcos Costa (Gecob)", verificador_geric: "Roberto Carlos (Geric)", gestor_accountability: "Diretora Fernanda Rocha",
-      total_incidentes_12m: 1, ultimo_teste: null, status_plano: "Aguardando Aprovação", rpo_minutos: 5 },
+      total_incidentes_12m: 1, ultimo_teste: null, status_plano: "Aguardando Aprovação", rpo_minutos: 5, mtpd_horas: 0.5 },
     { id_processo: "PROC-GER-001", nome: "Assistência Técnica em Campo (Astec)", descricao: "Gestão de atendimentos técnicos de campo com SLA de 8h (capitais) e 24h (interior). 13 contratos regionais.", id_contrato: "CON-ASTEC-01", criticidade: "Alta", id_gerencia: "GER-NEG02", requer_drp: false, ativo_cmdb_id: "", estrategia_drp: "Backup & Restore", sla_contrato_cliente: 0, sla_tic: 0, status_aprovacao_tic: "Pendente",
       faturamento_anual: 750000, perda_hora_estimada: 15000, ciclo_vida: "Declínio", indicacao_gerel: "Modelo de assistência técnica presencial em declínio. Gerel recomenda migração para suporte remoto/IoT. Não investir em DR tradicional.",
       responsavel_testes: "Carla Souza (Gered)", verificador_geric: "Roberto Carlos (Geric)", gestor_accountability: "Diretora Fernanda Rocha",
-      total_incidentes_12m: 0, ultimo_teste: "2025-11-10", status_plano: "Em Elaboração", rpo_minutos: 1440 },
+      total_incidentes_12m: 0, ultimo_teste: "2025-11-10", status_plano: "Em Elaboração", rpo_minutos: 1440, mtpd_horas: 48.0 },
     { id_processo: "PROC-TIC-001", nome: "Infraestrutura de Nuvem e Data Center", descricao: "Servidores e clusters em nuvem AWS sob gestão da Getic. PRD de TI (ISO 27031).", id_contrato: "CON-001", criticidade: "Crítica", id_gerencia: "GER-TIC01", requer_drp: true, ativo_cmdb_id: "ATV-SRV01", estrategia_drp: "DR em Nuvem", sla_contrato_cliente: 60, sla_tic: 30, status_aprovacao_tic: "Aprovado",
       faturamento_anual: 450000, perda_hora_estimada: 95000, ciclo_vida: "Maturidade", indicacao_gerel: "Infraestrutura core. Sem ela, nenhum negócio opera. Investimento permanente obrigatório.",
       responsavel_testes: "Patrícia Lima (Getic)", verificador_geric: "Eduardo Santos (Geati)", gestor_accountability: "Patrícia Lima (Getic)",
-      total_incidentes_12m: 1, ultimo_teste: "2026-07-01", status_plano: "Plano Aprovado", rpo_minutos: 5 },
+      total_incidentes_12m: 1, ultimo_teste: "2026-07-01", status_plano: "Plano Aprovado", rpo_minutos: 5, mtpd_horas: 2.0 },
     { id_processo: "PROC-TIC-002", nome: "Links de Conectividade WAN e Internet", descricao: "Links dedicados Embratel e redundâncias. SLA de 99.95%.", id_contrato: "CON-002", criticidade: "Alta", id_gerencia: "GER-TIC01", requer_drp: true, ativo_cmdb_id: "ATV-LNK01", estrategia_drp: "Warm Standby", sla_contrato_cliente: 120, sla_tic: 120, status_aprovacao_tic: "Aprovado",
       faturamento_anual: 120000, perda_hora_estimada: 65000, ciclo_vida: "Maturidade", indicacao_gerel: "Commodity de conectividade. Redundância contratada. Risco controlado.",
       responsavel_testes: "Patrícia Lima (Getic)", verificador_geric: "Eduardo Santos (Geati)", gestor_accountability: "Patrícia Lima (Getic)",
-      total_incidentes_12m: 0, ultimo_teste: "2026-05-12", status_plano: "Plano Aprovado", rpo_minutos: 30 },
+      total_incidentes_12m: 0, ultimo_teste: "2026-05-12", status_plano: "Plano Aprovado", rpo_minutos: 30, mtpd_horas: 4.0 },
     { id_processo: "PROC-SIT-001", nome: "Plataforma de Integração de APIs (Gesit)", descricao: "Gerencia a integração e comunicação técnica de sistemas legados com canais digitais.", id_contrato: "CON-001", criticidade: "Crítica", id_gerencia: "GER-TIC05", requer_drp: true, ativo_cmdb_id: "ATV-SRV01", estrategia_drp: "Hot Standby / Ativo-Ativo", sla_contrato_cliente: 60, sla_tic: 30, status_aprovacao_tic: "Aprovado",
       faturamento_anual: 0, perda_hora_estimada: 75000, ciclo_vida: "Maturidade", indicacao_gerel: "Camada de integração. Não fatura diretamente mas suporta todos os canais. Criticidade indireta máxima.",
       responsavel_testes: "Bruno Mendes (Gesit)", verificador_geric: "Eduardo Santos (Geati)", gestor_accountability: "Bruno Mendes (Gesit)",
-      total_incidentes_12m: 0, ultimo_teste: "2026-04-22", status_plano: "Plano Aprovado", rpo_minutos: 10 },
+      total_incidentes_12m: 0, ultimo_teste: "2026-04-22", status_plano: "Plano Aprovado", rpo_minutos: 10, mtpd_horas: 1.0 },
     { id_processo: "PROC-PIN-001", nome: "Portal de Inovação Aberta (Gepin)", descricao: "Ambiente de testes e homologação para startups parceiras.", id_contrato: "", criticidade: "Média", id_gerencia: "GER-NEG07", requer_drp: true, ativo_cmdb_id: "ATV-SYS02", estrategia_drp: "Backup & Restore", sla_contrato_cliente: 1440, sla_tic: 240, status_aprovacao_tic: "Pendente",
       faturamento_anual: 180000, perda_hora_estimada: 5000, ciclo_vida: "Crescimento", indicacao_gerel: "Ambiente de inovação em expansão. Alto potencial futuro mas baixo impacto financeiro atual.",
       responsavel_testes: "Gilberto Ramos (Gepin)", verificador_geric: "Roberto Carlos (Geric)", gestor_accountability: "Gilberto Ramos (Gepin)",
-      total_incidentes_12m: 0, ultimo_teste: null, status_plano: "Em Elaboração", rpo_minutos: 720 },
+      total_incidentes_12m: 0, ultimo_teste: null, status_plano: "Em Elaboração", rpo_minutos: 720, mtpd_horas: 72.0 },
     { id_processo: "PROC-NED-001", nome: "Plataforma de Crédito Digital (Gened)", descricao: "Originação e gestão de crédito digital com motor de decisão automatizado.", id_contrato: "", criticidade: "Crítica", id_gerencia: "GER-NEG03", requer_drp: true, ativo_cmdb_id: "ATV-SYS01", estrategia_drp: "Hot Standby / Ativo-Ativo", sla_contrato_cliente: 30, sla_tic: 15, status_aprovacao_tic: "Pendente",
       faturamento_anual: 4500000, perda_hora_estimada: 150000, ciclo_vida: "Crescimento", indicacao_gerel: "Maior produto digital da empresa. Crescimento de 60% YoY. Prioridade absoluta de investimento.",
       responsavel_testes: "Gestor Gened", verificador_geric: "Roberto Carlos (Geric)", gestor_accountability: "Diretora Fernanda Rocha",
-      total_incidentes_12m: 1, ultimo_teste: "2026-07-20", status_plano: "Plano Aprovado", rpo_minutos: 5 },
+      total_incidentes_12m: 1, ultimo_teste: "2026-07-20", status_plano: "Plano Aprovado", rpo_minutos: 5, mtpd_horas: 0.75 },
     { id_processo: "PROC-REC-001", nome: "CRM e Atendimento Pós-Venda (Gerec)", descricao: "Plataforma de relacionamento com clientes e gestão de SAC multicanal.", id_contrato: "", criticidade: "Alta", id_gerencia: "GER-NEG04", requer_drp: true, ativo_cmdb_id: "ATV-SYS02", estrategia_drp: "Warm Standby", sla_contrato_cliente: 240, sla_tic: 60, status_aprovacao_tic: "Pendente",
       faturamento_anual: 850000, perda_hora_estimada: 22000, ciclo_vida: "Maturidade", indicacao_gerel: "Canal de retenção importante. Estável. Investimento moderado em continuidade.",
       responsavel_testes: "Gestor Gerec", verificador_geric: "Roberto Carlos (Geric)", gestor_accountability: "Diretora Fernanda Rocha",
-      total_incidentes_12m: 0, ultimo_teste: "2026-02-10", status_plano: "Em Revisão", rpo_minutos: 60 },
+      total_incidentes_12m: 0, ultimo_teste: "2026-02-10", status_plano: "Em Revisão", rpo_minutos: 60, mtpd_horas: 12.0 },
     { id_processo: "PROC-OLQ-001", nome: "Liquidação Financeira e Conciliação (Geoliq)", descricao: "Processamento da liquidação financeira diária e conciliação bancária de todas as operações.", id_contrato: "", criticidade: "Crítica", id_gerencia: "GER-NEG05", requer_drp: true, ativo_cmdb_id: "ATV-SYS01", estrategia_drp: "Hot Standby / Ativo-Ativo", sla_contrato_cliente: 60, sla_tic: 30, status_aprovacao_tic: "Aprovado",
       faturamento_anual: 2100000, perda_hora_estimada: 110000, ciclo_vida: "Maturidade", indicacao_gerel: "Processo core. Sem liquidação, toda a cadeia de valor para. Investimento obrigatório.",
       responsavel_testes: "Gestor Geoliq", verificador_geric: "Roberto Carlos (Geric)", gestor_accountability: "Diretora Fernanda Rocha",
-      total_incidentes_12m: 0, ultimo_teste: "2026-06-05", status_plano: "Plano Aprovado", rpo_minutos: 15 },
+      total_incidentes_12m: 0, ultimo_teste: "2026-06-05", status_plano: "Plano Aprovado", rpo_minutos: 15, mtpd_horas: 1.5 },
     { id_processo: "PROC-NCP-001", nome: "Soluções B2B Corporativas (Gencorp)", descricao: "Gestão de contratos empresariais e soluções B2B de meios de pagamento.", id_contrato: "", criticidade: "Alta", id_gerencia: "GER-NEG06", requer_drp: true, ativo_cmdb_id: "ATV-SYS01", estrategia_drp: "Warm Standby", sla_contrato_cliente: 120, sla_tic: 60, status_aprovacao_tic: "Pendente",
       faturamento_anual: 1200000, perda_hora_estimada: 35000, ciclo_vida: "Maturidade", indicacao_gerel: "Segmento corporativo sólido. Crescimento estável de 8% ao ano.",
       responsavel_testes: "Gestor Gencorp", verificador_geric: "Roberto Carlos (Geric)", gestor_accountability: "Diretora Fernanda Rocha",
-      total_incidentes_12m: 0, ultimo_teste: null, status_plano: "Aguardando Aprovação", rpo_minutos: 30 },
+      total_incidentes_12m: 0, ultimo_teste: null, status_plano: "Aguardando Aprovação", rpo_minutos: 30, mtpd_horas: 6.0 },
     { id_processo: "PROC-SEC-001", nome: "Segurança da Informação e SOC (Gesec)", descricao: "Monitoramento 24x7 do SOC, resposta a incidentes de cibersegurança, SIEM e firewall.", id_contrato: "", criticidade: "Crítica", id_gerencia: "GER-TIC04", requer_drp: true, ativo_cmdb_id: "ATV-SEC01", estrategia_drp: "Hot Standby / Ativo-Ativo", sla_contrato_cliente: 15, sla_tic: 5, status_aprovacao_tic: "Aprovado",
       faturamento_anual: 0, perda_hora_estimada: 200000, ciclo_vida: "Crescimento", indicacao_gerel: "Área de proteção. Sem faturamento direto mas perda catastrófica em caso de breach. Investimento contínuo obrigatório.",
       responsavel_testes: "Diego Ferreira (Gesec)", verificador_geric: "Eduardo Santos (Geati)", gestor_accountability: "Patrícia Lima (Getic)",
-      total_incidentes_12m: 3, ultimo_teste: "2026-07-28", status_plano: "Plano Aprovado", rpo_minutos: 5 },
+      total_incidentes_12m: 3, ultimo_teste: "2026-07-28", status_plano: "Plano Aprovado", rpo_minutos: 5, mtpd_horas: 0.5 },
     { id_processo: "PROC-FIN-001", nome: "Gestão Financeira e Tesouraria (Gefic)", descricao: "Tesouraria corporativa, tributos, SPED, EFD, DCTF, fluxo de caixa e pagamentos.", id_contrato: "", criticidade: "Crítica", id_gerencia: "GER-APO02", requer_drp: true, ativo_cmdb_id: "ATV-SYS03", estrategia_drp: "Warm Standby", sla_contrato_cliente: 240, sla_tic: 120, status_aprovacao_tic: "Pendente",
       faturamento_anual: 0, perda_hora_estimada: 90000, ciclo_vida: "Maturidade", indicacao_gerel: "Processo interno crítico. Tributos, SPED e folha exigem continuidade absoluta. Multas regulatórias altíssimas.",
       responsavel_testes: "Carla Mendes (Gefic)", verificador_geric: "Roberto Carlos (Geric)", gestor_accountability: "Carla Mendes (Gefic)",
-      total_incidentes_12m: 0, ultimo_teste: null, status_plano: "Em Elaboração", rpo_minutos: 30,
+      total_incidentes_12m: 0, ultimo_teste: null, status_plano: "Em Elaboração", rpo_minutos: 30, mtpd_horas: 8.0,
       sla_interno: "SLA interno: Liberação de pagamentos em até 4h. Obrigações acessórias conforme calendário Receita Federal.", tipo_plano: "PCO-APOIO" },
     { id_processo: "PROC-APO-001", nome: "Folha de Pagamento Corporativa (Gepes)", descricao: "[APOIO/DIAFI] Processamento interno de folha, eSocial, DCTFWeb, RAIS.", id_contrato: "", criticidade: "Alta", id_gerencia: "GER-APO01", sla_interno: "Fechamento da folha até o dia 25 de cada mês. Em crise: processamento emergencial em 48h.", tipo_plano: "PCO-APOIO", requer_drp: false, ativo_cmdb_id: "ATV-SYS04", estrategia_drp: "Backup & Restore", sla_contrato_cliente: 0, sla_tic: 0, status_aprovacao_tic: "Pendente",
       faturamento_anual: 0, perda_hora_estimada: 25000, ciclo_vida: "Maturidade", indicacao_gerel: "Processo interno regulatório. Falha implica multas trabalhistas e eSocial.",
       responsavel_testes: "Ana Ribeiro (Gepes)", verificador_geric: "Roberto Carlos (Geric)", gestor_accountability: "Ana Ribeiro (Gepes)",
-      total_incidentes_12m: 0, ultimo_teste: null, status_plano: "Sem Plano", rpo_minutos: 480 },
+      total_incidentes_12m: 0, ultimo_teste: null, status_plano: "Sem Plano", rpo_minutos: 480, mtpd_horas: 48.0 },
     { id_processo: "PROC-APO-003", nome: "Aquisições e Suprimentos de Emergência (Gesuc)", descricao: "[APOIO/DIAFI] Compras emergenciais durante contingências. SLA: aprovação e pedido em 24h.", id_contrato: "", criticidade: "Média", id_gerencia: "GER-APO03", sla_interno: "SLA interno: Aprovação e emissão de pedido em até 24h.", tipo_plano: "PCO-APOIO", requer_drp: false, ativo_cmdb_id: "", estrategia_drp: "Backup & Restore", sla_contrato_cliente: 0, sla_tic: 0, status_aprovacao_tic: "Pendente",
       faturamento_anual: 0, perda_hora_estimada: 8000, ciclo_vida: "Maturidade", indicacao_gerel: "Apoio operacional. Baixa prioridade de DR.",
       responsavel_testes: "Luis Fernandes (Gesuc)", verificador_geric: "Roberto Carlos (Geric)", gestor_accountability: "Luis Fernandes (Gesuc)",
-      total_incidentes_12m: 0, ultimo_teste: null, status_plano: "Sem Plano", rpo_minutos: 1440 },
+      total_incidentes_12m: 0, ultimo_teste: null, status_plano: "Sem Plano", rpo_minutos: 1440, mtpd_horas: 24.0 },
     { id_processo: "PROC-APO-004", nome: "Evacuação Predial e Brigada de Incêndio (Gesap)", descricao: "[APOIO/DIAFI] Plano de evacuação de emergência, acionamento da brigada de incêndio.", id_contrato: "", criticidade: "Alta", id_gerencia: "GER-APO04", sla_interno: "SLA Brigada: Resposta até 5 minutos. Evacuação total em até 15 minutos.", tipo_plano: "PCO-APOIO", requer_drp: false, ativo_cmdb_id: "", estrategia_drp: "Backup & Restore", sla_contrato_cliente: 0, sla_tic: 0, status_aprovacao_tic: "Pendente",
       faturamento_anual: 0, perda_hora_estimada: 50000, ciclo_vida: "Maturidade", indicacao_gerel: "Segurança de pessoas. Obrigação legal (NR-23, NBR 15219). Prioridade regulatória.",
       responsavel_testes: "Sandro Lima (Gesap)", verificador_geric: "Roberto Carlos (Geric)", gestor_accountability: "Sandro Lima (Gesap)",
-      total_incidentes_12m: 1, ultimo_teste: "2026-05-01", status_plano: "Plano Aprovado", rpo_minutos: 0 },
+      total_incidentes_12m: 1, ultimo_teste: "2026-05-01", status_plano: "Plano Aprovado", rpo_minutos: 0, mtpd_horas: 0.25 },
     { id_processo: "PROC-CPL-001", nome: "Compliance, Jurídico e LGPD (Gecoj)", descricao: "Gestão de conformidade regulatória, LGPD, contratos e pareceres jurídicos.", id_contrato: "", criticidade: "Alta", id_gerencia: "GER-APO05", requer_drp: false, ativo_cmdb_id: "", estrategia_drp: "Backup & Restore", sla_contrato_cliente: 0, sla_tic: 0, status_aprovacao_tic: "Pendente",
       faturamento_anual: 0, perda_hora_estimada: 30000, ciclo_vida: "Maturidade", indicacao_gerel: "Compliance é custo regulatório. Sem faturamento mas exposição jurídica altíssima se falhar.",
       responsavel_testes: "Gestor Gecoj", verificador_geric: "Roberto Carlos (Geric)", gestor_accountability: "Gestor Gecoj",
-      total_incidentes_12m: 0, ultimo_teste: null, status_plano: "Sem Plano", rpo_minutos: 720,
+      total_incidentes_12m: 0, ultimo_teste: null, status_plano: "Sem Plano", rpo_minutos: 720, mtpd_horas: 12.0,
       sla_interno: "SLA interno: 8h para pareceres legais emergenciais.", tipo_plano: "PCO-APOIO" },
     { id_processo: "PROC-ATM-001", nome: "Manutenção Preventiva de ATMs Nacional (Gered)", descricao: "Manutenção preventiva e corretiva da rede de terminais de autoatendimento em todo o Brasil.", id_contrato: "CON-ASTEC-09", criticidade: "Alta", id_gerencia: "GER-NEG02", requer_drp: false, ativo_cmdb_id: "", estrategia_drp: "Backup & Restore", sla_contrato_cliente: 480, sla_tic: 0, status_aprovacao_tic: "Pendente",
       faturamento_anual: 1100000, perda_hora_estimada: 18000, ciclo_vida: "Sunset", indicacao_gerel: "Rede de ATMs em fase de sunset. Migração para canais digitais em andamento. NÃO investir em DR adicional.",
       responsavel_testes: "Carla Souza (Gered)", verificador_geric: "Roberto Carlos (Geric)", gestor_accountability: "Carla Souza (Gered)",
-      total_incidentes_12m: 0, ultimo_teste: "2025-09-15", status_plano: "Em Revisão", rpo_minutos: 1440 }
+      total_incidentes_12m: 0, ultimo_teste: "2025-09-15", status_plano: "Em Revisão", rpo_minutos: 1440, mtpd_horas: 24.0 }
   ],
 
   // ── INCIDENTES (v2) ───────────────────────────────────────────────────────
@@ -940,6 +950,10 @@ export const dbService = {
         saveDB(db);
       }
     }
+  },
+
+  fornecedoresCriticosTPRM: {
+    list: () => getDB().fornecedoresCriticosTPRM || [],
   },
 
   // PRD

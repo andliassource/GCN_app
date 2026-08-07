@@ -84,6 +84,12 @@ export default function GestaoCrises({ db }) {
         >
           Painel de Acionamento & Comunicação (Gemac)
         </button>
+        <button 
+          onClick={() => setCrisisTab('playbooks')}
+          className={`pb-3 transition-all ${crisisTab === 'playbooks' ? 'border-b-2 border-indigo-650 dark:border-indigo-400 text-indigo-650 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`}
+        >
+          🚨 Playbooks de Resposta Imediata (0-15min / 1h / 4h)
+        </button>
       </div>
 
       {notification && (
@@ -407,6 +413,156 @@ export default function GestaoCrises({ db }) {
                 <div className="font-bold text-[9px] uppercase tracking-wider text-slate-400">Prazos de Protocolo Gemac:</div>
                 <p>• <strong>Interno:</strong> Até 30 min via App corporativo.</p>
                 <p>• <strong>Externo:</strong> Até 60 min via Status Page pública.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ABA: PLAYBOOKS DE RESPOSTA IMEDIATA */}
+      {crisisTab === 'playbooks' && (
+        <div className="space-y-6">
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
+            <h3 className="font-extrabold text-sm text-slate-800 dark:text-white flex items-center gap-2">
+              <ShieldAlert className="w-5 h-5 text-indigo-500" /> Playbooks de Resposta Imediata a Crises (ISO 22301 / NIST)
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed max-w-4xl">
+              Guia operacional dinâmico para tomada de decisão nos primeiros minutos e horas da eclosão de um desastre. 
+              Dividido em 3 fases temporais: <strong>Fase 1 (0-15 min) — Segurança & Contenção</strong>, <strong>Fase 2 (15-60 min) — Acionamento & Gemac</strong> e <strong>Fase 3 (1-4h) — Failover & Reguladores</strong>.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            {/* Playbook 1: Ransomware */}
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-rose-200 dark:border-rose-900/40 shadow-sm space-y-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <span className="text-[9px] font-bold text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-950/40 px-2 py-0.5 rounded-full uppercase">Cibersegurança / SOC</span>
+                  <h4 className="font-extrabold text-sm text-slate-800 dark:text-white mt-1">Ataque Ransomware / Invasão Crítica</h4>
+                </div>
+                <span className="text-xs font-mono font-bold text-rose-500">RTO: 15 min</span>
+              </div>
+              <div className="space-y-2 text-[11px]">
+                <div className="p-2.5 rounded-lg bg-rose-50/60 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/30">
+                  <span className="font-bold text-rose-700 dark:text-rose-400 block mb-0.5">⏱ 0 a 15 Minutos (Fase 1 - Isolamento):</span>
+                  <ul className="list-disc pl-4 text-slate-600 dark:text-slate-400 space-y-1 text-[10px]">
+                    <li>Gesec: Isolar vLANs atingidas e cortar links WAN/VPN.</li>
+                    <li>NÃO reiniciar servidores infectados (preservar memória RAM para forense).</li>
+                    <li>Disparar alerta vermelho no Slack #incidentes-ciber.</li>
+                  </ul>
+                </div>
+                <div className="p-2.5 rounded-lg bg-amber-50/60 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30">
+                  <span className="font-bold text-amber-700 dark:text-amber-400 block mb-0.5">⏱ 15 a 60 Minutos (Fase 2 - Contenção & Gemac):</span>
+                  <ul className="list-disc pl-4 text-slate-600 dark:text-slate-400 space-y-1 text-[10px]">
+                    <li>Convocação emergencial do Comitê de Crise Geemp via MNS.</li>
+                    <li>Gemac: Preparar nota interna de esclarecimento para colaboradores.</li>
+                    <li>Verificar integridade dos backups offline no S3 Glacier.</li>
+                  </ul>
+                </div>
+                <div className="p-2.5 rounded-lg bg-indigo-50/60 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30">
+                  <span className="font-bold text-indigo-700 dark:text-indigo-400 block mb-0.5">⏱ 1 a 4 Horas (Fase 3 - Restauração & Notificação Legal):</span>
+                  <ul className="list-disc pl-4 text-slate-600 dark:text-slate-400 space-y-1 text-[10px]">
+                    <li>Iniciar restore dos backups limpos em ambiente isolado.</li>
+                    <li>Gecoj/DPO: Avaliar necessidade de notificação à ANPD em até 3 dias.</li>
+                    <li>Gerin: Notificar BACEN caso o incidente afete transações financeiras.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Playbook 2: Blackout AWS */}
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-indigo-200 dark:border-indigo-900/40 shadow-sm space-y-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <span className="text-[9px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-950/40 px-2 py-0.5 rounded-full uppercase">Infraestrutura TIC</span>
+                  <h4 className="font-extrabold text-sm text-slate-800 dark:text-white mt-1">Indisponibilidade Total de Data Center / Cloud</h4>
+                </div>
+                <span className="text-xs font-mono font-bold text-indigo-500">RTO: 30 min</span>
+              </div>
+              <div className="space-y-2 text-[11px]">
+                <div className="p-2.5 rounded-lg bg-indigo-50/60 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30">
+                  <span className="font-bold text-indigo-700 dark:text-indigo-400 block mb-0.5">⏱ 0 a 15 Minutos (Fase 1 - Diagnóstico):</span>
+                  <ul className="list-disc pl-4 text-slate-600 dark:text-slate-400 space-y-1 text-[10px]">
+                    <li>Getic: Confirmar se a falha afeta a região us-east-1 inteira via AWS Health.</li>
+                    <li>Abrir War Room virtual no Teams 'War-Room-Infra'.</li>
+                    <li>Acionar suporte de emergência Enterprise AWS.</li>
+                  </ul>
+                </div>
+                <div className="p-2.5 rounded-lg bg-amber-50/60 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30">
+                  <span className="font-bold text-amber-700 dark:text-amber-400 block mb-0.5">⏱ 15 a 60 Minutos (Fase 2 - Failover Ativo):</span>
+                  <ul className="list-disc pl-4 text-slate-600 dark:text-slate-400 space-y-1 text-[10px]">
+                    <li>Executar Script de Chaveamento DNS Route53 para região reserva (sa-east-1).</li>
+                    <li>Validar se a réplica do banco de dados assumiu como Master.</li>
+                    <li>Gemac: Atualizar Status Page pública para clientes e parceiros.</li>
+                  </ul>
+                </div>
+                <div className="p-2.5 rounded-lg bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30">
+                  <span className="font-bold text-emerald-700 dark:text-emerald-400 block mb-0.5">⏱ 1 a 4 Horas (Fase 3 - Validação & Normalização):</span>
+                  <ul className="list-disc pl-4 text-slate-600 dark:text-slate-400 space-y-1 text-[10px]">
+                    <li>Testar integridade de transações enfileiradas.</li>
+                    <li>Validar conciliação financeira Geoliq.</li>
+                    <li>Elaborar Relatório RSO (Relatório Semestral de Operações de Contingência).</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Playbook 3: Evacuação Predial */}
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-amber-200 dark:border-amber-900/40 shadow-sm space-y-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-950/40 px-2 py-0.5 rounded-full uppercase">Gesap / Predial</span>
+                  <h4 className="font-extrabold text-sm text-slate-800 dark:text-white mt-1">Desastre Predial / Evacuação Emergencial</h4>
+                </div>
+                <span className="text-xs font-mono font-bold text-amber-500">SLA: 15 min</span>
+              </div>
+              <div className="space-y-2 text-[11px]">
+                <div className="p-2.5 rounded-lg bg-amber-50/60 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30">
+                  <span className="font-bold text-amber-700 dark:text-amber-400 block mb-0.5">⏱ 0 a 15 Minutos (Fase 1 - Vidas em Primeiro Lugar):</span>
+                  <ul className="list-disc pl-4 text-slate-600 dark:text-slate-400 space-y-1 text-[10px]">
+                    <li>Disparar alarme geral e evacuar andares via rotas de fuga.</li>
+                    <li>Acionar Corpo de Bombeiros (193) e SAMU (192).</li>
+                    <li>Brigadistas contam pessoas no Ponto de Encontro Externa (Muster Point).</li>
+                  </ul>
+                </div>
+                <div className="p-2.5 rounded-lg bg-indigo-50/60 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30">
+                  <span className="font-bold text-indigo-700 dark:text-indigo-400 block mb-0.5">⏱ 15 a 60 Minutos (Fase 2 - Continuidade Operacional):</span>
+                  <ul className="list-disc pl-4 text-slate-600 dark:text-slate-400 space-y-1 text-[10px]">
+                    <li>Ativar home office automático para 100% dos colaboradores.</li>
+                    <li>Gesap: Isolar a área predial afetada e desligar disjuntores.</li>
+                    <li>Gepes: Checar se há colaboradores feridos ou hospitalizados.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Playbook 4: Crise de Liquidez */}
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <span className="text-[9px] font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full uppercase">Gefic / Tesouraria</span>
+                  <h4 className="font-extrabold text-sm text-slate-800 dark:text-white mt-1">Crise de Liquidez / Estresse de Caixa</h4>
+                </div>
+                <span className="text-xs font-mono font-bold text-slate-500">SLA: 4h</span>
+              </div>
+              <div className="space-y-2 text-[11px]">
+                <div className="p-2.5 rounded-lg bg-slate-50/60 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700">
+                  <span className="font-bold text-slate-700 dark:text-slate-300 block mb-0.5">⏱ 0 a 60 Minutos (Fase 1 - Bloqueio Preservativo):</span>
+                  <ul className="list-disc pl-4 text-slate-600 dark:text-slate-400 space-y-1 text-[10px]">
+                    <li>Suspender todos os pagamentos não-essenciais e CAPEX.</li>
+                    <li>Preservar saldo para Folha de Pagamento (Gepes) e tributos.</li>
+                    <li>Reunir Gefic com CFO para projeção de caixa diário.</li>
+                  </ul>
+                </div>
+                <div className="p-2.5 rounded-lg bg-indigo-50/60 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30">
+                  <span className="font-bold text-indigo-700 dark:text-indigo-400 block mb-0.5">⏱ 1 a 4 Horas (Fase 2 - Injeção de Liquidez):</span>
+                  <ul className="list-disc pl-4 text-slate-600 dark:text-slate-400 space-y-1 text-[10px]">
+                    <li>Acionar linha de crédito emergencial homologada.</li>
+                    <li>Antecipar recebíveis de cartão de crédito.</li>
+                    <li>Acionar conselho de administração se necessidade &gt; R$ 10MM.</li>
+                  </ul>
+                </div>
               </div>
             </div>
 

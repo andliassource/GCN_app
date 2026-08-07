@@ -644,24 +644,20 @@ export default function AnaliseImpacto({ db }) {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {ain ? (
-                        <div className="grid grid-cols-3 gap-2 text-center bg-slate-50 dark:bg-slate-950/40 p-1.5 rounded border border-slate-200 dark:border-slate-850 max-w-[200px]">
-                          <div>
-                            <p className="text-[8px] text-slate-400 font-bold uppercase">RTO</p>
-                            <p className="font-black text-[11px] text-slate-700 dark:text-slate-350">{ain.RTO}m</p>
-                          </div>
-                          <div>
-                            <p className="text-[8px] text-slate-400 font-bold uppercase">RPO</p>
-                            <p className="font-black text-[11px] text-slate-700 dark:text-slate-350">{ain.RPO}m</p>
-                          </div>
-                          <div>
-                            <p className="text-[8px] text-slate-400 font-bold uppercase">MTD</p>
-                            <p className="font-black text-[11px] text-rose-500">{ain.MTDCN}m</p>
-                          </div>
+                      <div className="grid grid-cols-3 gap-1.5 text-center bg-slate-50 dark:bg-slate-950/40 p-2 rounded-lg border border-slate-200 dark:border-slate-800 max-w-[220px]">
+                        <div>
+                          <p className="text-[8px] text-slate-400 font-bold uppercase">RTO</p>
+                          <p className="font-black text-[11px] text-slate-700 dark:text-slate-300">{proc.sla_contrato_cliente ? `${proc.sla_contrato_cliente}m` : (ain ? `${ain.RTO}m` : '—')}</p>
                         </div>
-                      ) : (
-                        <span className="text-slate-400 dark:text-slate-600 text-[10px] italic">BIA Não Configurado</span>
-                      )}
+                        <div>
+                          <p className="text-[8px] text-slate-400 font-bold uppercase">RPO</p>
+                          <p className="font-black text-[11px] text-slate-700 dark:text-slate-300">{proc.rpo_minutos ? `${proc.rpo_minutos}m` : (ain ? `${ain.RPO}m` : '—')}</p>
+                        </div>
+                        <div>
+                          <p className="text-[8px] text-rose-500 font-bold uppercase">MTPD</p>
+                          <p className="font-black text-[11px] text-rose-600 dark:text-rose-400">{proc.mtpd_horas ? `${proc.mtpd_horas}h` : (ain ? `${ain.MTDCN}m` : '—')}</p>
+                        </div>
+                      </div>
                     </td>
                     <td className="px-6 py-4 text-center font-bold text-slate-750 dark:text-slate-300">
                       {perdas.hasContrato ? (
