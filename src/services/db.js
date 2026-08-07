@@ -4,7 +4,7 @@
 // ============================================================================
 
 const INITIAL_DATA = {
-  db_version: "11.0",
+  db_version: "12.0",
 
   // ── CONFIG DO SISTEMA ─────────────────────────────────────────────────────
   configSistema: {
@@ -397,6 +397,44 @@ const INITIAL_DATA = {
         { status: "Pendente TIC", aprovador: "Roberto Carlos (GERIC)", data: "2026-02-05T10:00:00", parecer: "Revisado. Encaminhado para aval técnico TIC." }
       ],
       ans_vigente: null, dispensa_ans: null, parecer_geric: "Revisado. Encaminhado para aval técnico TIC.", parecer_tic: null, parecer_gerente: null, parecer_comite: null, id_gerente_exec_aprovador: null
+    },
+    {
+      id_pco: "PCO-GER-001", id_processo: "PROC-GER-001", id_gerencia: "GER-NEG02",
+      estrategia_recuperacao: "Acionamento do plano de contingência presencial com equipes Astec regionais. Atendimento com SLA estendido.",
+      responsabilidades: "Carla Souza (Gered) e coordenadores regionais Astec.",
+      recursos_necessarios: "Estoque de peças de reposição e veículos de atendimento.",
+      cenario_acesso: "Operação descentralizada em campo.",
+      cenario_sistemas: "Passo 1: Registrar chamados manuais no sistema de contingência Astec.",
+      cenario_fornecedores: "Acionamento imediato das 13 assistências técnicas cadastradas.",
+      cenario_pessoas: "Remanejamento de técnicos de campo de regiões vizinhas.",
+      escalonamento_crise: "Escalar para Gerente Gered se SLA de 24h for estourado em mais de 5 chamados simultâneos.",
+      status_aprovacao: "Vigente", versao: "1.0.0",
+      data_proxima_revisao: "2026-02-01", data_ultima_revisao: "2025-02-01", ultima_revisao: "2025-02-01",
+      vigente_ate: "2026-02-01", nivel_confidencialidade: "restrito",
+      intervenientes: ["INT-007"], acionamentos: [],
+      workflow_log: [
+        { status: "Vigente", aprovador: "Comitê Conti", data: "2025-02-01T10:00:00", parecer: "Plano aprovado com vigência de 12 meses." }
+      ],
+      ans_vigente: "CON-ASTEC-01", dispensa_ans: null, parecer_geric: "Aprovado", parecer_tic: "Aprovado", parecer_gerente: "Aprovado", parecer_comite: "Aprovado", id_gerente_exec_aprovador: "USR-009"
+    },
+    {
+      id_pco: "PCO-PIN-001", id_processo: "PROC-PIN-001", id_gerencia: "GER-NEG07",
+      estrategia_recuperacao: "Ambiente de contingência em nuvem secundária para o Portal de Inovação.",
+      responsabilidades: "Gilberto Ramos (Gepin).",
+      recursos_necessarios: "Servidores em nuvem de teste.",
+      cenario_acesso: "Acesso remoto via VPN.",
+      cenario_sistemas: "Passo 1: Ativar réplica do portal de inovação.",
+      cenario_fornecedores: "Provedor de nuvem secundário.",
+      cenario_pessoas: "Equipe de projetos Gepin.",
+      escalonamento_crise: "Escalar se fora por mais de 24h.",
+      status_aprovacao: "Vigente", versao: "1.1.0",
+      data_proxima_revisao: "2026-08-20", data_ultima_revisao: "2025-08-20", ultima_revisao: "2025-08-20",
+      vigente_ate: "2026-08-20", nivel_confidencialidade: "interno",
+      intervenientes: ["INT-001"], acionamentos: [],
+      workflow_log: [
+        { status: "Vigente", aprovador: "Comitê Conti", data: "2025-08-20T10:00:00", parecer: "Aprovado por 1 ano." }
+      ],
+      ans_vigente: null, dispensa_ans: "Ambiente de testes/inovação sem contrato de cliente", parecer_geric: "Aprovado", parecer_tic: "Aprovado", parecer_gerente: "Aprovado", parecer_comite: "Aprovado", id_gerente_exec_aprovador: "USR-014"
     }
   ],
 
