@@ -48,7 +48,7 @@ export const notificationService = {
             // Cópia para GERIC sempre
             db.notificacoes.create({
               tipo: 'plano_vencendo',
-              titulo: `[CÓPIA GERIC] ${titulo}`,
+              titulo: `[GERIC] ${titulo}`,
               mensagem,
               id_destino: 'GER-GOV01',
               prioridade: limite.prioridade,
@@ -86,7 +86,7 @@ export const notificationService = {
           // Cópia para GERIC
           db.notificacoes.create({
             tipo: 'revisao_devida',
-            titulo: `[CÓPIA GERIC] Revisão anual obrigatória — ${pco.id_pco}`,
+            titulo: `📋 Revisão anual obrigatória (GERIC) — ${pco.id_pco}`,
             mensagem: `O PCO ${pco.id_pco} não é revisado há ${Math.round(diffRevisao)} dias. Cobrar revisão da gerência responsável.`,
             id_destino: 'GER-GOV01',
             prioridade: 'media',
@@ -145,7 +145,7 @@ export const notificationService = {
           if (pa.id_gerencia && pa.id_gerencia !== 'GER-GOV01') {
             db.notificacoes.create({
               tipo: 'plano_acao_atrasado',
-              titulo: `[CÓPIA GERIC] ${titulo}`,
+              titulo: `[GERIC] ${titulo}`,
               mensagem,
               id_destino: 'GER-GOV01',
               prioridade: 'alta',
@@ -185,7 +185,7 @@ export const notificationService = {
           if (diff <= 30) {
             db.notificacoes.create({
               tipo: 'ativo_fim_suporte',
-              titulo: `[CÓPIA GERIC] ${titulo}`,
+              titulo: `[GERIC] ${titulo}`,
               mensagem,
               id_destino: 'GER-GOV01',
               prioridade: 'media',
