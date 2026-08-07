@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import DashboardGeric from './components/DashboardGeric';
+import DashboardBOD from './components/DashboardBOD';
 import ContratosDocs from './components/ContratosDocs';
 import BaseIncidentes from './components/BaseIncidentes';
 import AnaliseImpacto from './components/AnaliseImpacto';
@@ -54,6 +55,8 @@ function MainLayout() {
     switch (activeTab) {
       case 'dashboard':
         return <DashboardGeric db={dbService} />;
+      case 'bod':
+        return <DashboardBOD db={dbService} />;
       case 'priorizacao':
         return <MatrizPriorizacao db={dbService} />;
       case 'organizacao':

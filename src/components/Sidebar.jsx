@@ -15,7 +15,8 @@ import {
   Settings,
   Target,
   X,
-  HeartHandshake
+  HeartHandshake,
+  Crown
 } from 'lucide-react';
 
 export default function Sidebar({ 
@@ -36,6 +37,7 @@ export default function Sidebar({
 
   const allMenuItems = [
     { id: 'dashboard', label: 'Painel Executivo Geric', icon: LayoutDashboard, roles: ALL_ROLES },
+    { id: 'bod', label: 'Painel C-Level & Conselho (BOD)', icon: Crown, roles: ALL_ROLES },
     { id: 'priorizacao', label: 'Matriz de Priorização', icon: Target, roles: ALL_ROLES },
     { id: 'organizacao', label: 'Estrutura & Riscos', icon: Network, roles: ALL_ROLES },
     { id: 'contratos', label: '1. Ingestão de Contratos', icon: FileText, roles: ALL_ROLES },
