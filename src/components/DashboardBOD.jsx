@@ -51,7 +51,11 @@ export default function DashboardBOD({ db }) {
       
       const faturamentoDir = procsDir.reduce((acc, p) => acc + (p.faturamento_anual || 0), 0);
       const perdaHoraDir = procsDir.reduce((acc, p) => acc + (p.perda_hora_estimada || 0), 0);
-      const pcosAprovados = pcosDir.filter(p => p.status_aprovacao === 'Aprovado' || p.status_aprovacao === 'Vigente').length;
+      const pcosAprovados = procsDir.filter(pr => {
+        const pco = planosPCO.find(p => p.id_processo === pr.id_processo);
+        if (pco && (pco.status_aprovacao === 'Aprovado' || pco.status_aprovacao === 'Vigente')) return true;
+        return pr.status_plano === 'Plano Aprovado' || pr.status_plano === 'Vigente';
+      }).length;
       const coberturaPCO = procsDir.length > 0 ? Math.round((pcosAprovados / procsDir.length) * 100) : 0;
       
       // Score da Diretoria (0-100)
