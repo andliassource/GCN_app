@@ -454,6 +454,20 @@ export default function PainelApoio({ db }) {
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════════
+          GESUC — SUPRIMENTOS / COMPRAS / LOGÍSTICA
+          ═══════════════════════════════════════════════════════════════════════ */}
+      {apoioTab === 'gesuc' && (
+        <div>
+          <h3 className="font-extrabold text-sm text-slate-800 dark:text-white mb-4">Cenários de Contingência de Suprimentos & Compras (Gesuc)</h3>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            {CENARIOS_SUPRIMENTOS.map(c => (
+              <CardCenario key={c.id} cenario={c} acionado={!!acionados[c.id]} onAcionar={(id) => handleAcionarCenario(id, CENARIOS_SUPRIMENTOS)} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════════════
           TPRM — GESTÃO DE RISCOS DE TERCEIROS E FORNECEDORES CRÍTICOS
           ═══════════════════════════════════════════════════════════════════════ */}
       {apoioTab === 'tprm' && (
