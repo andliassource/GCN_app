@@ -331,7 +331,17 @@ const INITIAL_DATA = {
     { id_ain: "AIN-007", id_processo: "PROC-APO-001", probabilidade: "Pouco Provável", impacto_financeiro: "Moderado", RTO: 2880, RPO: 2880, MTDCN: 7200 },
     { id_ain: "AIN-008", id_processo: "PROC-APO-002", probabilidade: "Pouco Provável", impacto_financeiro: "Maior", RTO: 240, RPO: 480, MTDCN: 1440 },
     { id_ain: "AIN-009", id_processo: "PROC-APO-003", probabilidade: "Provável", impacto_financeiro: "Menor", RTO: 1440, RPO: 2880, MTDCN: 5760 },
-    { id_ain: "AIN-010", id_processo: "PROC-APO-004", probabilidade: "Provável", impacto_financeiro: "Maior", RTO: 30, RPO: 0, MTDCN: 60 }
+    { id_ain: "AIN-010", id_processo: "PROC-APO-004", probabilidade: "Provável", impacto_financeiro: "Maior", RTO: 30, RPO: 0, MTDCN: 60 },
+    { id_ain: "AIN-011", id_processo: "PROC-PIN-001", probabilidade: "Pouco Provável", impacto_financeiro: "Moderado", RTO: 240, RPO: 720, MTDCN: 4320 },
+    { id_ain: "AIN-012", id_processo: "PROC-NED-001", probabilidade: "Provável", impacto_financeiro: "Catastrófico", RTO: 15, RPO: 5, MTDCN: 45 },
+    { id_ain: "AIN-013", id_processo: "PROC-REC-001", probabilidade: "Provável", impacto_financeiro: "Maior", RTO: 60, RPO: 60, MTDCN: 720 },
+    { id_ain: "AIN-014", id_processo: "PROC-OLQ-001", probabilidade: "Pouco Provável", impacto_financeiro: "Catastrófico", RTO: 30, RPO: 15, MTDCN: 90 },
+    { id_ain: "AIN-015", id_processo: "PROC-NCP-001", probabilidade: "Pouco Provável", impacto_financeiro: "Maior", RTO: 60, RPO: 30, MTDCN: 360 },
+    { id_ain: "AIN-016", id_processo: "PROC-SEC-001", probabilidade: "Provável", impacto_financeiro: "Catastrófico", RTO: 5, RPO: 5, MTDCN: 30 },
+    { id_ain: "AIN-017", id_processo: "PROC-FIN-001", probabilidade: "Pouco Provável", impacto_financeiro: "Maior", RTO: 120, RPO: 30, MTDCN: 480 },
+    { id_ain: "AIN-018", id_processo: "PROC-CPL-001", probabilidade: "Rara", impacto_financeiro: "Maior", RTO: 480, RPO: 720, MTDCN: 1440 },
+    { id_ain: "AIN-019", id_processo: "PROC-ATM-001", probabilidade: "Provável", impacto_financeiro: "Moderado", RTO: 480, RPO: 1440, MTDCN: 2880 },
+    { id_ain: "AIN-020", id_processo: "PROC-SIT-001", probabilidade: "Pouco Provável", impacto_financeiro: "Catastrófico", RTO: 30, RPO: 10, MTDCN: 120 }
   ],
 
   // ── PLANOS DE CONTINUIDADE (PCO) ──────────────────────────────────────────
@@ -582,6 +592,51 @@ const INITIAL_DATA = {
       procedimento_war_room: "1. Falha > 15 min: Criar War Room Teams 'War-Room-Canais'. 2. Convocar Gecob, Getic e fiscal de canais. 3. Acionamento de Geemp se SLA contratual ultrapassado.",
       status_aprovacao: "Aprovado", versao: "1.0.0",
       data_proxima_revisao: "2027-01-01", vigente_ate: "2027-01-01"
+    },
+    {
+      id_prd: "PRD-TIC-003", id_processo: "PROC-SEC-001",
+      procedimentos_restauracao: "1. Isolar vLAN afetada no FortiGate HA. 2. Ativar SOC secundário em nuvem com SIEM backup. 3. Notificar CSIRT e ANPD se vazamento.",
+      local_backup: "Snapshot de configurações FortiOS e SIEM no S3 Glacier (sa-east-1)", frequencia_backup: "Diário",
+      comunicacao_emergencia: "Notificar SOC e Cibersegurança via PagerDuty. E-mail restrito para Gesec.",
+      procedimento_war_room: "1. Criar War Room Cibersegurança. 2. Isolar servidores. 3. Avaliar impacto LGPD.",
+      status_aprovacao: "Aprovado", versao: "2.0.0",
+      data_proxima_revisao: "2027-03-01", vigente_ate: "2027-03-01"
+    },
+    {
+      id_prd: "PRD-TIC-004", id_processo: "PROC-SIT-001",
+      procedimentos_restauracao: "1. Detectar queda no Kong API Gateway. 2. Re-rotear tráfego para réplica em cluster EKS secundário. 3. Validar autenticação OAuth2.",
+      local_backup: "Réplicas de bancos PostgreSQL e Redis no S3", frequencia_backup: "A cada 10 minutos",
+      comunicacao_emergencia: "Notificar time Gesit via Slack #api-incidentes.",
+      procedimento_war_room: "1. Abrir sala Teams Gesit/Getic. 2. Re-rotear APIs críticas.",
+      status_aprovacao: "Aprovado", versao: "1.2.0",
+      data_proxima_revisao: "2027-01-20", vigente_ate: "2027-01-20"
+    },
+    {
+      id_prd: "PRD-TIC-005", id_processo: "PROC-NED-001",
+      procedimentos_restauracao: "1. Ativar réplica do motor de crédito na AWS sa-east-1. 2. Redirecionar esteira de aprovação. 3. Validar comunicação com bureau de crédito.",
+      local_backup: "AWS DynamoDB Global Tables + S3 Glacier", frequencia_backup: "Tempo real / Ativo-Ativo",
+      comunicacao_emergencia: "Notificar Gerência Gened e time de produto.",
+      procedimento_war_room: "1. Criar War Room Gened/Getic. 2. Chavear motor de crédito.",
+      status_aprovacao: "Aprovado", versao: "2.0.0",
+      data_proxima_revisao: "2027-04-15", vigente_ate: "2027-04-15"
+    },
+    {
+      id_prd: "PRD-TIC-006", id_processo: "PROC-OLQ-001",
+      procedimentos_restauracao: "1. Chavear transmissão CNAB para canal contingencial bancário. 2. Reprocessar liquidações pendentes. 3. Gerar relatório de conciliação.",
+      local_backup: "Base de liquidação espelhada em Multi-AZ RDS", frequencia_backup: "A cada 15 minutos",
+      comunicacao_emergencia: "Notificar Geoliq e Tesouraria.",
+      procedimento_war_room: "1. Convocar War Room Geoliq/Gefic. 2. Notificar bancos liquidantes.",
+      status_aprovacao: "Aprovado", versao: "1.8.0",
+      data_proxima_revisao: "2027-05-10", vigente_ate: "2027-05-10"
+    },
+    {
+      id_prd: "PRD-TIC-007", id_processo: "PROC-FIN-001",
+      procedimentos_restauracao: "1. Ativar réplica do ERP SAP na nuvem secundária. 2. Liberar lote emergencial de pagamentos via token contingencial.",
+      local_backup: "SAP HANA System Replication + S3 Glacier", frequencia_backup: "A cada 1 hora",
+      comunicacao_emergencia: "Notificar Gefic e Contabilidade.",
+      procedimento_war_room: "1. War Room Financeira. 2. Transmissão contábil contingencial.",
+      status_aprovacao: "Aprovado", versao: "1.0.0",
+      data_proxima_revisao: "2027-02-28", vigente_ate: "2027-02-28"
     }
   ],
 
@@ -614,12 +669,57 @@ const INITIAL_DATA = {
       gerou_plano_acao: true, id_plano_acao: "PA-003",
       participantes: ["Sandro Lima (Gesap)", "Arthur Mendes (Geemp)", "Roberto Carlos (Geric)"],
       proxima_revisao_data: "2026-12-01"
+    },
+    {
+      id_teste: "TST-003", id_pco: "PCO-SEC-001", id_prd: "PRD-TIC-003", data_teste: "2026-07-28",
+      tipo_teste: "exercicio_campo", resultado: "Sucesso",
+      areas_melhoria: "Simulado de contenção de ransomware no SOC: isolamento automático via EDR em 8 minutos (meta < 15 min).",
+      cenarios_testados: [
+        { cenario: "acesso", resultado: "passou", observacoes: "War room remota de cibersegurança criada em 3 min." },
+        { cenario: "sistemas", resultado: "passou", observacoes: "vLANs isoladas via FortiGate HA em 5 min." },
+        { cenario: "fornecedores", resultado: "passou", observacoes: "Suporte Fortinet e EDR CrowdStrike validados." },
+        { cenario: "pessoas", resultado: "passou", observacoes: "Equipe SOC 24x7 operando conforme runbook." }
+      ],
+      gerou_plano_acao: false, id_plano_acao: null,
+      participantes: ["Diego Ferreira (Gesec)", "Patrícia Lima (Getic)", "Roberto Carlos (Geric)"],
+      proxima_revisao_data: "2027-01-28"
+    },
+    {
+      id_teste: "TST-004", id_pco: "PCO-TIC-001", id_prd: "PRD-TIC-001", data_teste: "2026-07-01",
+      tipo_teste: "exercicio_campo", resultado: "Sucesso",
+      areas_melhoria: "Failover de infraestrutura em nuvem AWS us-east-1 para sa-east-1 concluído em 22 min (RTO = 30 min).",
+      cenarios_testados: [
+        { cenario: "acesso", resultado: "passou", observacoes: "VPN e MFA ativos para 100% dos técnicos." },
+        { cenario: "sistemas", resultado: "passou", observacoes: "Clusters EKS e banco RDS promovidos em 22 min." },
+        { cenario: "fornecedores", resultado: "passou", observacoes: "Suporte AWS Enterprise acionado com sucesso." },
+        { cenario: "pessoas", resultado: "passou", observacoes: "Escala SRE completa." }
+      ],
+      gerou_plano_acao: false, id_plano_acao: null,
+      participantes: ["Patrícia Lima (Getic)", "Diego Ferreira (Gesec)", "Bruno Mendes (Gesit)"],
+      proxima_revisao_data: "2027-01-01"
+    },
+    {
+      id_teste: "TST-005", id_pco: "PCO-OLQ-001", id_prd: "PRD-TIC-006", data_teste: "2026-06-05",
+      tipo_teste: "simulacao_mesa", resultado: "Sucesso",
+      areas_melhoria: "Teste de liquidação financeira off-line com grade BACEN secundária efetuado sem perda de registros.",
+      cenarios_testados: [
+        { cenario: "acesso", resultado: "passou", observacoes: "Acesso aos terminais bancários contingenciais OK." },
+        { cenario: "sistemas", resultado: "passou", observacoes: "Fila CNAB reprocessada em 18 min." },
+        { cenario: "fornecedores", resultado: "passou", observacoes: "Bancos parceiros responderam em SLA." },
+        { cenario: "pessoas", resultado: "passou", observacoes: "Equipe Geoliq treinada." }
+      ],
+      gerou_plano_acao: false, id_plano_acao: null,
+      participantes: ["Gestor Geoliq", "Carla Mendes (Gefic)", "Roberto Carlos (Geric)"],
+      proxima_revisao_data: "2026-12-05"
     }
   ],
 
   revisoesAtualizacoes: [
     { id_revisao: "REV-001", id_pco: "PCO-COB-001", id_prd: "PRD-TIC-002", data_revisao: "2026-04-15", motivo: "Mudança no gateway reserva", atualizacao_realizada: "Substituição do gateway reserva para Pagar.me." },
-    { id_revisao: "REV-002", id_pco: "PCO-APO-004", id_prd: null, data_revisao: "2026-02-09", motivo: "Incidente de incêndio real", atualizacao_realizada: "Atualização do plano após incidente INC-102. Inclusão de procedimento de inspeção elétrica anual." }
+    { id_revisao: "REV-002", id_pco: "PCO-APO-004", id_prd: null, data_revisao: "2026-02-09", motivo: "Incidente de incêndio real", atualizacao_realizada: "Atualização do plano após incidente INC-102. Inclusão de procedimento de inspeção elétrica anual." },
+    { id_revisao: "REV-003", id_pco: "PCO-SEC-001", id_prd: "PRD-TIC-003", data_revisao: "2026-07-28", motivo: "Revisão pós-simulado de cibersegurança", atualizacao_realizada: "Inclusão de protocolo de isolamento automático via EDR CrowdStrike." },
+    { id_revisao: "REV-004", id_pco: "PCO-TIC-001", id_prd: "PRD-TIC-001", data_revisao: "2026-07-01", motivo: "Atualização de arquitetura AWS", atualizacao_realizada: "Homologação de clusters EKS 1.30 e automação de failover DNS." },
+    { id_revisao: "REV-005", id_pco: "PCO-OLQ-001", id_prd: "PRD-TIC-006", data_revisao: "2026-06-05", motivo: "Nova regulação BACEN de liquidação", atualizacao_realizada: "Inclusão de redundância de transmissão CNAB e ajuste de RTO para 30min." }
   ],
 
   governancaGCN: [
@@ -633,9 +733,21 @@ const INITIAL_DATA = {
     { id_avaliacao: "EVL-002", id_processo: "PROC-COB-002", nivel_resiliencia: 2.10, aderencia_ISO22301: 27.5, nota_area: 2.50, nota_geric: 1.80, checklist_area: "{\"req_equipe\":true,\"req_remoto\":false,\"req_rto\":true,\"req_testes\":false,\"req_contatos\":false}", checklist_geric: "{\"req_politica\":true,\"req_pco_rev\":false,\"req_simulado\":false,\"req_rto_bia\":false,\"req_matriz\":false,\"req_comite\":false}", comentarios_geric: "Necessita de revisão urgente do PCO e simulação operacional.", grafico_resultado: "radar_PROC-COB-002" },
     { id_avaliacao: "EVL-003", id_processo: "PROC-COB-003", nivel_resiliencia: 3.40, aderencia_ISO22301: 60.0, nota_area: 4.00, nota_geric: 3.00, checklist_area: "{\"req_equipe\":true,\"req_remoto\":true,\"req_rto\":true,\"req_testes\":true,\"req_contatos\":false}", checklist_geric: "{\"req_politica\":true,\"req_pco_rev\":true,\"req_simulado\":false,\"req_rto_bia\":true,\"req_matriz\":false,\"req_comite\":false}", comentarios_geric: "Aguardando testes formais de contingência de câmbio.", grafico_resultado: "radar_PROC-COB-003" },
     { id_avaliacao: "EVL-004", id_processo: "PROC-GER-001", nivel_resiliencia: 3.00, aderencia_ISO22301: 50.0, nota_area: 3.00, nota_geric: 3.00, checklist_area: "{}", checklist_geric: "{}", comentarios_geric: "Inicializado.", grafico_resultado: "radar_PROC-GER-001" },
-    { id_avaliacao: "EVL-005", id_processo: "PROC-TIC-001", nivel_resiliencia: 4.20, aderencia_ISO22301: 80.0, nota_area: 4.00, nota_geric: 4.30, checklist_area: "{}", checklist_geric: "{}", comentarios_geric: "Aprovado no simulado prático.", grafico_resultado: "radar_PROC-TIC-001" },
+    { id_avaliacao: "EVL-005", id_processo: "PROC-TIC-001", nivel_resiliencia: 4.20, aderencia_ISO22301: 80.0, nota_area: 4.00, nota_geric: 4.30, checklist_area: "{}", checklist_geric: "{}", comentarios_geric: "Aprovado no simulado prático de nuvem AWS.", grafico_resultado: "radar_PROC-TIC-001" },
     { id_avaliacao: "EVL-006", id_processo: "PROC-APO-001", nivel_resiliencia: 2.10, aderencia_ISO22301: 27.5, nota_area: 2.00, nota_geric: 2.20, checklist_area: "{}", checklist_geric: "{}", comentarios_geric: "Plano de apoio pendente de treinamento.", grafico_resultado: "radar_PROC-APO-001" },
-    { id_avaliacao: "EVL-007", id_processo: "PROC-APO-004", nivel_resiliencia: 3.80, aderencia_ISO22301: 70.0, nota_area: 4.00, nota_geric: 3.70, checklist_area: "{}", checklist_geric: "{}", comentarios_geric: "Concluído o teste predial de evacuação.", grafico_resultado: "radar_PROC-APO-004" }
+    { id_avaliacao: "EVL-007", id_processo: "PROC-APO-004", nivel_resiliencia: 3.80, aderencia_ISO22301: 70.0, nota_area: 4.00, nota_geric: 3.70, checklist_area: "{}", checklist_geric: "{}", comentarios_geric: "Concluído o teste predial de evacuação.", grafico_resultado: "radar_PROC-APO-004" },
+    { id_avaliacao: "EVL-008", id_processo: "PROC-TIC-002", nivel_resiliencia: 4.10, aderencia_ISO22301: 82.0, nota_area: 4.00, nota_geric: 4.20, checklist_area: "{}", checklist_geric: "{}", comentarios_geric: "Link redundante operando com alta estabilidade.", grafico_resultado: "radar_PROC-TIC-002" },
+    { id_avaliacao: "EVL-009", id_processo: "PROC-SIT-001", nivel_resiliencia: 4.30, aderencia_ISO22301: 86.0, nota_area: 4.20, nota_geric: 4.40, checklist_area: "{}", checklist_geric: "{}", comentarios_geric: "Camada de APIs testada e homologada.", grafico_resultado: "radar_PROC-SIT-001" },
+    { id_avaliacao: "EVL-010", id_processo: "PROC-PIN-001", nivel_resiliencia: 3.20, aderencia_ISO22301: 55.0, nota_area: 3.50, nota_geric: 3.00, checklist_area: "{}", checklist_geric: "{}", comentarios_geric: "Ambiente de inovação sem contrato de cliente direto.", grafico_resultado: "radar_PROC-PIN-001" },
+    { id_avaliacao: "EVL-011", id_processo: "PROC-NED-001", nivel_resiliencia: 4.50, aderencia_ISO22301: 92.0, nota_area: 4.60, nota_geric: 4.40, checklist_area: "{}", checklist_geric: "{}", comentarios_geric: "Plataforma de crédito digital altamente resiliente (Ativo-Ativo).", grafico_resultado: "radar_PROC-NED-001" },
+    { id_avaliacao: "EVL-012", id_processo: "PROC-REC-001", nivel_resiliencia: 3.60, aderencia_ISO22301: 68.0, nota_area: 3.80, nota_geric: 3.50, checklist_area: "{}", checklist_geric: "{}", comentarios_geric: "SAC multicanal com contingência em revisão.", grafico_resultado: "radar_PROC-REC-001" },
+    { id_avaliacao: "EVL-013", id_processo: "PROC-OLQ-001", nivel_resiliencia: 4.70, aderencia_ISO22301: 94.0, nota_area: 4.80, nota_geric: 4.60, checklist_area: "{}", checklist_geric: "{}", comentarios_geric: "Processo core de liquidação com excelente governança.", grafico_resultado: "radar_PROC-OLQ-001" },
+    { id_avaliacao: "EVL-014", id_processo: "PROC-NCP-001", nivel_resiliencia: 3.50, aderencia_ISO22301: 65.0, nota_area: 3.60, nota_geric: 3.40, checklist_area: "{}", checklist_geric: "{}", comentarios_geric: "Soluções B2B estáveis.", grafico_resultado: "radar_PROC-NCP-001" },
+    { id_avaliacao: "EVL-015", id_processo: "PROC-SEC-001", nivel_resiliencia: 4.80, aderencia_ISO22301: 96.0, nota_area: 4.90, nota_geric: 4.70, checklist_area: "{}", checklist_geric: "{}", comentarios_geric: "SOC 24x7 com testes de cibersegurança aprovados.", grafico_resultado: "radar_PROC-SEC-001" },
+    { id_avaliacao: "EVL-016", id_processo: "PROC-FIN-001", nivel_resiliencia: 3.90, aderencia_ISO22301: 74.0, nota_area: 4.00, nota_geric: 3.80, checklist_area: "{}", checklist_geric: "{}", comentarios_geric: "PCO financeiro aprovado com contingência ERP SAP.", grafico_resultado: "radar_PROC-FIN-001" },
+    { id_avaliacao: "EVL-017", id_processo: "PROC-APO-003", nivel_resiliencia: 3.10, aderencia_ISO22301: 48.0, nota_area: 3.20, nota_geric: 3.00, checklist_area: "{}", checklist_geric: "{}", comentarios_geric: "Aquisições de emergência com SLA de 24h.", grafico_resultado: "radar_PROC-APO-003" },
+    { id_avaliacao: "EVL-018", id_processo: "PROC-CPL-001", nivel_resiliencia: 3.30, aderencia_ISO22301: 52.0, nota_area: 3.50, nota_geric: 3.10, checklist_area: "{}", checklist_geric: "{}", comentarios_geric: "Compliance e LGPD com suporte jurídico contínuo.", grafico_resultado: "radar_PROC-CPL-001" },
+    { id_avaliacao: "EVL-019", id_processo: "PROC-ATM-001", nivel_resiliencia: 2.80, aderencia_ISO22301: 42.0, nota_area: 3.00, nota_geric: 2.60, checklist_area: "{}", checklist_geric: "{}", comentarios_geric: "Rede de ATMs em fase de sunset.", grafico_resultado: "radar_PROC-ATM-001" }
   ],
 
   // ── PLANO ANUAL DE EXERCÍCIOS E SIMULADOS (ISO 22301 §8.5) ───────────────
@@ -661,54 +773,54 @@ const INITIAL_DATA = {
     },
     {
       id_simulado: "SIM-2026-Q2",
-      titulo: "Simulado de Evacuação Predial e Brigada de Incêndio",
+      titulo: "Exercício Prático de Campo — Evacuação Predial e Brigada",
       trimestre: "Q2 2026",
-      data_agendada: "2026-05-20",
+      data_agendada: "2026-05-15",
       id_processo: "PROC-APO-004",
       tipo: "Exercício Prático de Campo",
-      gerencia_responsavel: "Gesap / CBMERJ",
+      gerencia_responsavel: "Gesap / Geric",
       status: "Concluído",
-      resultado: "Sucesso Parcial",
-      rto_meta_min: 30,
-      rto_atingido_min: 28,
+      resultado: "Parcial (Score 78/100)",
+      rto_meta_min: 10,
+      rto_atingido_min: 13,
       evidencias: [
-        { nome: "Laudo_CBMERJ_Simulado_Evacuacao.pdf", tipo: "Relatório Oficial", tamanho: "3.8 MB", data: "2026-05-20" },
-        { nome: "Lista_Presenca_Muster_Point.xlsx", tipo: "Controle de Pessoas", tamanho: "210 KB", data: "2026-05-20" }
+        { nome: "Relatorio_Evacuacao_Gesap_Q2.pdf", tipo: "Relatório de Campo", tamanho: "2.1 MB", data: "2026-05-15" },
+        { nome: "Lista_Presenca_MusterPoint.xlsx", tipo: "Controle de Pessoas", tamanho: "180 KB", data: "2026-05-15" }
       ],
-      parecer_geric: "Evacuação concluída em 28 minutos. Plano de ação PA-003 aberto para ajuste de rotas no 3º andar.",
-      parecer_auditoria: "Plano mitigatório PA-003 sob acompanhamento da 3ª Linha."
+      parecer_geric: "Evacuação executada. Plano de ação PA-003 aberto para reduzir tempo de saída de 13 para 10 min.",
+      parecer_auditoria: "Auditoria interna acompanhou o exercício presencialmente."
     },
     {
       id_simulado: "SIM-2026-Q3",
-      titulo: "Simulado de Failover DR de TI & Banco de Dados (AWS us-east-1)",
+      titulo: "Simulado Integrado de Failover AWS e SOC Cibersegurança",
       trimestre: "Q3 2026",
-      data_agendada: "2026-08-15",
+      data_agendada: "2026-08-20",
       id_processo: "PROC-TIC-001",
-      tipo: "Teste Técnico de DR / Failover",
-      gerencia_responsavel: "Getic / Geati",
+      tipo: "Exercício Prático de Campo",
+      gerencia_responsavel: "Getic / Gesec / Geric",
       status: "Agendado",
       resultado: "Aguardando Execução",
       rto_meta_min: 30,
-      rto_atingido_min: null,
+      rto_atingido_min: 0,
       evidencias: [],
-      parecer_geric: "Script de testes aprovado pela GERIC. War room agendada na sala 402.",
-      parecer_auditoria: "Auditoria Interna agendada para acompanhamento in loco."
+      parecer_geric: "Simulado agendado no calendário anual. Roteiro e salas virtuais preparados.",
+      parecer_auditoria: "Auditores convidados para acompanhar os testes em tempo real."
     },
     {
       id_simulado: "SIM-2026-Q4",
-      titulo: "Simulado de Cibersegurança & Resposta a Ransomware",
+      titulo: "Simulado de Contingência de Liquidação Financeira e Crédito",
       trimestre: "Q4 2026",
       data_agendada: "2026-11-10",
-      id_processo: "PROC-TIC-002",
-      tipo: "Simulado Cyber / Red Team",
-      gerencia_responsavel: "Gesec / SOC",
+      id_processo: "PROC-OLQ-001",
+      tipo: "Simulação de Mesa (Tabletop)",
+      gerencia_responsavel: "Geoliq / Gened / Geric",
       status: "Planejado",
-      resultado: "Aguardando Q4",
-      rto_meta_min: 60,
-      rto_atingido_min: null,
+      resultado: "Planejado",
+      rto_meta_min: 30,
+      rto_atingido_min: 0,
       evidencias: [],
-      parecer_geric: "Escopo em definição pela equipe de Cibersegurança.",
-      parecer_auditoria: "Pendente de alinhamento prévio."
+      parecer_geric: "Planejamento inicial aprovado para o 4º trimestre.",
+      parecer_auditoria: "Pauta pré-aprovada pelo Comitê."
     }
   ]
 };
