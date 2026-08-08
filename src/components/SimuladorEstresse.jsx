@@ -162,6 +162,40 @@ export default function SimuladorEstresse({ db }) {
     return processosAtingidos.filter(p => p.mtpdExcedido).length;
   }, [processosAtingidos]);
 
+  // Simulador de Monte Carlo Integrado (1.000 iterações estocásticas)
+  const monteCarloResults = useMemo(() => {
+    if (!cenarioSelecionado) return null;
+    const nSimulacoes = 1000;
+    const resultados = [];
+    
+    const perdaHoraBase = cenarioSelecionado.processosAfetados.reduce((sum, pid) => {
+      const proc = processos.find(p => p.id_processo === pid);
+      return sum + (proc?.perda_hora_estimada || 12000);
+    }, 0);
+
+    for (let i = 0; i < nSimulacoes; i++) {
+      const variacao = (Math.random() + Math.random() + Math.random() - 1.5) * 1.2;
+      const duracaoSim = Math.max(1, duracaoHoras + variacao);
+      const multSeveridade = 0.85 + Math.random() * 0.4;
+      const perda = perdaHoraBase * duracaoSim * multSeveridade;
+      resultados.push(perda);
+    }
+
+    resultados.sort((a, b) => a - b);
+
+    const var95 = resultados[Math.floor(nSimulacoes * 0.95)];
+    const var99 = resultados[Math.floor(nSimulacoes * 0.99)];
+    const mediaPerda = resultados.reduce((a, b) => a + b, 0) / nSimulacoes;
+
+    return {
+      var95: Number(var95.toFixed(0)),
+      var99: Number(var99.toFixed(0)),
+      mediaPerda: Number(mediaPerda.toFixed(0)),
+      minPerda: Number(resultados[0].toFixed(0)),
+      maxPerda: Number(resultados[nSimulacoes - 1].toFixed(0))
+    };
+  }, [cenarioSelecionado, duracaoHoras, processos]);
+
   return (
     <div className="space-y-6 animate-fade-in">
 
@@ -327,6 +361,55 @@ export default function SimuladorEstresse({ db }) {
         </div>
 
       </div>
+
+      {/* ═══ ANÁLISE DE ESTRESSE DE MONTE CARLO (VALUE AT RISK — VaR 95% & 99%) ═══ */}
+      {monteCarloResults && (
+        <div className="bg-slate-900 text-white p-6 rounded-2xl border border-indigo-500/30 shadow-xl space-y-4">
+          <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-indigo-400" />
+              <h3 className="font-extrabold text-sm text-white">Análise Estocástica de Monte Carlo (1.000 Itens de Estresse)</h3>
+            </div>
+            <span className="text-[10px] font-mono bg-indigo-950 text-indigo-300 border border-indigo-800 px-3 py-1 rounded-full font-bold">
+              VaR Preditivo (ISO 31000 / ISO 22301)
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
+            <div className="p-3 bg-slate-955 rounded-xl border border-slate-800">
+              <span className="text-[10px] font-bold text-slate-400 uppercase">Perda Média Simulação</span>
+              <div className="text-lg font-black text-white mt-1">
+                R$ {monteCarloResults.mediaPerda.toLocaleString('pt-BR')}
+              </div>
+              <p className="text-[9px] text-slate-400 mt-0.5">Expectativa matemática de impacto</p>
+            </div>
+
+            <div className="p-3 bg-slate-955 rounded-xl border border-amber-900/40">
+              <span className="text-[10px] font-bold text-amber-400 uppercase">VaR 95% (Cenário Adverso)</span>
+              <div className="text-lg font-black text-amber-400 mt-1">
+                R$ {monteCarloResults.var95.toLocaleString('pt-BR')}
+              </div>
+              <p className="text-[9px] text-amber-300/80 mt-0.5">95% de probabilidade de não exceder este valor</p>
+            </div>
+
+            <div className="p-3 bg-slate-955 rounded-xl border border-rose-900/50">
+              <span className="text-[10px] font-bold text-rose-400 uppercase">VaR 99% (Estresse Severo / Tail Risk)</span>
+              <div className="text-lg font-black text-rose-400 mt-1">
+                R$ {monteCarloResults.var99.toLocaleString('pt-BR')}
+              </div>
+              <p className="text-[9px] text-rose-300/80 mt-0.5">Perda no pior 1% dos cenários simulados</p>
+            </div>
+
+            <div className="p-3 bg-slate-955 rounded-xl border border-indigo-900/40">
+              <span className="text-[10px] font-bold text-indigo-400 uppercase">Perda Máxima Absoluta</span>
+              <div className="text-lg font-black text-indigo-300 mt-1">
+                R$ {monteCarloResults.maxPerda.toLocaleString('pt-BR')}
+              </div>
+              <p className="text-[9px] text-slate-400 mt-0.5">Cenário de choque máximo (24h+)</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ═══ TABELA DE EFEITO CASCATA NOS PROCESSOS ═══ */}
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden space-y-3">
